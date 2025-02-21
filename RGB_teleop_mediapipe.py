@@ -1,4 +1,5 @@
 import time
+from collections import deque
 from typing import List
 
 import cv2  # type: ignore
@@ -76,6 +77,77 @@ def rotation_matrix_from_vector(vect: np.ndarray) -> np.ndarray:
     return rotation_matrix
 
 
+class MedianFilter:
+    def __init__(self, filter_size=5):
+        self.filter_size = filter_size
+        self.measurements = deque(maxlen=filter_size)
+
+    def update(self, measurement):
+        self.measurements.append(measurement)
+        if len(self.measurements) == self.filter_size:
+            return np.median(np.array(self.measurements), axis=0)
+        else:
+            return measurement
+
+
+class KalmanFilter2D:
+    def __init__(
+        self,
+        process_noise=0.01,
+        measurement_noise=0.1,
+        error_cov_post=1.0,
+        add_median_filter=True,
+        median_filter_size=5,
+    ):
+        self.kf = cv2.KalmanFilter(4, 2)
+        self.kf.measurementMatrix = np.array([[1, 0, 0, 0], [0, 1, 0, 0]], np.float32)
+        self.kf.transitionMatrix = np.array(
+            [[1, 0, 1, 0], [0, 1, 0, 1], [0, 0, 1, 0], [0, 0, 0, 1]], np.float32
+        )
+        self.kf.processNoiseCov = (
+            np.array(
+                [[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]], np.float32
+            )
+            * process_noise
+        )
+        self.kf.measurementNoiseCov = (
+            np.array([[1, 0], [0, 1]], np.float32) * measurement_noise
+        )
+        self.kf.errorCovPost = (
+            np.array(
+                [[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]], np.float32
+            )
+            * error_cov_post
+        )
+
+        self.initialized = False
+        self.kf.statePre = np.zeros((4, 1), dtype=np.float32)  # x, y, vx, vy
+        self.kf.statePost = np.zeros((4, 1), dtype=np.float32)
+
+        self.add_median_filter = add_median_filter
+        if self.add_median_filter:
+            self.median_filter = MedianFilter(median_filter_size)
+
+    def update(self, measurement):
+        if measurement is None:
+            return self.kf.statePost[:2].flatten() if self.initialized else None
+
+        measurement = np.array([[measurement[0]], [measurement[1]]], dtype=np.float32)
+
+        if not self.initialized:
+            self.kf.statePre[:2] = measurement
+            self.kf.statePost[:2] = measurement
+            self.initialized = True
+            return measurement.flatten()
+
+        self.kf.correct(measurement)
+        prediction = self.kf.predict()
+        filtered_position = np.array(prediction[:2]).flatten()
+        if self.add_median_filter:
+            filtered_position = self.median_filter.update(filtered_position)
+        return filtered_position
+
+
 class ComputerVision:
     def __init__(self, object_labels, detection_threshold):
         # mediapipe holistic
@@ -130,20 +202,21 @@ class ComputerVision:
         else:
             return None
 
-    def get_landmarks_coordinates(self, image) -> bool:
+    def get_landmarks_coordinates(self, image, fixed_user=False) -> bool:
         results = self.holistic.process(cv2.cvtColor(image, cv2.COLOR_BGR2RGB))
         if results:
-            self.left_shoulder = self.get_xy_coordinates(
-                results.pose_landmarks, LEFT_SHOULDER_CST, image
-            )
-            self.right_shoulder = self.get_xy_coordinates(
-                results.pose_landmarks, RIGHT_SHOULDER_CST, image
-            )
-            if self.left_shoulder is not None and self.right_shoulder is not None:
-                self.user_center = (self.left_shoulder + self.right_shoulder) / 2.0
-                self.dist_intershoulder = np.linalg.norm(
-                    self.left_shoulder - self.right_shoulder
+            if not fixed_user:
+                self.left_shoulder = self.get_xy_coordinates(
+                    results.pose_landmarks, LEFT_SHOULDER_CST, image
                 )
+                self.right_shoulder = self.get_xy_coordinates(
+                    results.pose_landmarks, RIGHT_SHOULDER_CST, image
+                )
+                if self.left_shoulder is not None and self.right_shoulder is not None:
+                    self.user_center = (self.left_shoulder + self.right_shoulder) / 2.0
+                    self.dist_intershoulder = np.linalg.norm(
+                        self.left_shoulder - self.right_shoulder
+                    )
 
             self.left_index = self.get_xy_coordinates(
                 results.left_hand_landmarks, INDEX_CST, image
@@ -312,6 +385,15 @@ class RobotController:
             self.reachy.r_arm.gripper.is_on(),
         ]
 
+        # filters
+        self.kf_left_object = KalmanFilter2D()
+        self.kf_right_object = KalmanFilter2D()
+        self.kf_left_index = KalmanFilter2D(add_median_filter=False)
+        self.kf_right_index = KalmanFilter2D(add_median_filter=False)
+        self.kf_face = [
+            KalmanFilter2D(median_filter_size=3) for _ in range(len(FACELANDMARKS_CST))
+        ]
+
     def estimate_depth(self, side, vision):
         side_int = 0 if side == "left" else 1
         object_diameter = (
@@ -340,13 +422,15 @@ class RobotController:
     def get_effector_pose(self, side, vision):
         user_center = vision.user_center
         dist_intershoulder = vision.dist_intershoulder
-        depth = self.estimate_depth(side, vision)
         side_int = 0 if side == "left" else 1
-        obj_center = (
-            vision.left_object_dict["center"]
-            if side == "left"
-            else vision.right_object_dict["center"]
-        )
+
+        # get the filtered object center
+        if side_int == 0:
+            obj_center = self.kf_left_object.update(vision.left_object_dict["center"])
+        else:
+            obj_center = self.kf_right_object.update(vision.right_object_dict["center"])
+
+        depth = self.estimate_depth(side, vision)
 
         goal_position = self.convert_to_robot_frame(
             obj_center, user_center, dist_intershoulder, depth
@@ -436,7 +520,7 @@ class RobotController:
 
             time.sleep(max(1.0 / self.control_frequency - (time.time() - t), 0.0))
 
-    def get_head_pose(self, vision):
+    def get_head_rotation(self, vision):
         model_points = np.array(
             [
                 [0.0, 0.0, 0.0],  # Nose tip
@@ -450,10 +534,18 @@ class RobotController:
         )
 
         dist_coeffs = np.zeros((4, 1))
+
+        # get the filtered face points
+        face_points_filtered = np.zeros((len(FACELANDMARKS_CST), 2))
+        for idx in range(len(FACELANDMARKS_CST)):
+            face_points_filtered[idx] = self.kf_face[idx].update(
+                vision.face_points[idx]
+            )
+
         # Estimation de la pose via solvePnP
         success_pnp, rvec, tvec = cv2.solvePnP(
             model_points,
-            vision.face_points,
+            face_points_filtered,
             vision.camera_matrix,
             dist_coeffs,
             flags=cv2.SOLVEPNP_ITERATIVE,
@@ -478,24 +570,37 @@ class RobotController:
 
     def get_gripper_command(self, side, vision):
         obj = vision.left_object_dict if side == "left" else vision.right_object_dict
-        index = vision.left_index if side == "left" else vision.right_index
+
+        # get the filtered index position
+        if side == "left":
+            index = self.kf_left_index.update(vision.left_index)
+        else:
+            index = self.kf_right_index.update(vision.right_index)
+
         gripper = (
             self.reachy.l_arm.gripper if side == "left" else self.reachy.r_arm.gripper
         )
         side_int = 0 if side == "left" else 1
 
-        if obj is None or index is None:
+        if not obj or index is None:
             return
 
-        dist_index_ball = np.linalg.norm(index - obj["center"])
-        dist_normalized = dist_index_ball / (obj["diameter"] / 2)
+        try:
+            dist_index_ball = np.linalg.norm(index - obj["center"])
+            dist_normalized = dist_index_ball / (obj["diameter"] / 2)
 
-        if dist_normalized > 1.5 and self.grippers_ready[side_int]:
-            self.grippers_ready[side_int] = False
-            gripper.close() if gripper.get_current_opening() > 0.5 else gripper.open()
+            if dist_normalized > 1.5 and self.grippers_ready[side_int]:
+                self.grippers_ready[side_int] = False
+                (
+                    gripper.close()
+                    if gripper.get_current_opening() > 0.5
+                    else gripper.open()
+                )
 
-        elif dist_normalized < 1.1 and not self.grippers_ready[side_int]:
-            self.grippers_ready[side_int] = True
+            elif dist_normalized < 1.1 and not self.grippers_ready[side_int]:
+                self.grippers_ready[side_int] = True
+        except Exception:
+            print(f"Error in get_gripper_command : {obj} and {index} ")
 
 
 class TeleopControl:
@@ -541,7 +646,7 @@ class TeleopControl:
         while self.vision.cap.isOpened():
             img = self.vision.get_frame()
             if img is not None:
-                self.vision.get_landmarks_coordinates(img)
+                self.vision.get_landmarks_coordinates(img, fixed_user=True)
                 self.vision.get_object_dict(img)
 
                 # make the robot follow the user's hands
@@ -558,7 +663,7 @@ class TeleopControl:
                 )
 
                 # make the robot follow the user's head
-                roll, pitch, yaw = self.robot_controller.get_head_pose(vision)
+                roll, pitch, yaw = self.robot_controller.get_head_rotation(vision)
                 self.robot_controller.set_head_orientation(roll, pitch, yaw)
 
                 # make the robot grab the objects

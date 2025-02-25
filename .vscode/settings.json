@@ -1,5 +1,9 @@
 {
     "black-formatter.importStrategy": "fromEnvironment",
+    "black-formatter.args": [
+        "--line-length",
+        "119"
+    ],
     "isort.check": true,
     "isort.importStrategy": "fromEnvironment",
     "editor.formatOnSave": true,
@@ -11,5 +15,9 @@
         "black"
     ],
     "mypy-type-checker.importStrategy": "fromEnvironment",
-    "flake8.importStrategy": "fromEnvironment"
+    "flake8.importStrategy": "fromEnvironment",
+    "flake8.args": [
+        "--max-line-length",
+        "119"
+    ],
 }

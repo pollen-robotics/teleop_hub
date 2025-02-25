@@ -22,9 +22,18 @@ from scipy.spatial.transform import Rotation as R  # type: ignore
 from scipy.spatial.transform import Slerp  # type: ignore
 
 # landmarks constant :
-INDEX_CST = 8
+HANDLANDMARKS_CST = [
+    4,
+    8,
+    16,
+    20,
+]  # Thumb tip, Index finger tip, Ring finger tip, Pinky tip
+
 LEFT_SHOULDER_CST = 11
 RIGHT_SHOULDER_CST = 12
+LEFT_ELBOW_CST = 13
+RIGHT_ELBOW_CST = 14
+
 FACELANDMARKS_CST = [1, 152, 33, 263, 61, 291]
 # Nose tip, Chin, Left eye left corner, Right eye right corner, Left mouth corner, Right mouth corner
 
@@ -142,11 +151,10 @@ class ComputerVision:
     def __init__(self, object_labels, detection_threshold):
         # mediapipe holistic
         self.holistic = mp.solutions.holistic.Holistic(
-            min_detection_confidence=0.5,
-            min_tracking_confidence=0.5,
+            min_detection_confidence=0.6,
+            min_tracking_confidence=0.6,
             model_complexity=0,
         )
-        self.results = None
 
         # pollen vision
         self.object_detection = YoloWorldWrapper()
@@ -165,9 +173,11 @@ class ComputerVision:
         self.right_shoulder = None
         self.dist_intershoulder = None
         self.user_center = None
-        self.left_index = None
-        self.right_index = None
-        self.face_points = None
+        self.left_elbow = None
+        self.right_elbow = None
+        self.left_hand_points = np.zeros((len(HANDLANDMARKS_CST), 2))
+        self.right_hand_points = np.zeros((len(HANDLANDMARKS_CST), 2))
+        self.face_points = np.zeros((len(FACELANDMARKS_CST), 2))
 
         # parameters
         self.camera_matrix = np.zeros((3, 3))
@@ -175,12 +185,8 @@ class ComputerVision:
     def get_frame(self):
         ret, frame = self.cap.read()
         if ret:
-            # self.results = self.holistic.process(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
-
-            # if self.results.pose_landmarks:
             return frame
         else:
-            # self.results = None
             return None
 
     def get_xy_coordinates(self, landmarks, landmark_cst, image):
@@ -195,6 +201,7 @@ class ComputerVision:
     def get_landmarks_coordinates(self, image, fixed_user=False) -> bool:
         results = self.holistic.process(cv2.cvtColor(image, cv2.COLOR_BGR2RGB))
         if results:
+            # get shoulders and user center landmarks
             if not fixed_user:
                 self.left_shoulder = self.get_xy_coordinates(results.pose_landmarks, LEFT_SHOULDER_CST, image)
                 self.right_shoulder = self.get_xy_coordinates(results.pose_landmarks, RIGHT_SHOULDER_CST, image)
@@ -202,15 +209,25 @@ class ComputerVision:
                     self.user_center = (self.left_shoulder + self.right_shoulder) / 2.0
                     self.dist_intershoulder = np.linalg.norm(self.left_shoulder - self.right_shoulder)
 
-            self.left_index = self.get_xy_coordinates(results.left_hand_landmarks, INDEX_CST, image)
-            self.right_index = self.get_xy_coordinates(results.right_hand_landmarks, INDEX_CST, image)
+            # get elbow landmarks
+            self.left_elbow = self.get_xy_coordinates(results.pose_landmarks, LEFT_ELBOW_CST, image)
+            self.right_elbow = self.get_xy_coordinates(results.pose_landmarks, RIGHT_ELBOW_CST, image)
+            # get hand landmarks
 
-            face_points = []
-            for idx in FACELANDMARKS_CST:
-                face_coord = self.get_xy_coordinates(results.face_landmarks, idx, image)
+            for i, lm_cst in enumerate(HANDLANDMARKS_CST):
+                left_finger_coord = self.get_xy_coordinates(results.left_hand_landmarks, lm_cst, image)
+                right_finger_coord = self.get_xy_coordinates(results.right_hand_landmarks, lm_cst, image)
+                if left_finger_coord is not None:
+                    self.left_hand_points[i] = left_finger_coord
+                if right_finger_coord is not None:
+                    self.right_hand_points[i] = right_finger_coord
+
+            # get face landmarks
+            for i, lm_cst in enumerate(FACELANDMARKS_CST):
+                face_coord = self.get_xy_coordinates(results.face_landmarks, lm_cst, image)
                 if face_coord is not None:
-                    face_points.append(face_coord.tolist())
-            self.face_points = np.array(face_points, dtype=np.float32)
+                    self.face_points[i] = face_coord
+
             return True
 
         else:
@@ -266,7 +283,7 @@ class ComputerVision:
             self.right_object_dict = {}
 
     def get_depth_parameters(self, left_diam, right_diam, dists_inter_shoulder):
-        reachy_arm_straight = 0.7
+        reachy_arm_straight = 0.6
         reachy_arm_bent = 0.2
         diam_forward, diam_backward = np.zeros(2), np.zeros(2)
         dist_inter_shoulder = np.mean(dists_inter_shoulder)
@@ -340,11 +357,17 @@ class RobotController:
             self.reachy.r_arm.gripper.is_on(),
         ]
 
+        # gripper parameters
+        self.former_left_hand_points = [deque(maxlen=5) for _ in range(len(HANDLANDMARKS_CST))]
+        self.former_right_hand_points = [deque(maxlen=5) for _ in range(len(HANDLANDMARKS_CST))]
+
         # filters
         self.kf_left_object = KalmanFilter2D()
         self.kf_right_object = KalmanFilter2D()
-        self.kf_left_index = KalmanFilter2D(add_median_filter=False)
-        self.kf_right_index = KalmanFilter2D(add_median_filter=False)
+        self.kf_left_elbow = KalmanFilter2D()
+        self.kf_right_elbow = KalmanFilter2D()
+        self.kf_left_hand = [KalmanFilter2D(add_median_filter=False) for _ in range(len(HANDLANDMARKS_CST))]
+        self.kf_right_hand = [KalmanFilter2D() for _ in range(len(HANDLANDMARKS_CST))]
         self.kf_face = [KalmanFilter2D(median_filter_size=3) for _ in range(len(FACELANDMARKS_CST))]
 
     def estimate_depth(self, side, vision):
@@ -359,6 +382,11 @@ class RobotController:
         position3D_robot_frame = np.array([depth, position2D_user_frame[0], -position2D_user_frame[1]])
         return position3D_robot_frame
 
+    def is_top_grasp_pose(self, obj, elbow):
+        if obj is None or elbow is None:
+            return False
+        return elbow[1] < 0.9 * obj[1]
+
     def get_effector_pose(self, side, vision):
         user_center = vision.user_center
         dist_intershoulder = vision.dist_intershoulder
@@ -367,17 +395,29 @@ class RobotController:
         # get the filtered object center
         if side_int == 0:
             obj_center = self.kf_left_object.update(vision.left_object_dict["center"])
+            elbow = self.kf_left_elbow.update(vision.left_elbow)
         else:
             obj_center = self.kf_right_object.update(vision.right_object_dict["center"])
+            elbow = self.kf_right_elbow.update(vision.right_elbow)
 
         depth = self.estimate_depth(side, vision)
 
         goal_position = self.convert_to_robot_frame(obj_center, user_center, dist_intershoulder, depth)
-        vect = goal_position - self.real_shoulders[side_int]
-        vect = vect / np.linalg.norm(vect)
-        rotation_matrix = rotation_matrix_from_vector(vect)
-        goal_pose = recompose_matrix(rotation_matrix, goal_position)
 
+        # check if the object is in a top grasp pose
+        if not self.is_top_grasp_pose(obj_center, elbow):
+            vect = goal_position - self.real_shoulders[side_int]
+            vect = vect / np.linalg.norm(vect)
+            rotation_matrix = rotation_matrix_from_vector(vect)
+
+        else:
+            print("top grasp")
+            rot_z = -180 * depth + 90
+            if side_int == 0:
+                rot_z = -rot_z
+            rotation_matrix = R.from_euler("xyz", [0, 0, rot_z], degrees=True).as_matrix()
+
+        goal_pose = recompose_matrix(rotation_matrix, goal_position)
         return goal_pose
 
     def go_to_pose(self, pose: npt.NDArray[np.float64], arm: str) -> None:
@@ -501,32 +541,43 @@ class RobotController:
         self.reachy.send_goal_positions()
 
     def get_gripper_command(self, side, vision):
-        obj = vision.left_object_dict if side == "left" else vision.right_object_dict
+        hand_points = vision.left_hand_points if side == "left" else vision.right_hand_points
+        former_list = self.former_left_hand_points if side == "left" else self.former_right_hand_points
 
-        # get the filtered index position
-        if side == "left":
-            index = self.kf_left_index.update(vision.left_index)
-        else:
-            index = self.kf_right_index.update(vision.right_index)
+        if hand_points is None:
+            return
+
+        kf_hand = self.kf_left_hand if side == "left" else self.kf_right_hand
+
+        max_distances = []
+        # get the filtered fingers position
+        hand_points_filtered = np.zeros((len(HANDLANDMARKS_CST), 2))
+        for idx in range(len(HANDLANDMARKS_CST)):
+            hand_points_filtered[idx] = kf_hand[idx].update(hand_points[idx])
+            former_list[idx].append(hand_points_filtered[idx].tolist())
+            if len(former_list[idx]) > 2:
+                former_points = np.array(former_list[idx])
+                dist = np.linalg.norm(former_points - former_points[-1], axis=1)
+                max_distances.append(np.max(dist))
 
         gripper = self.reachy.l_arm.gripper if side == "left" else self.reachy.r_arm.gripper
         side_int = 0 if side == "left" else 1
 
-        if not obj or index is None:
-            return
-
-        try:
-            dist_index_ball = np.linalg.norm(index - obj["center"])
-            dist_normalized = dist_index_ball / (obj["diameter"] / 2)
-
-            if dist_normalized > 1.5 and self.grippers_ready[side_int]:
+        if not gripper.is_moving() and len(max_distances) > 0:
+            if (
+                max_distances[1] / np.mean([max_distances[0], max_distances[2], max_distances[3]]) > 4
+                and self.grippers_ready[side_int]
+            ):
                 self.grippers_ready[side_int] = False
                 (gripper.close() if gripper.get_current_opening() > 0.5 else gripper.open())
+                print(side, "open/close")
 
-            elif dist_normalized < 1.1 and not self.grippers_ready[side_int]:
+            elif (
+                max_distances[1] < np.mean([max_distances[0], max_distances[2], max_distances[3]])
+                and not self.grippers_ready[side_int]
+            ):
+                print(side, "ready")
                 self.grippers_ready[side_int] = True
-        except Exception:
-            print(f"Error in get_gripper_command : {obj} and {index} ")
 
 
 class TeleopControl:
@@ -577,6 +628,8 @@ class TeleopControl:
                 # make the robot grab the objects
                 self.robot_controller.get_gripper_command("left", vision)
                 self.robot_controller.get_gripper_command("right", vision)
+
+                # cv2.imshow("Teleoperation", img)
 
             if cv2.waitKey(5) & 0xFF == 27:
                 break

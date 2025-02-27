@@ -104,7 +104,7 @@ class Orbbec:
         self.config.enable_stream(self.depth_profile)
 
         self.MIN_DEPTH = 20
-        self.MAX_DEPTH = 3500
+        self.MAX_DEPTH = 4000
 
         self.set_align_mode(align_mode, enable_sync)
 
@@ -112,6 +112,8 @@ class Orbbec:
 
         self.color_shape = np.zeros(2, dtype=np.int32)
         self.depth_shape = np.zeros(2, dtype=np.int32)
+
+        self.color_format = None
         self.get_parameters()
 
     def set_align_mode(self, align_mode, enable_sync):
@@ -147,48 +149,63 @@ class Orbbec:
 
     def get_parameters(self):
         while True:
-            frames = self.pipeline.wait_for_frames(500)
+            frames = self.pipeline.wait_for_frames(50)
             if frames:
                 color_frame = frames.get_color_frame()
                 depth_frame = frames.get_depth_frame()
                 if color_frame and depth_frame:
                     self.color_shape[:] = [color_frame.get_height(), color_frame.get_width()]
                     self.depth_shape[:] = [depth_frame.get_height(), depth_frame.get_width()]
+                    self.color_format = color_frame.get_format()
                     break
 
-    def get_frames(self):
-        frames = self.pipeline.wait_for_frames(500)
-        color_frame = frames.get_color_frame() if frames else None
-        color_frame_bgr = self.frame_to_bgr_image(color_frame) if color_frame else None
-        depth_frame = frames.get_depth_frame() if frames else None
-        depth_data = self.get_depth_data(depth_frame)
-        return color_frame_bgr, depth_data
+    def get_frames(self, scale_percent=100):
+        frames = self.pipeline.wait_for_frames(50)
+        if frames:
+            color_frame = frames.get_color_frame()
+            color_frame_bgr = self.frame_to_bgr_image(color_frame) if color_frame else None
+            color_frame_resized = (
+                self.resize_frames(color_frame_bgr, scale_percent) if color_frame_bgr is not None else None
+            )
+
+            depth_frame = frames.get_depth_frame()
+            depth_data = self.get_depth_data(depth_frame)
+            depth_data_resized = self.resize_frames(depth_data, scale_percent) if depth_data is not None else None
+
+            return color_frame_resized, depth_data_resized
+
+        return None, None
+
+    def resize_frames(self, frame, scale_percent=50):
+        width = int(frame.shape[1] * scale_percent / 100)
+        height = int(frame.shape[0] * scale_percent / 100)
+        dim = (width, height)
+
+        frame_resized = cv2.resize(frame, dim, interpolation=cv2.INTER_AREA)
+
+        return frame_resized
 
     def get_depth_data(self, depth_frame) -> Optional[Frame]:
         if depth_frame:
             depth_data = np.frombuffer(depth_frame.get_data(), dtype=np.uint16)
             depth_data = depth_data.reshape(self.depth_shape)
-
-            depth_data = depth_data.astype(np.float32)
-            depth_data -= self.MIN_DEPTH
-            depth_data /= self.MAX_DEPTH - self.MIN_DEPTH
-            np.clip(depth_data, 0, 1, out=depth_data)
-            depth_data *= 255
-            depth_image = depth_data.astype(np.uint8)
-
-            return depth_image
+            depth_data = depth_data.astype(np.float32) * 10e-4
+            return depth_data
         return None
 
     def view_stream(self, show_color=True, show_depth=True):
         while True:
             try:
-                color_image, depth_image = self.get_frames()
+                color_data, depth_data = self.get_frames()
 
-                if show_color and color_image is not None:
-                    cv2.imshow("Color Viewer", color_image)
+                if show_color and color_data is not None:
+                    cv2.imshow("Color Viewer", color_data)
 
-                if show_depth and depth_image is not None:
-                    depth_colormap = cv2.applyColorMap(depth_image, cv2.COLORMAP_JET)
+                if show_depth and depth_data is not None:
+                    depth_image = np.clip(
+                        (depth_data - self.MIN_DEPTH) / (self.MAX_DEPTH - self.MIN_DEPTH) * 255, 0, 255
+                    )
+                    depth_colormap = cv2.applyColorMap(depth_image.astype(np.uint8), cv2.COLORMAP_JET)
                     cv2.imshow("Depth Viewer", depth_colormap)
 
                 key = cv2.waitKey(1)
@@ -198,18 +215,16 @@ class Orbbec:
                 break
 
     def frame_to_bgr_image(self, frame) -> Optional[np.ndarray]:
-        width, height = frame.get_width(), frame.get_height()
-        color_format = frame.get_format()
         data = np.asanyarray(frame.get_data())
 
-        if color_format in [OBFormat.RGB, OBFormat.BGR]:
-            image = data.reshape((height, width, 3))
-            if color_format == OBFormat.RGB:
+        if self.color_format in [OBFormat.RGB, OBFormat.BGR]:
+            image = data.reshape((self.color_shape[0], self.color_shape[1], 3))
+            if self.color_format == OBFormat.RGB:
                 image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
-        elif color_format == OBFormat.MJPG:
+        elif self.color_format == OBFormat.MJPG:
             image = cv2.imdecode(data, cv2.IMREAD_COLOR)
         else:
-            print(f"Unsupported color format: {color_format}")
+            print(f"Unsupported color format: {self.color_format}")
             return None
         return image
 
@@ -291,15 +306,18 @@ class KalmanFilter3D:
 
 
 class ComputerVision:
-    def __init__(self, camera: Orbbec):
+    def __init__(self, camera: Orbbec, scale_percent: int = 100):
         # orbbec initialization
         self.camera = camera
+        self.scale_percent = scale_percent
 
         # mediapipe holistic
         self.holistic = mp.solutions.holistic.Holistic(
             min_detection_confidence=0.5,
             min_tracking_confidence=0.5,
             model_complexity=0,
+            smooth_landmarks=True,
+            refine_face_landmarks=False,
         )
 
         # ROI coordinates in image frame
@@ -314,7 +332,8 @@ class ComputerVision:
         self.user_center = np.zeros(3)
 
         # parameters
-        self.image_shape = self.camera.color_shape
+        self.image_shape = self.camera.color_shape * self.scale_percent // 100
+        print("Image shape : ", self.image_shape)
         self.camera_matrix = np.eye(3, dtype=np.float32)
         self.calibration_camera()
 
@@ -337,7 +356,17 @@ class ComputerVision:
         x = np.clip(x_init, 0, self.image_shape[1] - 1)
         y = np.clip(y_init, 0, self.image_shape[0] - 1)
 
-        z = depth_frame[y, x]
+        z = np.zeros(len(x))
+        radius = 1
+
+        for i in range(len(x)):
+            if (
+                radius + 1 < x[i] < self.image_shape[1] - radius - 1
+                and radius + 1 < y[i] < self.image_shape[0] - radius - 1
+            ):
+                z[i] = np.median(depth_frame[y[i] - radius : y[i] + radius, x[i] - radius : x[i] + radius])
+            else:
+                z[i] = depth_frame[y[i], x[i]]
 
         return np.vstack((x, y, z)).T.astype(np.float32)
 
@@ -463,40 +492,41 @@ class RobotController:
         normalization_factor = self.real_dist_intershoulder / dist_intershoulder
         x = position_user_frame[0] * normalization_factor
         y = position_user_frame[1] * normalization_factor
-        z = position_user_frame[2] * 10e-3
+        z = position_user_frame[2]
+        z = np.clip(z, -0.8, 0)
         position_robot_frame = np.array([-z, x, -y])
         return position_robot_frame
 
-    # def is_top_grasp_pose(self, wrist, elbow):
-    #     if wrist is None or elbow is None:
-    #         return False
-    #     return elbow[1] < 0.9 * obj[1]
+    def is_top_grasp_pose(self, elbow, user_center, dist_intershoulder):
+        if elbow is None:
+            return False
+        return elbow[1] < user_center[1] + dist_intershoulder / 2
 
     def get_effector_pose(self, side, vision):
         side_int = 0 if side == "left" else 1
-        wrist_position = self.kf_wrists[side_int].update(vision.wrists[side_int])
-        # lbow_position = self.kf_elbows[side_int].update(vision.elbows[side_int])
+        wrist_position = vision.wrists[side_int]
+        elbow_position = self.kf_elbows[side_int].update(vision.elbows[side_int])
         user_center = self.kf_user_center.update(vision.user_center)
         left_shoulder = self.kf_shoulders[0].update(vision.shoulders[0])
         right_shoulder = self.kf_shoulders[1].update(vision.shoulders[1])
         dist_intershoulder = np.linalg.norm(left_shoulder - right_shoulder)
 
         goal_position = self.convert_to_robot_frame(wrist_position, user_center, dist_intershoulder)
+        goal_position_filtered = self.kf_wrists[side_int].update(goal_position)
 
         # check if the object is in a top grasp pose
-        # if not self.is_top_grasp_pose(obj_center, elbow):
-        vect = goal_position - self.real_shoulders[side_int]
-        vect = vect / np.linalg.norm(vect)
-        rotation_matrix = rotation_matrix_from_vector(vect)
+        if not self.is_top_grasp_pose(elbow_position, user_center, dist_intershoulder):
+            vect = goal_position_filtered - self.real_shoulders[side_int]
+            vect = vect / np.linalg.norm(vect)
+            rotation_matrix = rotation_matrix_from_vector(vect)
 
-        # else:
-        #     print("top grasp")
-        #     rot_z = -180 * depth + 90
-        #     if side_int == 0:
-        #         rot_z = -rot_z
-        #     rotation_matrix = R.from_euler("xyz", [0, 0, rot_z], degrees=True).as_matrix()
+        else:
+            rot_z = -5 * goal_position_filtered[0] + 40
+            if side_int == 0:
+                rot_z = -rot_z
+            rotation_matrix = R.from_euler("xyz", [0, 0, rot_z], degrees=True).as_matrix()
 
-        goal_pose = recompose_matrix(rotation_matrix, goal_position)
+        goal_pose = recompose_matrix(rotation_matrix, np.round(goal_position_filtered, 3))
         return goal_pose
 
     def go_to_pose(self, pose: npt.NDArray[np.float64], arm: str) -> None:
@@ -504,7 +534,7 @@ class RobotController:
             request = ArmCartesianGoal(
                 id=self.reachy.r_arm._part_id,
                 goal_pose=Matrix4x4(data=pose.flatten().tolist()),
-                continuous_mode=IKContinuousMode.CONTINUOUS,
+                continuous_mode=IKContinuousMode.UNFREEZE,
                 constrained_mode=IKConstrainedMode.UNCONSTRAINED,
                 preferred_theta=FloatValue(
                     value=-4 * np.pi / 6,
@@ -518,7 +548,7 @@ class RobotController:
             request = ArmCartesianGoal(
                 id=self.reachy.l_arm._part_id,
                 goal_pose=Matrix4x4(data=pose.flatten().tolist()),
-                continuous_mode=IKContinuousMode.CONTINUOUS,
+                continuous_mode=IKContinuousMode.UNFREEZE,
                 constrained_mode=IKConstrainedMode.UNCONSTRAINED,
                 preferred_theta=FloatValue(
                     value=-4 * np.pi / 6,
@@ -570,7 +600,6 @@ class RobotController:
 
             self.go_to_pose(left_pose, "l_arm")
             self.go_to_pose(right_pose, "r_arm")
-
             time.sleep(max(1.0 / self.control_frequency - (time.time() - t), 0.0))
 
     def get_head_rotation(self, vision):
@@ -614,13 +643,12 @@ class RobotController:
         self.reachy.head.neck.roll.goal_position = roll
         self.reachy.head.neck.pitch.goal_position = pitch
         self.reachy.head.neck.yaw.goal_position = yaw
-        self.reachy.send_goal_positions()
+        self.reachy.send_goal_positions(check_positions=False)
 
     def get_gripper_command(self, side, vision):
         hand_points = vision.left_hand_points if side == "left" else vision.right_hand_points
         kf_hand = self.kf_left_hand if side == "left" else self.kf_right_hand
         gripper = self.reachy.l_arm.gripper if side == "left" else self.reachy.r_arm.gripper
-        side_int = 0 if side == "left" else 1
 
         # get the filtered fingers position
         hand_points_filtered = np.zeros((len(HANDLANDMARKS_CST), 3))
@@ -641,9 +669,9 @@ class RobotController:
 
 
 class TeleopControl:
-    def __init__(self, camera: Orbbec, robot_controller: RobotController, timestep: float):
+    def __init__(self, camera: Orbbec, robot_controller: RobotController, scale_percent: int, timestep: float):
         self.camera = camera
-        self.vision = ComputerVision(self.camera)
+        self.vision = ComputerVision(self.camera, scale_percent)
         self.robot_controller = robot_controller
         self.timestep = timestep
         self.first_pose_done = False
@@ -651,11 +679,18 @@ class TeleopControl:
     def run(self):
         # first pose
         while not self.first_pose_done:
-            color_frame, depth_frame = self.vision.camera.get_frames()
+            color_frame, depth_frame = self.vision.camera.get_frames(scale_percent=50)
             if color_frame is not None and depth_frame is not None:
-                self.vision.get_landmarks_coordinates(color_frame, depth_frame, fixed_user=False)
+                t0 = time.time()
 
-                if np.any(self.vision.user_center):
+                self.vision.get_landmarks_coordinates(color_frame, depth_frame, fixed_user=False)
+                print("t = ", time.time() - t0)
+
+                self.vision.visualization_landmarks(color_frame, body_on=True, hands_on=False, face_on=True)
+
+                print(f"usercenter :  {self.vision.user_center} \nwrists = ", self.vision.wrists)
+
+                if np.any(self.vision.user_center) and np.any(self.vision.wrists):
                     left_goal_pose = self.robot_controller.get_effector_pose("left", self.vision)
                     right_goal_pose = self.robot_controller.get_effector_pose("right", self.vision)
                     self.robot_controller.make_line([left_goal_pose, right_goal_pose], 2.0)
@@ -664,16 +699,39 @@ class TeleopControl:
 
         # teleoperation
         while True:
-            color_frame, depth_frame = self.vision.camera.get_frames()
+            color_frame, depth_frame = self.vision.camera.get_frames(scale_percent=50)
+            t0 = time.time()
             if color_frame is not None and depth_frame is not None:
-                self.vision.get_landmarks_coordinates(color_frame, depth_frame, fixed_user=False)
+                self.vision.get_landmarks_coordinates(color_frame, depth_frame, fixed_user=False)  # too long (0.035)
+                print("t = ", time.time() - t0)
+
                 # to visualize landmarks
-                # self.vision.visualization_landmarks(color_frame, body_on=False, hands_on=True, face_on=False)
+                self.vision.visualization_landmarks(color_frame, body_on=True, hands_on=False, face_on=True)
 
                 # make the robot follow the user's hands
                 left_goal_pose = self.robot_controller.get_effector_pose("left", self.vision)
                 right_goal_pose = self.robot_controller.get_effector_pose("right", self.vision)
-                self.robot_controller.make_line([left_goal_pose, right_goal_pose], self.timestep)
+                cv2.putText(
+                    color_frame,
+                    f"left_goal: {left_goal_pose[:3,3]}",
+                    (10, 30),
+                    cv2.FONT_HERSHEY_SIMPLEX,
+                    1,
+                    (255, 255, 255),
+                    2,
+                    cv2.LINE_AA,
+                )
+                cv2.putText(
+                    color_frame,
+                    f"right_goal: {right_goal_pose[:3,3]}",
+                    (10, 60),
+                    cv2.FONT_HERSHEY_SIMPLEX,
+                    1,
+                    (255, 255, 255),
+                    2,
+                    cv2.LINE_AA,
+                )
+                self.robot_controller.make_line([left_goal_pose, right_goal_pose], self.timestep)  # too long (0.035)
 
                 # make the robot follow the user's head
                 if np.any(self.vision.face_points):
@@ -684,7 +742,7 @@ class TeleopControl:
                 self.robot_controller.get_gripper_command("left", self.vision)
                 self.robot_controller.get_gripper_command("right", self.vision)
 
-            if cv2.waitKey(5) & 0xFF == 27:
+            if cv2.waitKey(1) & 0xFF == 27:
                 break
         cv2.destroyAllWindows()
         self.camera.stop()
@@ -692,6 +750,8 @@ class TeleopControl:
 
 if __name__ == "__main__":
     camera = Orbbec()
+    scale_percent = 50
+    timestep = 0.02
     robot = RobotController("localhost")
-    teleop = TeleopControl(camera, robot, 0.05)
+    teleop = TeleopControl(camera, robot, scale_percent, timestep)
     teleop.run()

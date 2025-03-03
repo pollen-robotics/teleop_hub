@@ -26,13 +26,9 @@ from reachy2_sdk_api.kinematics_pb2 import Matrix4x4  # type: ignore
 from scipy.spatial.transform import Rotation as R  # type: ignore
 from scipy.spatial.transform import Slerp  # type: ignore
 
-# landmarks constant :
-HANDLANDMARKS_CST = [
-    4,
-    8,
-    16,
-    20,
-]  # Thumb tip, Index finger tip, Ring finger tip, Pinky tip
+# original_landmarks constant :
+HANDLANDMARKS_CST = [0, 4, 5, 8, 9, 17, 20]
+# wrist, thumb tip, index mcp, index tip, middle mcp, pinky mcp, pinky tip
 
 SHOULDER_CST = [11, 12]
 ELBOWS_CST = [13, 14]
@@ -345,61 +341,125 @@ class ComputerVision:
             dtype="double",
         )
 
-    def landmarks_to_xyz(self, landmarks, depth_frame) -> Optional[np.ndarray]:
-        if not landmarks:
+    def get_2D_landmarks(self, results):
+        landmarks_dict = {
+            "pose": None,
+            "face": None,
+            "left_hand": None,
+            "right_hand": None,
+        }
+
+        landmarks_sources = {
+            "pose": results.pose_landmarks,
+            "face": results.face_landmarks,
+            "left_hand": results.left_hand_landmarks,
+            "right_hand": results.right_hand_landmarks,
+        }
+
+        for key, original_landmarks in landmarks_sources.items():
+            if original_landmarks is None:
+                continue
+
+            original_landmarks = np.array([(lm.x, lm.y) for lm in original_landmarks.landmark])
+            x_init = (original_landmarks[:, 0] * self.image_shape[1]).astype(int)
+            y_init = (original_landmarks[:, 1] * self.image_shape[0]).astype(int)
+
+            x = np.clip(x_init, 0, self.image_shape[1] - 1)
+            y = np.clip(y_init, 0, self.image_shape[0] - 1)
+            landmarks_dict[key] = np.vstack((x, y)).T.astype(np.float32)
+
+        return (
+            landmarks_dict["pose"],
+            landmarks_dict["face"],
+            landmarks_dict["left_hand"],
+            landmarks_dict["right_hand"],
+        )
+
+    def get_3D_landmarks(self, results):
+        hands = [
+            ("left", results.left_hand_landmarks),
+            ("right", results.right_hand_landmarks),
+        ]
+
+        landmarks_dict = {"left": None, "right": None, "face": None}
+
+        for hand, original_landmarks in hands:
+            if original_landmarks is None:
+                continue
+
+            original_landmarks = np.array([(lm.x, lm.y, lm.z) for lm in original_landmarks.landmark])
+            x_init = (original_landmarks[:, 0] * self.image_shape[1]).astype(int)
+            y_init = (original_landmarks[:, 1] * self.image_shape[0]).astype(int)
+            z = original_landmarks[:, 2]
+
+            x = np.clip(x_init, 0, self.image_shape[1] - 1)
+            y = np.clip(y_init, 0, self.image_shape[0] - 1)
+            landmarks_dict[hand] = np.vstack((x, y, z)).T.astype(np.float32)
+
+        return landmarks_dict["left"], landmarks_dict["right"]
+
+    def estimate_3D_landmark_with_depth(self, landmark, depth_frame, radius=2) -> Optional[np.ndarray]:
+        if landmark is None:
             return None
 
-        landmarks = np.array([(lm.x, lm.y) for lm in landmarks.landmark])
-        x_init = (landmarks[:, 0] * self.image_shape[1]).astype(int)
-        y_init = (landmarks[:, 1] * self.image_shape[0]).astype(int)
-
-        x = np.clip(x_init, 0, self.image_shape[1] - 1)
-        y = np.clip(y_init, 0, self.image_shape[0] - 1)
-
-        z = np.zeros(len(x))
-        radius = 1
-
-        for i in range(len(x)):
-            if (
-                radius + 1 < x[i] < self.image_shape[1] - radius - 1
-                and radius + 1 < y[i] < self.image_shape[0] - radius - 1
-            ):
-                z[i] = np.median(depth_frame[y[i] - radius : y[i] + radius, x[i] - radius : x[i] + radius])
-            else:
-                z[i] = depth_frame[y[i], x[i]]
+        x, y = landmark[0], landmark[1]
+        if (radius + 1 < x < self.image_shape[1] - radius - 1) and (radius + 1 < y < self.image_shape[0] - radius - 1):
+            z = np.median(depth_frame[int(y - radius) : int(y + radius), int(x - radius) : int(x + radius)])
+        else:
+            z = depth_frame[int(y), int(x)]
 
         return np.vstack((x, y, z)).T.astype(np.float32)
+
+        # z = np.zeros(len(x))
+        # radius = 1
+
+        # for i in range(len(x)):
+        #     if (
+        #         radius + 1 < x[i] < self.image_shape[1] - radius - 1
+        #         and radius + 1 < y[i] < self.image_shape[0] - radius - 1
+        #     ):
+        #         z[i] = np.median(depth_frame[y[i] - radius : y[i] + radius, x[i] - radius : x[i] + radius])
+        #     else:
+        #         z[i] = depth_frame[y[i], x[i]]
+
+        # return np.vstack((x, y, z)).T.astype(np.float32)
 
     def get_landmarks_coordinates(self, image, depth_frame, fixed_user=False) -> bool:
         results = self.holistic.process(cv2.cvtColor(image, cv2.COLOR_BGR2RGB))
         if not results:
             return False
 
-        body_landmarks = self.landmarks_to_xyz(results.pose_landmarks, depth_frame)
-        left_hand_landmarks = self.landmarks_to_xyz(results.left_hand_landmarks, depth_frame)
-        right_hand_landmarks = self.landmarks_to_xyz(results.right_hand_landmarks, depth_frame)
-        face_landmarks = self.landmarks_to_xyz(results.face_landmarks, depth_frame)
+        # body_landmarks = self.landmarks_to_xyz(results.pose_landmarks, depth_frame)
+        # left_hand_landmarks = self.landmarks_to_xyz(results.left_hand_landmarks, depth_frame)
+        # right_hand_landmarks = self.landmarks_to_xyz(results.right_hand_landmarks, depth_frame)
+        # face_landmarks = self.landmarks_to_xyz(results.face_landmarks, depth_frame)
+
+        body_landmarks, face_landmarks, left_hand_landmarks, right_hand_landmarks = self.get_2D_landmarks(results)
+
+        left_hand_3D, right_hand_3D = self.get_3D_landmarks(results)
 
         if body_landmarks is not None:
             if not fixed_user:
-                left_shoulder = body_landmarks[SHOULDER_CST[0]]
-                right_shoulder = body_landmarks[SHOULDER_CST[1]]
-                if self.shoulders[0] is not None and self.shoulders[1] is not None:
+                left_shoulder = self.estimate_3D_landmark_with_depth(body_landmarks[SHOULDER_CST[0]], depth_frame)
+                if left_shoulder is not None:
                     self.shoulders[0] = left_shoulder
+                right_shoulder = self.estimate_3D_landmark_with_depth(body_landmarks[SHOULDER_CST[1]], depth_frame)
+                if right_shoulder is not None:
                     self.shoulders[1] = right_shoulder
+                if np.any(self.shoulders[0]) and np.any(self.shoulders[1]):
                     self.user_center = (self.shoulders[0] + self.shoulders[1]) / 2.0
                     self.dist_intershoulder = np.linalg.norm(self.shoulders[0] - self.shoulders[1])
 
             for i in range(2):
-                elbow = body_landmarks[ELBOWS_CST[i]]
+                elbow = self.estimate_3D_landmark_with_depth(body_landmarks[ELBOWS_CST[i]], depth_frame)
                 if elbow is not None:
                     self.elbows[i] = elbow
-                wrist = body_landmarks[WRISTS_CST[i]]
+                wrist = self.estimate_3D_landmark_with_depth(body_landmarks[WRISTS_CST[i]], depth_frame)
                 if wrist is not None:
                     self.wrists[i] = wrist
 
         for hand_landmarks, points in zip(
-            [left_hand_landmarks, right_hand_landmarks], [self.left_hand_points, self.right_hand_points]
+            [left_hand_3D, right_hand_3D], [self.left_hand_points, self.right_hand_points]
         ):
             if hand_landmarks is not None:
                 for i, lm_cst in enumerate(HANDLANDMARKS_CST):
@@ -409,7 +469,7 @@ class ComputerVision:
 
         if face_landmarks is not None:
             for i, lm_cst in enumerate(FACELANDMARKS_CST):
-                face_coord = face_landmarks[lm_cst]
+                face_coord = self.estimate_3D_landmark_with_depth(face_landmarks[lm_cst], depth_frame)
                 if face_coord is not None:
                     self.face_points[i] = face_coord
 
@@ -507,13 +567,16 @@ class RobotController:
         wrist_position = vision.wrists[side_int]
         elbow_position = self.kf_elbows[side_int].update(vision.elbows[side_int])
         user_center = self.kf_user_center.update(vision.user_center)
-        left_shoulder = self.kf_shoulders[0].update(vision.shoulders[0])
-        right_shoulder = self.kf_shoulders[1].update(vision.shoulders[1])
-        dist_intershoulder = np.linalg.norm(left_shoulder - right_shoulder)
+        shoulders = [
+            self.kf_shoulders[0].update(vision.shoulders[0]),
+            self.kf_shoulders[1].update(vision.shoulders[1]),
+        ]
+        dist_intershoulder = np.linalg.norm(shoulders[0] - shoulders[1])
 
         goal_position = self.convert_to_robot_frame(wrist_position, user_center, dist_intershoulder)
         goal_position_filtered = self.kf_wrists[side_int].update(goal_position)
 
+        # version avec épaule
         # check if the object is in a top grasp pose
         if not self.is_top_grasp_pose(elbow_position, user_center, dist_intershoulder):
             vect = goal_position_filtered - self.real_shoulders[side_int]
@@ -525,6 +588,12 @@ class RobotController:
             if side_int == 0:
                 rot_z = -rot_z
             rotation_matrix = R.from_euler("xyz", [0, 0, rot_z], degrees=True).as_matrix()
+
+        ## version avec coude
+        # elbow_robot_frame = self.convert_to_robot_frame(elbow_position, user_center, dist_intershoulder)
+        # vect = goal_position_filtered - elbow_robot_frame
+        # vect = vect / np.linalg.norm(vect)
+        # rotation_matrix = rotation_matrix_from_vector(vect)
 
         goal_pose = recompose_matrix(rotation_matrix, np.round(goal_position_filtered, 3))
         return goal_pose
@@ -655,8 +724,8 @@ class RobotController:
         for idx in range(len(HANDLANDMARKS_CST)):
             hand_points_filtered[idx] = kf_hand[idx].update(hand_points[idx])
 
-        index = hand_points_filtered[1]
-        thumb = hand_points_filtered[0]
+        index = hand_points_filtered[3]
+        thumb = hand_points_filtered[1]
 
         dist_index_thumb_normalized = np.linalg.norm(index - thumb) / vision.dist_intershoulder
         dist_filtered = self.mf_gripper.update(dist_index_thumb_normalized)
@@ -681,16 +750,10 @@ class TeleopControl:
         while not self.first_pose_done:
             color_frame, depth_frame = self.vision.camera.get_frames(scale_percent=50)
             if color_frame is not None and depth_frame is not None:
-                t0 = time.time()
-
                 self.vision.get_landmarks_coordinates(color_frame, depth_frame, fixed_user=False)
-                print("t = ", time.time() - t0)
-
-                self.vision.visualization_landmarks(color_frame, body_on=True, hands_on=False, face_on=True)
-
-                print(f"usercenter :  {self.vision.user_center} \nwrists = ", self.vision.wrists)
-
+                print(self.vision.user_center, self.vision.wrists)
                 if np.any(self.vision.user_center) and np.any(self.vision.wrists):
+
                     left_goal_pose = self.robot_controller.get_effector_pose("left", self.vision)
                     right_goal_pose = self.robot_controller.get_effector_pose("right", self.vision)
                     self.robot_controller.make_line([left_goal_pose, right_goal_pose], 2.0)
@@ -700,13 +763,8 @@ class TeleopControl:
         # teleoperation
         while True:
             color_frame, depth_frame = self.vision.camera.get_frames(scale_percent=50)
-            t0 = time.time()
             if color_frame is not None and depth_frame is not None:
                 self.vision.get_landmarks_coordinates(color_frame, depth_frame, fixed_user=False)  # too long (0.035)
-                print("t = ", time.time() - t0)
-
-                # to visualize landmarks
-                self.vision.visualization_landmarks(color_frame, body_on=True, hands_on=False, face_on=True)
 
                 # make the robot follow the user's hands
                 left_goal_pose = self.robot_controller.get_effector_pose("left", self.vision)
@@ -737,10 +795,23 @@ class TeleopControl:
                 if np.any(self.vision.face_points):
                     roll, pitch, yaw = self.robot_controller.get_head_rotation(self.vision)
                     self.robot_controller.set_head_orientation(roll, pitch, yaw)
+                    cv2.putText(
+                        color_frame,
+                        f"roll: {roll:.2f}, pitch: {pitch:.2f}, yaw: {yaw:.2f}",
+                        (10, 90),
+                        cv2.FONT_HERSHEY_SIMPLEX,
+                        1,
+                        (255, 255, 255),
+                        2,
+                        cv2.LINE_AA,
+                    )
 
                 # make the robot grab the objects
                 self.robot_controller.get_gripper_command("left", self.vision)
                 self.robot_controller.get_gripper_command("right", self.vision)
+
+                # to visualize original_landmarks
+                self.vision.visualization_landmarks(color_frame, body_on=True, hands_on=True, face_on=True)
 
             if cv2.waitKey(1) & 0xFF == 27:
                 break

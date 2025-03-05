@@ -7,6 +7,7 @@ import mediapipe as mp  # type: ignore
 import numpy as np  # type : ignore
 import numpy.typing as npt
 from google.protobuf.wrappers_pb2 import FloatValue, Int32Value
+from mediapipe.tasks.python import BaseOptions, vision
 from pyorbbecsdk import (  # type : ignore
     Config,
     Frame,
@@ -36,6 +37,51 @@ WRISTS_CST = [15, 16]
 
 FACELANDMARKS_CST = [1, 152, 33, 263, 61, 291]
 # Nose tip, Chin, Left eye left corner, Right eye right corner, Left mouth corner, Right mouth corner
+
+
+# hand_base_options = BaseOptions(model_asset_path="hand_landmarker.task", delegate=BaseOptions.Delegate.GPU)
+# hand_landmarker = vision.HandLandmarker.create_from_options(hand_base_options)
+
+# face_base_options = BaseOptions(model_asset_path="face_landmarker.task", delegate=BaseOptions.Delegate.GPU)
+# face_landmarker = vision.FaceLandmarker.create_from_options(face_base_options)
+
+# pose_base_options = BaseOptions(model_asset_path="pose_landmarker.task", delegate=BaseOptions.Delegate.GPU)
+# pose_landmarker = vision.PoseLandmarker.create_from_options(pose_base_options)
+from mediapipe.tasks.python import BaseOptions, vision
+from mediapipe.tasks.python.vision import (
+    FaceLandmarker,
+    FaceLandmarkerOptions,
+    HandLandmarker,
+    HandLandmarkerOptions,
+    PoseLandmarker,
+    PoseLandmarkerOptions,
+)
+
+# Use GPU delegate explicitly
+base_options = BaseOptions(delegate=BaseOptions.Delegate.GPU)
+
+# Define landmarker-specific options
+hand_options = HandLandmarkerOptions(
+    base_options=BaseOptions(model_asset_path="hand_landmarker.task", delegate=BaseOptions.Delegate.GPU),
+    num_hands=2,
+    running_mode=vision.RunningMode.IMAGE,  # ✅ No callback needed
+)
+
+face_options = FaceLandmarkerOptions(
+    base_options=BaseOptions(model_asset_path="face_landmarker.task", delegate=BaseOptions.Delegate.GPU),
+    running_mode=vision.RunningMode.IMAGE,  # ✅ No callback needed
+)
+
+pose_options = PoseLandmarkerOptions(
+    base_options=BaseOptions(model_asset_path="pose_landmarker_lite.task", delegate=BaseOptions.Delegate.GPU),
+    running_mode=vision.RunningMode.IMAGE,  # ✅ No callback needed
+)
+
+
+# Initialize the landmarkers
+hand_landmarker = HandLandmarker.create_from_options(hand_options)
+face_landmarker = FaceLandmarker.create_from_options(face_options)
+pose_landmarker = PoseLandmarker.create_from_options(pose_options)
 
 
 def rotationMatrixToEulerAngles(rot):
@@ -349,24 +395,23 @@ class ComputerVision:
             "right_hand": None,
         }
 
-        landmarks_sources = {
-            "pose": results.pose_landmarks,
-            "face": results.face_landmarks,
-            "left_hand": results.left_hand_landmarks,
-            "right_hand": results.right_hand_landmarks,
-        }
+        # Ensure pose detection exists and has at least one detected pose
+        if results.get("pose") and results["pose"].pose_landmarks:
+            first_pose = results["pose"].pose_landmarks[0]  # Take the first detected pose
+            landmarks_dict["pose"] = np.array([(lm.x, lm.y) for lm in first_pose])
 
-        for key, original_landmarks in landmarks_sources.items():
-            if original_landmarks is None:
-                continue
+        # Ensure face detection exists
+        if results.get("face") and results["face"].face_landmarks:
+            first_face = results["face"].face_landmarks[0]  # Take the first detected face
+            landmarks_dict["face"] = np.array([(lm.x, lm.y) for lm in first_face])
 
-            original_landmarks = np.array([(lm.x, lm.y) for lm in original_landmarks.landmark])
-            x_init = (original_landmarks[:, 0] * self.image_shape[1]).astype(int)
-            y_init = (original_landmarks[:, 1] * self.image_shape[0]).astype(int)
-
-            x = np.clip(x_init, 0, self.image_shape[1] - 1)
-            y = np.clip(y_init, 0, self.image_shape[0] - 1)
-            landmarks_dict[key] = np.vstack((x, y)).T.astype(np.float32)
+        # Ensure hand detection exists
+        if results.get("hands") and results["hands"].hand_landmarks:
+            hands = results["hands"].hand_landmarks
+            if len(hands) > 0:
+                landmarks_dict["left_hand"] = np.array([(lm.x, lm.y) for lm in hands[0]])
+            if len(hands) > 1:
+                landmarks_dict["right_hand"] = np.array([(lm.x, lm.y) for lm in hands[1]])
 
         return (
             landmarks_dict["pose"],
@@ -376,27 +421,31 @@ class ComputerVision:
         )
 
     def get_3D_landmarks(self, results):
-        hands = [
-            ("left", results.left_hand_landmarks),
-            ("right", results.right_hand_landmarks),
-        ]
+        landmarks_dict = {"pose": None, "face": None, "left_hand": None, "right_hand": None}
 
-        landmarks_dict = {"left": None, "right": None, "face": None}
+        if results["pose"] and results["pose"].pose_landmarks:
+            pose_landmarks = np.array([(lm.x, lm.y, lm.z) for lm in results["pose"].pose_landmarks.landmark])
+            landmarks_dict["pose"] = pose_landmarks
 
-        for hand, original_landmarks in hands:
-            if original_landmarks is None:
-                continue
+        if results["face"] and results["face"].face_landmarks:
+            face_landmarks = np.array([(lm.x, lm.y, lm.z) for lm in results["face"].face_landmarks.landmark])
+            landmarks_dict["face"] = face_landmarks
 
-            original_landmarks = np.array([(lm.x, lm.y, lm.z) for lm in original_landmarks.landmark])
-            x_init = (original_landmarks[:, 0] * self.image_shape[1]).astype(int)
-            y_init = (original_landmarks[:, 1] * self.image_shape[0]).astype(int)
-            z = original_landmarks[:, 2]
+        if results["hands"] and results["hands"].hand_landmarks:
+            hands = results["hands"].hand_landmarks
+            landmarks_dict["left_hand"] = (
+                np.array([(lm.x, lm.y, lm.z) for lm in hands[0].landmark]) if len(hands) > 0 else None
+            )
+            landmarks_dict["right_hand"] = (
+                np.array([(lm.x, lm.y, lm.z) for lm in hands[1].landmark]) if len(hands) > 1 else None
+            )
 
-            x = np.clip(x_init, 0, self.image_shape[1] - 1)
-            y = np.clip(y_init, 0, self.image_shape[0] - 1)
-            landmarks_dict[hand] = np.vstack((x, y, z)).T.astype(np.float32)
-
-        return landmarks_dict["left"], landmarks_dict["right"]
+        return (
+            landmarks_dict["pose"],
+            landmarks_dict["face"],
+            landmarks_dict["left_hand"],
+            landmarks_dict["right_hand"],
+        )
 
     def estimate_3D_landmark_with_depth(self, landmark, depth_frame, radius=2) -> Optional[np.ndarray]:
         if landmark is None:
@@ -409,6 +458,18 @@ class ComputerVision:
             z = depth_frame[int(y), int(x)]
 
         return np.vstack((x, y, z)).T.astype(np.float32)
+
+    def get_3D_landmarks(self, results):
+        hands = results.get("hands", None)  # Ensure hands exist in results
+        left_hand, right_hand = None, None
+
+        if hands and hands.hand_landmarks:
+            if len(hands.hand_landmarks) > 0:
+                left_hand = np.array([(lm.x, lm.y, lm.z) for lm in hands.hand_landmarks[0]])
+            if len(hands.hand_landmarks) > 1:
+                right_hand = np.array([(lm.x, lm.y, lm.z) for lm in hands.hand_landmarks[1]])
+
+        return left_hand, right_hand
 
         # z = np.zeros(len(x))
         # radius = 1
@@ -425,7 +486,21 @@ class ComputerVision:
         # return np.vstack((x, y, z)).T.astype(np.float32)
 
     def get_landmarks_coordinates(self, image, depth_frame, fixed_user=False) -> bool:
-        results = self.holistic.process(cv2.cvtColor(image, cv2.COLOR_BGR2RGB))
+        # results = self.holistic.process(cv2.cvtColor(image, cv2.COLOR_BGR2RGB))
+        mp_image = mp.Image(image_format=mp.ImageFormat.SRGB, data=image)
+
+        # Run each detection separately
+        pose_results = pose_landmarker.detect(mp_image)
+        face_results = face_landmarker.detect(mp_image)
+        hand_results = hand_landmarker.detect(mp_image)
+
+        # Ensure the results are structured properly
+        results = {
+            "pose": pose_results if pose_results and pose_results.pose_landmarks else None,
+            "face": face_results if face_results and face_results.face_landmarks else None,
+            "hands": hand_results if hand_results and hand_results.hand_landmarks else None,
+        }
+
         if not results:
             return False
 
@@ -434,6 +509,7 @@ class ComputerVision:
         # right_hand_landmarks = self.landmarks_to_xyz(results.right_hand_landmarks, depth_frame)
         # face_landmarks = self.landmarks_to_xyz(results.face_landmarks, depth_frame)
 
+        # body_landmarks, face_landmarks, left_hand_landmarks, right_hand_landmarks = self.get_2D_landmarks(results)
         body_landmarks, face_landmarks, left_hand_landmarks, right_hand_landmarks = self.get_2D_landmarks(results)
 
         left_hand_3D, right_hand_3D = self.get_3D_landmarks(results)
@@ -753,7 +829,6 @@ class TeleopControl:
                 self.vision.get_landmarks_coordinates(color_frame, depth_frame, fixed_user=False)
                 print(self.vision.user_center, self.vision.wrists)
                 if np.any(self.vision.user_center) and np.any(self.vision.wrists):
-
                     left_goal_pose = self.robot_controller.get_effector_pose("left", self.vision)
                     right_goal_pose = self.robot_controller.get_effector_pose("right", self.vision)
                     self.robot_controller.make_line([left_goal_pose, right_goal_pose], 2.0)

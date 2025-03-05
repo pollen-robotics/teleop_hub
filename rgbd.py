@@ -1,3 +1,4 @@
+import collections
 import time
 from collections import deque
 from typing import List, Optional
@@ -145,7 +146,7 @@ class Orbbec:
 
     def get_parameters(self):
         while True:
-            frames = self.pipeline.wait_for_frames(50)
+            frames = self.pipeline.wait_for_frames(5)
             if frames:
                 color_frame = frames.get_color_frame()
                 depth_frame = frames.get_depth_frame()
@@ -156,7 +157,7 @@ class Orbbec:
                     break
 
     def get_frames(self, scale_percent=100):
-        frames = self.pipeline.wait_for_frames(50)
+        frames = self.pipeline.wait_for_frames(500)
         if frames:
             color_frame = frames.get_color_frame()
             color_frame_bgr = self.frame_to_bgr_image(color_frame) if color_frame else None
@@ -744,6 +745,9 @@ class TeleopControl:
         self.robot_controller = robot_controller
         self.timestep = timestep
         self.first_pose_done = False
+        self.color_frame = collections.deque(maxlen=1)
+        self.depth_frame = collections.deque(maxlen=1)
+        self.lock = threading.Lock()
 
     def run(self):
         # first pose
@@ -753,7 +757,6 @@ class TeleopControl:
                 self.vision.get_landmarks_coordinates(color_frame, depth_frame, fixed_user=False)
                 print(self.vision.user_center, self.vision.wrists)
                 if np.any(self.vision.user_center) and np.any(self.vision.wrists):
-
                     left_goal_pose = self.robot_controller.get_effector_pose("left", self.vision)
                     right_goal_pose = self.robot_controller.get_effector_pose("right", self.vision)
                     self.robot_controller.make_line([left_goal_pose, right_goal_pose], 2.0)
@@ -762,8 +765,25 @@ class TeleopControl:
 
         # teleoperation
         while True:
-            color_frame, depth_frame = self.vision.camera.get_frames(scale_percent=50)
+            t0 = time.time()
+            # color_frame, depth_frame = self.vision.camera.get_frames(scale_percent=50)
+            # self.vision.camera.view_stream(show_color=True, show_depth=False)
+            # self.lock.acquire()
+            # self.lock.acquire()
+            # if self.color_frame is not None and self.depth_frame is not None:
+            try:
+                color_frame = self.color_frame.pop()
+                depth_frame = self.depth_frame.pop()
+
+            except IndexError:
+                time.sleep(0.005)
+                continue
+
+            # print(color_frame.shape, depth_frame.shape)
+            # cv2.imshow("Color Viewer", color_frame)
+            # time.sleep(0.001)
             if color_frame is not None and depth_frame is not None:
+                # if False:
                 self.vision.get_landmarks_coordinates(color_frame, depth_frame, fixed_user=False)  # too long (0.035)
 
                 # make the robot follow the user's hands
@@ -813,11 +833,23 @@ class TeleopControl:
                 # to visualize original_landmarks
                 self.vision.visualization_landmarks(color_frame, body_on=True, hands_on=True, face_on=True)
 
+            t1 = time.time()
+            print(f"Time elapsed: {t1 - t0:.3f} s")
             if cv2.waitKey(1) & 0xFF == 27:
                 break
         cv2.destroyAllWindows()
         self.camera.stop()
 
+    def image_getter(self):
+        while True:
+            color_frame, depth_frame = self.vision.camera.get_frames(scale_percent=50)
+            if color_frame is not None:
+                self.color_frame.append(color_frame)
+            if depth_frame is not None:
+                self.depth_frame.append(depth_frame)
+
+
+import threading
 
 if __name__ == "__main__":
     camera = Orbbec()
@@ -825,4 +857,8 @@ if __name__ == "__main__":
     timestep = 0.02
     robot = RobotController("localhost")
     teleop = TeleopControl(camera, robot, scale_percent, timestep)
+    # in thread start get frame at 20hz and store frame in a singleton last value stored
+
+    frame_getter = threading.Thread(target=teleop.image_getter)
+    frame_getter.start()
     teleop.run()

@@ -2,13 +2,12 @@ from pypot.feetech import FeetechSTS3215IO
 import time
 import threading
 import math
-from lerobot.common.utils.kinematics import RobotKinematics
-
+# from lerobot.common.utils.kinematics import RobotKinematics
 
 
 #create Class feetech
 class Feetech:
-    def __init__(self, port):
+    def __init__(self, port, nb_dof=5):
 
 
         self.io = FeetechSTS3215IO(
@@ -17,10 +16,19 @@ class Feetech:
             use_sync_read=True,
         )
 
-        for i in range(1,7):
-            self.io.disable_torque([2])
+        if nb_dof == 5:
+            self.ids = [1, 2, 3, 4, 5, 6]
+        elif nb_dof == 6:
+            self.ids = [1, 2, 3, 4, 5, 6, 7]
+        else:
+            raise ValueError("nb_dof must be 5 or 6")
 
-        time.sleep(1)
+        for id in self.ids:
+            self.io.set_mode({id: 0})
+
+        self.disable_torque()
+
+        # time.sleep(1)
         # self.id = 1
         # self.io.enable_torque([self.id])
         # self.io.set_mode({1:0})
@@ -52,8 +60,7 @@ class Feetech:
 
     def close(self):
         self.stop = True
-        for i in range(1,7):
-            self.io.disable_torque([i])
+        self.disable_torque()
         self.io.close()
 
     def get_position(self, id):
@@ -63,12 +70,12 @@ class Feetech:
         self.io.set_goal_position({id: position})
 
     def disable_torque(self):
-        for i in range(1,7):
-            self.io.disable_torque([i])
+        for id in self.ids:
+            self.io.disable_torque([id])
 
     def enable_torque(self):
-        for i in range(1,7):
-            self.io.enable_torque([i])
+        for id in self.ids:
+            self.io.enable_torque([id])
     
     def goto_position(self, id, position, duration):
         freq = 100
@@ -82,16 +89,18 @@ class Feetech:
     def goto_joints(self, joints, duration):
         freq = 100
         steps = int(duration * freq)
-        current_positions = [self.get_position(i) for i in range(1,7)]
+        current_positions = self.get_joints()
+        print(joints)
+        print(current_positions)
         for i in range(steps):
-            for j in range(1,7):
-                self.set_position(j, current_positions[j-1] + (joints[j-1] - current_positions[j-1]) * i / steps)
+            for j in range(len(joints)):
+                self.set_position(j + 1, current_positions[j] + (joints[j] - current_positions[j]) * i / steps)
             time.sleep(1/freq)
-        for j in range(1,7):
-            self.set_position(j, joints[j-1])
+        for j in range(len(joints)):
+            self.set_position(j+1, joints[j])
 
     def get_joints(self):
-        return [self.get_position(i) for i in range(1,7)]
+        return [self.get_position(id) for id in self.ids]
 
 if __name__ == "__main__":
     try: 
@@ -99,68 +108,15 @@ if __name__ == "__main__":
         time.sleep(1)
         
         pos = []
-        for i in range(1,7):
-            position = feetech.get_position(i)
-            print(f"Id : {id} Position {i}: {position}")
+        for id in feetech.ids:
+            position = feetech.get_position(id)
+            print(f"Id : {id} Position : {position}")
             pos.append(position)
 
-        # pos[3] += 180
-        # pos[4] -= 90
-
-        # pos[4] *= -1
-        # # tip_pose = RobotKinematics.fk_gripper_tip(pos)
-        # print(tip_pose)
-            # feetech.set_position(i, 0)
-            # time.sleep(1)
         
     except KeyboardInterrupt:
         feetech.close()
         print("Bye")
 
-
-
-# try:
-#     # for baud in [9600, 57600, 115200, 1000000, 2000000]:
-#         # io = DxlIO('/dev/ttyACM0', baudrate=baud, timeout=0.1)
-#         # print(f"Testing baudrate {baud}: {io.scan()}")
-#     io = FeetechSTS3215IO(
-#         "/dev/ttyACM0",
-#         baudrate=1000000,
-#         use_sync_read=True,
-#     )
-#     # print(f"Testing baudrate : {io.scan()}")
-
-#     time.sleep(1)
-#     id = 1
-
-#     io.enable_torque([id])
-#     time.sleep(1)
-#     io.set_mode({1:1})
-#     io.set_goal_speed({1:0})
-#     io.set_torque_limit({1:1000})
-
-#     # time.sleep(3)
-#     t = 0.01
-#     for i in range(0, 100):
-#         pwm = i
-#         print(pwm)
-#         for j in range(0, 10):
-#             io.enable_torque([1])
-#             time.sleep(t * pwm / 100)
-#             io.disable_torque([1])
-#             time.sleep(t * (100 - pwm) / 100)
-#     io.enable_torque([1])
-#     time.sleep(3)
-#     # print(io.get_present_position([id]))
-#     # time.sleep(1)
-#     io.disable_torque([id])
-#     io.close()
-
-
-# except KeyboardInterrupt:
-#     io.disable_torque([id])
-#     io.close()
-#     print("Bye")
-#     exit(0)
 
     

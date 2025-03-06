@@ -37,7 +37,7 @@ def update_plot(ax, points, orientation):
     ax.clear()
     X, Y, Z = points[:, 0], points[:, 1], points[:, 2]
     ax.scatter(X, Y, Z, color='red', marker='o', s=50, label="Points")
-    ax.plot(X, Y, Z, color='blue', linestyle='-', linewidth=2, label="Ligne")
+    ax.plot(X, Y, Z, color='blue', linestyle='-', linewidth=2, label="Ligne", alpha=0.5)
     plot_orientation(ax, points[-1], orientation)
     ax.set_xlabel('X')
     ax.set_ylabel('Y')
@@ -52,11 +52,13 @@ def update_plot(ax, points, orientation):
 
 def fk(joints, top_grasp = False, ax=None):
     joints = np.deg2rad(joints)
+    print(joints)
 
     p1 = np.array([0, 0, 0])
     p2 = np.array([0.031, 0. , 0.072])
     d3 = np.array([0.03, 0., 0.115])
     d4 = np.array([0.135, 0., 0.005])
+    d4_bis = np.array([0.06, 0, 0])
     d5 = np.array([0.07, 0., 0.])
 
     P1 = p1
@@ -75,6 +77,11 @@ def fk(joints, top_grasp = False, ax=None):
     M4 = R.from_euler('xyz', [0, joints[3], 0], degrees=False).as_matrix()
     T4 = make_homogenous_matrix_from_rotation_matrix(M4, d4)
     T = T @ T4
+    if len(joints) == 7:
+        P4_bis = T @ np.append(d4_bis, 1)
+        M4_bis = R.from_euler('xyz', [0, 0, joints[6]], degrees=False).as_matrix()
+        T4_bis = make_homogenous_matrix_from_rotation_matrix(M4_bis, d4_bis)
+        T = T @ T4_bis
     P5 = T @ np.append(d5, 1)
     M5 = R.from_euler('xyz', [-joints[4], 0, 0], degrees=False).as_matrix()
     T5 = make_homogenous_matrix_from_rotation_matrix(M5, d5)

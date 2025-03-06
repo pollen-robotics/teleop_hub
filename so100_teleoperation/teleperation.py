@@ -22,15 +22,15 @@ from pynput import keyboard
 from utils import make_homogenous_matrix_from_rotation_matrix, create_plot, fk
 
 SHOW_GRAPH = False
-
+NB_DOF = 5
 
 class Teleoperation:
 
     def __init__(self, port, ip):
 
         if SHOW_GRAPH:
-            fig, ax = create_plot()
-        self.so100 = Feetech(port)
+            fig, self.ax = create_plot()
+        self.so100 = Feetech(port, NB_DOF)
         self.reachy = ReachySDK(ip)
         time.sleep(1)
         
@@ -42,14 +42,34 @@ class Teleoperation:
         self.init_tg = False
         self.position_coeff = 1
         self.orientation_coeff = 1
+        self.mobile_base = False
+        self.mirror = False
 
-        self.so_previous_joints = {"r_arm" : [-58.33, -7.16, 27.74, 72.48, -61.67, -1.8],
-                                    "l_arm" : [-58.33, -7.16, 27.74, 72.48, -61.67, -1.8],
-                                    "head" : [-50., 0., 27.74, 72.48, -65, -41.05]}
+        if NB_DOF == 5:
+            self.so_init_joints = {"r_arm" : [-58.33, -7.16, 27.74, 72.48, -61.67, -1.8],
+                                "l_arm" : [-58.33, -7.16, 27.74, 72.48, -61.67, -1.8],
+                                    "head" : [-50., 0., 27.74, 72.48, -65, -41.05],
+                                    "mobile_base" : [-58.33, -7.16, 27.74, 72.48, -61.67, -1.8]}
+        elif NB_DOF == 6:
+            self.so_init_joints = {"r_arm" : [-53.23, 9.54, -10.24, 91.56, -133.49, -13.76, 4.0],
+                             "l_arm" : [-53.23, 9.54, -10.24, 91.56, -133.49, -13.76, 4.0],
+                                "head" : [-50., 0., 27.74, 72.48, -65, -41.05, 0],
+                                "mobile_base" : [-58.33, -7.16, 27.74, 72.48, -61.67, -1.8, 0]}
+        
+        else:
+            raise ValueError("NB_DOF must be 5 or 6")
+        
+
+        self.so_previous_joints = {"r_arm" : self.so_init_joints["r_arm"],
+                                   "l_arm" : self.so_init_joints["l_arm"],
+                                   "head" : self.so_init_joints["head"],
+                                   "mobile_base" : self.so_init_joints["mobile_base"]}
+        
         
         self.so_previous_pose = {"r_arm" : fk(self.so_previous_joints["r_arm"]),
                               "l_arm" : fk(self.so_previous_joints["l_arm"]),
-                              "head" : fk(self.so_previous_joints["head"])}
+                              "head" : fk(self.so_previous_joints["head"]),
+                              "mobile_base" : fk(self.so_previous_joints["mobile_base"])}
         
         position = [0.36, -0.2, -0.28]
         orientation = R.from_euler('xyz', [0, -np.pi/2, 0], degrees=False)
@@ -87,7 +107,11 @@ class Teleoperation:
         print("init so")
         print(self.reachy_part)
         print(self.so_previous_joints[self.reachy_part])
-        self.so100.goto_joints(self.so_previous_joints[self.reachy_part], 2.0)
+        if self.reachy_part == "mobile_base":
+            joints = self.so_init_joints[self.reachy_part]
+        else:
+            joints =  self.so_previous_joints[self.reachy_part]
+        self.so100.goto_joints(joints, 2.0)
 
     def init_top_grasp(self):
         self.so100.enable_torque()
@@ -126,7 +150,7 @@ class Teleoperation:
         self.so100.disable_torque()
         
     def init_antenna(self):
-        duration = 2.0
+        duration = 3.0
         frequency = 100
         steps = int(duration * frequency)
         r_current_position = self.reachy.head.r_antenna.goal_position
@@ -145,7 +169,7 @@ class Teleoperation:
             request = ArmCartesianGoal(
                 id=reachy.r_arm._part_id,
                 goal_pose=Matrix4x4(data=pose.flatten().tolist()),
-                continuous_mode=IKContinuousMode.UNFREEZE,
+                continuous_mode=IKContinuousMode.CONTINUOUS,
                 constrained_mode=IKConstrainedMode.UNCONSTRAINED,
                 preferred_theta=FloatValue(
                     value=-4 * np.pi / 6,
@@ -159,7 +183,7 @@ class Teleoperation:
             request = ArmCartesianGoal(
                 id=reachy.l_arm._part_id,
                 goal_pose=Matrix4x4(data=pose.flatten().tolist()),
-                continuous_mode=IKContinuousMode.UNFREEZE,
+                continuous_mode=IKContinuousMode.CONTINUOUS,
                 constrained_mode=IKConstrainedMode.UNCONSTRAINED,
                 preferred_theta=FloatValue(
                     value=-4 * np.pi / 6,
@@ -174,12 +198,12 @@ class Teleoperation:
         try:
             if key.char == 'l':
                 print("press l")
-                if not self.init and not self.pause and self.reachy_part != "l_arm" and not self.mouse:
+                if not self.init and not self.pause and self.reachy_part != "l_arm" and not self.mouse and not self.init_tg:
                     self.init = True
                     self.reachy_part = "l_arm"
                 
             elif key.char == 'r':
-                if not self.init and not self.pause and self.reachy_part != "r_arm" and not self.mouse:
+                if not self.init and not self.pause and self.reachy_part != "r_arm" and not self.mouse and not self.init_tg:
                     self.init = True
                     self.reachy_part = "r_arm"
 
@@ -208,15 +232,29 @@ class Teleoperation:
             elif key.char == 'i':
                 self.position_coeff += 0.1
                 print(f'Position coeff: {self.position_coeff}')
+
             elif key.char == 'k':
                 self.position_coeff -= 0.1
                 print(f'Position coeff: {self.position_coeff}')
+
             elif key.char == 'u':
                 self.orientation_coeff += 0.1
                 print(f'Orientation coeff: {self.orientation_coeff}')
+
             elif key.char == 'j':
                 self.orientation_coeff -= 0.1
                 print(f'Orientation coeff: {self.orientation_coeff}')
+
+            elif key.char == 'm':
+                if not self.init and not self.pause and not self.init_tg and not self.mouse:
+                    self.init = True
+                    self.reachy_part = "mobile_base"
+
+            elif key.char == 'n':
+                self.mirror = not self.mirror
+                print(f'Mirror: {self.mirror}')
+
+            
 
         except AttributeError:
             print(f'Key {key} pressed')
@@ -243,11 +281,16 @@ class Teleoperation:
         # print(reachy_pose)
         diff_position = so_pose[:3, 3] - self.so_previous_pose[arm][:3, 3]
         diff_position *= self.position_coeff
+        if self.mirror:
+            diff_position[1] = -diff_position[1]
         reachy_pose[:3, 3] += diff_position
 
         diff_orientation = so_pose[:3, :3] @ self.so_previous_pose[arm][:3, :3].T 
         diff_orientation = R.from_matrix(diff_orientation).as_euler('xyz', degrees=False)
         diff_orientation *= self.orientation_coeff
+        if self.mirror:
+            diff_orientation[0] = -diff_orientation[0]
+            diff_orientation[2] = -diff_orientation[2]
         diff_orientation = R.from_euler('xyz', diff_orientation, degrees=False).as_matrix()
         reachy_pose[:3, :3] = diff_orientation @ self.reachy_previous_pose[arm][:3, :3]
         # orientation = R.from_euler('xyz', [0, np.pi/2, 0], degrees=False)orientation = T[:3, :3]
@@ -284,7 +327,11 @@ class Teleoperation:
 
     def control_arm(self, so_joints, arm, top_grasp):
         # print(self.top_grasp[arm])
+        # print(so_joints)
         pose = fk(so_joints, self.top_grasp[arm])
+        # print(pose[:3, :3])
+        # orientation = R.from_matrix(pose[:3, :3]).as_euler('XYZ', degrees=True)
+        # print(orientation)
         reachy_pose = self.find_reachy_pose(pose, arm, top_grasp)
         self.reachy_previous_pose[arm] = reachy_pose
         self.go_to_pose(self.reachy, reachy_pose, arm)
@@ -311,20 +358,48 @@ class Teleoperation:
         self.so_previous_pose["head"] = so_pose
         self.so_previous_joints["head"] = so_pose
 
+    def control_mobile_base(self):
+        so_joints = self.so100.get_joints()
+        so_pose = fk(so_joints)
+        # print(pose)
+        diff_position = so_pose[:3, 3] - self.so_previous_pose["mobile_base"][:3, 3]
+        print(diff_position)
+
+        x = diff_position[0] * 5
+        y = diff_position[1] * 5
+        diff_orientation = so_pose[:3, :3] @ self.so_previous_pose["mobile_base"][:3, :3].T
+        diff_orientation = R.from_matrix(diff_orientation).as_euler('xyz', degrees=False)
+        print(f"orientation: {diff_orientation}")
+        theta = diff_orientation[2]
+        theta = np.rad2deg(theta)
+
+        self.reachy.mobile_base.set_goal_speed(x=x, y=y, theta=theta)
+        self.reachy.mobile_base.send_speed_command()
+
+        # linear_range = [-0.5, 0.5]
+        # angular_range = [-1.5, 1.5]
+        # self.reachy.mobile_base.set_goal_speed(x=1.0, y=0.0, theta=0)
+        # tic=time.time()
+        # while time.time()-tic < 5:
+        #     
+        #     time.sleep(0.01)
         
 
 
 if __name__ == "__main__":
     try:
+        # teleop = Teleoperation("/dev/ttyACM0", "192.168.1.163")
         teleop = Teleoperation("/dev/ttyACM0", "localhost")
         frequency = 100
         while True:
             # print("_______")
             t = time.time()
             part = teleop.reachy_part
-            if part != "head":
+            if part == "l_arm" or part == "r_arm":
                 top_grasp = teleop.top_grasp[part]
             if teleop.pause:
+                teleop.reachy.mobile_base.set_goal_speed(x=0, y=0, theta=0)
+                teleop.reachy.mobile_base.send_speed_command()
                 continue
             elif teleop.mouse:
                 joints = teleop.so100.get_joints()
@@ -342,17 +417,20 @@ if __name__ == "__main__":
                 teleop.init_tg = False
             elif part == "head":
                 # print("head")
-                pose = teleop.so100.get_joints()
-                teleop.control_head(pose)
+                joints = teleop.so100.get_joints()
+                teleop.control_head(joints)
+            elif part == "mobile_base":
+                teleop.control_mobile_base()
             else :
                 # print("ici")
                 joints = teleop.so100.get_joints()
                 teleop.control_arm(joints, part, top_grasp)
-            print(max(0, 1/frequency - (time.time() - t)))
+
+            # print(max(0, 1/frequency - (time.time() - t)))
             time.sleep(max(0, 1/frequency - (time.time() - t)))
     except KeyboardInterrupt:
         teleop.so100.close()
-        teleop.reachy.turn_off()
+        teleop.reachy.turn_off_smoothly()
         print("Exiting...")
         exit(0)
             

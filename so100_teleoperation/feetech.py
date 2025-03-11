@@ -34,9 +34,9 @@ class Feetech:
         # self.io.set_mode({1:0})
         # # self.io.set_goal_speed({1:0})
         # self.io.set_torque_limit({1:1000})
-        # self.t = 0.01
+        self.t = 0.01
         # self.pwm = 0
-        # self.stop = False
+        self.stop = False
 
     def set_pwm(self, pwm):
         self.pwm = pwm
@@ -50,9 +50,12 @@ class Feetech:
     def run(self):
         print("Running")
         while True:
-            self.io.enable_torque([1])
+            print(self.pwm)
+            for id in self.ids:
+                self.io.enable_torque([id])
             time.sleep(self.t * self.pwm / 100)
-            self.io.disable_torque([1])
+            for id in self.ids:
+                self.io.disable_torque([id])
             time.sleep(self.t * (100 - self.pwm) / 100)
             if self.stop:
                 break
@@ -68,6 +71,10 @@ class Feetech:
     
     def set_position(self, id, position):
         self.io.set_goal_position({id: position})
+
+    def set_joints(self, joints):
+        for i in range(len(joints)):
+            self.set_position(i + 1, joints[i])
 
     def disable_torque(self):
         for id in self.ids:

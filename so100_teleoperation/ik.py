@@ -30,9 +30,10 @@ def ik(pose, ax=None):
     b = np.linalg.norm(d3)
     a = np.linalg.norm(d4)
     c = np.linalg.norm(p4 - d2)
-    beta = np.arccos((b**2 + c**2 - a**2)/(2*b*c))
+    cosA = (b**2 + c**2 - a**2)/(2*b*c)
+    cosA = max(-1, min(1, cosA)) 
+    beta = np.arccos(cosA)
     gamma = np.arctan2(p[2], p[0])
-    print(alpha + beta + gamma)
     joints[1] = np.pi/2 - (alpha + beta + gamma)
 
     T_base
@@ -79,20 +80,26 @@ if __name__ == '__main__':
     
 
     while True:
-        joints1 = feetech.get_joints()
-        pose = fk(joints1, ax=ax)
+        # joints1 = feetech.get_joints()
+        # pose = fk(joints1, ax=ax)
+        pose = np.array([[ 0.0268145,   0.12638273,  0.99161907,  0.24835922],
+                [ 0.03061745,  0.99140653, -0.12718357,  0.05155435],
+                [-0.99917143,  0.03377121,  0.02271455,  0.12995589],
+                [ 0.,          0.,          0.,          1.,        ]])
         joints2 = ik(pose, ax=ax)
 
-        result = [np.abs(joints1[i]- joints2[i]) <= 0.001 for i in range(5)]
-        print(joints1[:5] - joints2)
-        print(joints1)
+
+        # result = [np.abs(joints1[i]- joints2[i]) <= 0.001 for i in range(5)]
+        # print(joints1[:5] - joints2)
+        # print(joints1)
         print(joints2)
-        print(result)
+        # print(result)
         pose2 = fk(joints2)
         is_working = np.allclose(pose, pose2, atol=0.001)
         print(is_working)
         print("______________")
-        time.sleep(0.1)
+        feetech.goto_joints(joints2, duration=3)
+        time.sleep(2)
 
 
 

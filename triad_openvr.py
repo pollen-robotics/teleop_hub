@@ -129,8 +129,7 @@ class pose_sample_buffer():
         self.yaw = []
         self.pitch = []
         self.roll = []
-        self.r_w = []        relative_position = relative_pose[:3, 3]
-        self.r_x = []
+        self.r_w = []
         self.r_y = []
         self.r_z = []
     

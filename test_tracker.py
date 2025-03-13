@@ -105,5 +105,6 @@ if __name__ == '__main__':
         tracker.update_rpy()
         pose = tracker.tracker_pose
         print(pose)
+        time.sleep(0.1)
         # goal_pose = robot.convert_to_robot_frame()
         # robot.go_to_pose(goal_pose)

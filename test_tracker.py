@@ -1,13 +1,20 @@
-import time
-import sys
-import numpy as np
 import math
+import sys
+import time
+
+import numpy as np
 import numpy.typing as npt
-import triad_openvr
 import openvr
+from scipy.spatial.transform import Rotation as R
 
-
-from utils import make_homogenous_matrix_from_rotation_matrix, create_plot, plot_orientation, update_plot, fk
+import triad_openvr
+from utils import (
+    create_plot,
+    fk,
+    make_homogenous_matrix_from_rotation_matrix,
+    plot_orientation,
+    update_plot,
+)
 
 
 class ViveTracker:
@@ -17,94 +24,87 @@ class ViveTracker:
         self.tracker = self.vive.devices[self.tracker_name]
         self.tracker_euler_angles = np.zeros(3)
         self.tracker_position = np.zeros(3)
-        self.tracker_pose = np.eye(4)
-        self.zero_pose = np.eye(4)
+        self.tracker_pose = np.eye(4)  # Current pose
+        self.zero_pose = None  # Initial reference frame
 
     def convert_openvr_matrix(self, hmd_matrix):
         """
-        Convertit une matrice OpenVR 3x4 (HmdMatrix34_t) en une matrice 4x4 NumPy.
+        Convert an OpenVR 3x4 matrix (HmdMatrix34_t) to a 4x4 NumPy matrix.
 
-        :param hmd_matrix: Matrice OpenVR (hmd_matrix.mDeviceToAbsoluteTracking)
-        :return: Matrice 4x4 NumPy
+        :param hmd_matrix: OpenVR matrix (hmd_matrix.mDeviceToAbsoluteTracking)
+        :return: 4x4 NumPy transformation matrix
         """
-        m = np.array([
-            [hmd_matrix[0][0], hmd_matrix[0][1], hmd_matrix[0][2], hmd_matrix[0][3]],
-            [hmd_matrix[1][0], hmd_matrix[1][1], hmd_matrix[1][2], hmd_matrix[1][3]],
-            [hmd_matrix[2][0], hmd_matrix[2][1], hmd_matrix[2][2], hmd_matrix[2][3]],
-            [0, 0, 0, 1]
-        ])
+        m = np.array(
+            [
+                [
+                    hmd_matrix[0][0],
+                    hmd_matrix[0][1],
+                    hmd_matrix[0][2],
+                    hmd_matrix[0][3],
+                ],
+                [
+                    hmd_matrix[1][0],
+                    hmd_matrix[1][1],
+                    hmd_matrix[1][2],
+                    hmd_matrix[1][3],
+                ],
+                [
+                    hmd_matrix[2][0],
+                    hmd_matrix[2][1],
+                    hmd_matrix[2][2],
+                    hmd_matrix[2][3],
+                ],
+                [0, 0, 0, 1],
+            ]
+        )
         return m
 
     def update_tracker_pose(self):
+        """Updates the tracker pose in the SteamVR world frame."""
         pose = self.tracker.get_pose_matrix()
-        # pose2 = self.tracker.get_pose_euler()
-        # print(pose2)
-
-        # pose = np.array(pose)
-        # position = pose[:3, 3]
-        # orientation = R.from_matrix(pose[:3, :3]).as_euler('xyz', degrees=True)
-        # print(f"position: {position}")
-        # print(f"orientation: {orientation}")
         self.tracker_pose = self.convert_openvr_matrix(pose)
 
-    def update_rpy(self):
-        [x, y, z, roll, pitch, yaw] = self.tracker.get_pose_euler()
-        
-        self.tracker_euler_angles = np.array(np.degrees([roll, pitch, yaw]))
-        print (self.tracker_euler_angles)
-
-
-    def get_tracker_position(self) -> npt.ArrayLike:
-        return self.tracker_position
-
-    def get_tracker_euler_angles(self) -> npt.ArrayLike:
-        return self.tracker_euler_angles
-
     def calibrate_pose_zero(self):
-        print("Calibration : reset zero pose ")
+        """Sets the current pose as the zero reference frame."""
+        print("Calibration: Setting the initial pose as the new coordinate system...")
         time.sleep(2)
         self.update_tracker_pose()
-        self.zero_pose = self.tracker_pose
-        # R_roll = np.array([
-        #     [1, 0, 0],
-        #     [0, 0, 1],
-        #     [0, -1, 0]
-        # ])
-
-        # self.center_pose[:3, :3] = self.tracker_pose[:3, :3]
-
-        # print("Calibration : Move the tracker in front of your sternum")
-        # user_positions = []
-        # time.sleep(2)
-        # t0 = time.time()
-        # while time.time() - t0 < 3 or len(user_positions) < 10:
-        #     user_positions.append(self.tracker.get_pose_euler()[:3])
-        #     time.sleep(0.1)
-        # mean_position = np.median(user_positions, axis=0)
-        
-        # self.center_pose[:3,3] = mean_position
-        # print("center pose", self.center_pose)
-
+        self.zero_pose = self.tracker_pose  # Store initial pose as reference
 
     def get_relative_tracker_pose(self):
+        """Computes the tracker pose relative to the initial calibration pose."""
         self.update_tracker_pose()
-        relative_pose = np.linalg.inv(self.center_pose) @ self.tracker_pose
-        relative_position = relative_pose[:3, 3]
-        # print("relative_position", relative_position)
-        # print("relative orientation in euler angles", R.from_matrix(relative_pose[:3, :3]).as_euler('xyz', degrees=True))
+
+        if self.zero_pose is None:
+            print("Warning: Zero pose not set. Returning absolute pose.")
+            return self.tracker_pose  # Return absolute pose if not calibrated
+
+        relative_pose = np.linalg.inv(self.zero_pose) @ self.tracker_pose
+
         return relative_pose
 
+    def get_tracker_position(self) -> npt.ArrayLike:
+        """Returns the tracker's current position relative to the calibrated frame."""
+        relative_pose = self.get_relative_tracker_pose()
+        return relative_pose[:3, 3]
+
+    def get_tracker_euler_angles(self) -> npt.ArrayLike:
+        """Returns the tracker's orientation (RPY) relative to the calibrated frame."""
+        relative_pose = self.get_relative_tracker_pose()
+        return R.from_matrix(relative_pose[:3, :3]).as_euler("xyz", degrees=True)
 
 
-if __name__ == '__main__':
-    tracker = ViveTracker('tracker_1')
-    # robot = RobotController(tracker=tracker)
-    # robot.convert_to_robot_frame()
+if __name__ == "__main__":
+    tracker = ViveTracker("tracker_1")
+
+    # Set new coordinate system
+    tracker.calibrate_pose_zero()
 
     while True:
-        tracker.update_rpy()
-        pose = tracker.tracker_pose
-        print(pose)
+        position = tracker.get_tracker_position()
+        orientation = tracker.get_tracker_euler_angles()
+
+        print(f"Relative position: {position}")
+        # print(f"Relative orientation (Euler XYZ): {orientation}")
+
         time.sleep(0.1)
-        # goal_pose = robot.convert_to_robot_frame()
-        # robot.go_to_pose(goal_pose)

@@ -73,6 +73,7 @@ class Teleoperation:
                               "head" : fk(self.so_previous_joints["head"]),
                               "mobile_base" : fk(self.so_previous_joints["mobile_base"])}
         
+        
         position = [0.36, -0.2, -0.28]
         orientation = R.from_euler('xyz', [0, -np.pi/2, 0], degrees=False)
         r_pose = make_homogenous_matrix_from_rotation_matrix(orientation.as_matrix(), position)
@@ -83,10 +84,15 @@ class Teleoperation:
         self.reachy_head_joints = [0, 0, 0]
 
         self.so100.enable_torque()
+        self.so100.set_torque_limit(1000)
         self.init_so()
+        print("init done")
         self.init_reachy()
-        if not INVERTED_TELEOPERATION:
-            self.so100.disable_torque()
+
+
+        self.real_reachy_previous_pose = {"r_arm" : self.reachy.r_arm.forward_kinematics(), "l_arm" : self.reachy.l_arm.forward_kinematics()}
+        # if not INVERTED_TELEOPERATION:
+        self.so100.disable_torque()
 
         keyboard_thread = threading.Thread(target=self.listen_keyboard, daemon=True)
         keyboard_thread.start()
@@ -335,7 +341,7 @@ class Teleoperation:
         # print(reachy_pose[:3, 3])
         # print(self.reachy_previous_pose["r_arm"][:3, 3])
         diff_position = reachy_pose[:3, 3] - self.reachy_previous_pose["r_arm"][:3, 3]
-        print(diff_position)
+        print(f"norm {np.linalg.norm(diff_position)}")
         # diff_orientation = reachy_pose[:3, :3] @ self.reachy_previous_pose["r_arm"][:3, :3].T
 
 
@@ -345,15 +351,53 @@ class Teleoperation:
         # print(f"norm position: {np.linalg.norm(diff_position)}")
         # print(f"norm orientation: {diff_orientation2[0]}")
 
-        if np.linalg.norm(diff_position) < 0.02: # and (diff_orientation2[0] < 0.02 and diff_orientation2[0] > -0.02):
-            print("no move")
-            self.so100.set_pwm(0)
+        diff_reachy_pose = reachy_pose[:3, 3] - self.real_reachy_previous_pose["r_arm"][:3, 3]
+        print(f"diff reachy pose: {np.linalg.norm(diff_reachy_pose)}")
+        self.real_reachy_previous_pose["r_arm"] = reachy_pose
+        print("___________________")
+
+        if np.linalg.norm(diff_reachy_pose) > 0.0008:
+            print("move")
+            self.so100.disable_torque()
             return False, self.so_previous_pose["r_arm"]
+        
+        elif np.linalg.norm(diff_reachy_pose) > 0.0005:
+            print("move a little")
+            if np.linalg.norm(diff_position) < 0.03: # and (diff_orientation2[0] < 0.02 and diff_orientation2[0] > -0.02):
+                print("no move")
+                # self.so100.set_torque_limit(1)
+                self.so100.disable_torque()
+
+                
+                return False, self.so_previous_pose["r_arm"]
+            else:
+                print("block")
+                print(f"torque {np.linalg.norm(diff_position) * 10000}")
+                torque = np.linalg.norm(diff_position) * 10000
+                torque = int(torque)
+                if torque > 1000:
+                    torque = 1000
+                self.so100.set_torque_limit(torque)
+                self.so100.enable_torque()
         else:
-            self.so100.set_pwm(50)
+            if np.linalg.norm(diff_position) < 0.01: # and (diff_orientation2[0] < 0.02 and diff_orientation2[0] > -0.02):
+                print("no move")
+                # self.so100.set_torque_limit(1)
+                self.so100.disable_torque()
 
+                
+                return False, self.so_previous_pose["r_arm"]
+            else:
+                print("block")
+                print(f"torque {np.linalg.norm(diff_position) * 10000}")
+                torque = np.linalg.norm(diff_position) * 10000
+                torque = int(torque)
+                if torque > 1000:
+                    torque = 1000
+                self.so100.set_torque_limit(torque)
+                self.so100.enable_torque()
 
-        if np.linalg.norm(diff_position) > 0.02:
+        if np.linalg.norm(diff_position) > 0.01:
             diff_position = diff_position / np.linalg.norm(diff_position) * 0.01
         
         so_pose = self.so_previous_pose["r_arm"].copy()
@@ -361,8 +405,14 @@ class Teleoperation:
         # so_pose[:3, :3] = diff_orientation @ self.so_previous_pose["r_arm"][:3, :3]
         # self.so_previous_pose["r_arm"] = so_pose
         # self.reachy_previous_pose["r_arm"] = reachy_pose
-        print("___________________")
 
+
+        # diff_reachy_pose = reachy_pose[:3, 3] - self.real_reachy_previous_pose["r_arm"][:3, 3]
+        # print(f"diff reachy pose: {diff_reachy_pose}")
+        # self.real_reachy_previous_pose["r_arm"] = reachy_pose
+
+
+        # print("___________________")
 
         return True, so_pose
 
@@ -431,7 +481,8 @@ class Teleoperation:
 
     def update_so_pose(self):
         if INVERTED_TELEOPERATION:
-            frequency = 50
+            print("inverted teleoperation")
+            frequency = 100
             while True:
                 t = time.time()
                 is_moving, so_pose = teleop.invert_teleoperation()
@@ -440,6 +491,7 @@ class Teleoperation:
 
 
                     # teleop.so100.goto_joints(joints, 0)
+                    # teleop.so100.set_joints(self.so_init_joints[teleop.reachy_part])
                     teleop.so100.set_joints(joints)
                 time.sleep(max(0, 1/frequency - (time.time() - t)))
         
@@ -447,17 +499,18 @@ class Teleoperation:
 
 if __name__ == "__main__":
     try:
-        # teleop = Teleoperation("/dev/ttyACM0", "192.168.1.163") #pvt02
-        teleop = Teleoperation("/dev/ttyACM0", "192.168.10.104") #dvt03
+        teleop = Teleoperation("/dev/ttyACM0", "192.168.10.107") #pvt02
+        # teleop = Teleoperation("/dev/ttyACM0", "192.168.10.104") #dvt03
+        
 
         # teleop = Teleoperation("/dev/ttyACM0", "localhost")
         
         frequency = 100
 
-        teleop.so100.set_pwm(10)
+        # teleop.so100.set_pwm(10)
 
-        thread = threading.Thread(target=teleop.so100.run, daemon=True)
-        thread.start()
+        # thread = threading.Thread(target=teleop.so100.run, daemon=True)
+        # thread.start()
 
         thread = threading.Thread(target=teleop.update_so_pose, daemon=True)
         thread.start()

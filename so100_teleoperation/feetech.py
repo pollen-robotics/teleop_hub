@@ -38,6 +38,10 @@ class Feetech:
         # self.pwm = 0
         self.stop = False
 
+    def set_torque_limit(self, torque):
+        for id in self.ids:
+            self.io.set_torque_limit({id: torque})
+
     def set_pwm(self, pwm):
         self.pwm = pwm
 
@@ -51,12 +55,21 @@ class Feetech:
         print("Running")
         while True:
             print(self.pwm)
-            for id in self.ids:
-                self.io.enable_torque([id])
-            time.sleep(self.t * self.pwm / 100)
-            for id in self.ids:
-                self.io.disable_torque([id])
-            time.sleep(self.t * (100 - self.pwm) / 100)
+            if self.pwm == 0:
+                for id in self.ids:
+                    self.io.disable_torque([id])
+                time.sleep(self.t)
+            elif self.pwm == 100:
+                for id in self.ids:
+                    self.io.enable_torque([id])
+                time.sleep(self.t)
+            else:
+                for id in self.ids:
+                    self.io.enable_torque([id])
+                time.sleep(self.t * self.pwm / 100)
+                for id in self.ids:
+                    self.io.disable_torque([id])
+                time.sleep(self.t * (100 - self.pwm) / 100)
             if self.stop:
                 break
 
@@ -83,6 +96,10 @@ class Feetech:
     def enable_torque(self):
         for id in self.ids:
             self.io.enable_torque([id])
+
+    def set_torque_limit(self, torque):
+        for id in self.ids:
+            self.io.set_torque_limit({id: torque})
     
     def goto_position(self, id, position, duration):
         freq = 100

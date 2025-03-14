@@ -125,6 +125,12 @@ class RobotController:
         self.tracker = ViveTracker('tracker_1')
         # self.tracker.calibrate_pose_zero()
 
+
+        self.gripper.enable_torque()
+        self.gripper.set_position(1, 0)
+        time.sleep(1)
+        self.gripper.disable_torque()
+
         self.reachy_part = "r_arm"
         self.init = False
         self.pause = False
@@ -148,6 +154,7 @@ class RobotController:
         self.reachy_init_pose = {"r_arm" : r_pose, "l_arm" : l_pose}
 
         self.init_reachy()
+        self.reachy.reset_default_limits()
 
         self.tracker.update_tracker_pose()
 
@@ -248,7 +255,7 @@ class RobotController:
             request = ArmCartesianGoal(
                 id=reachy.r_arm._part_id,
                 goal_pose=Matrix4x4(data=pose.flatten().tolist()),
-                continuous_mode=IKContinuousMode.UNFREEZE,
+                continuous_mode=IKContinuousMode.CONTINUOUS,
                 constrained_mode=IKConstrainedMode.UNCONSTRAINED,
                 preferred_theta=FloatValue(
                     value=-4 * np.pi / 6,
@@ -262,7 +269,7 @@ class RobotController:
             request = ArmCartesianGoal(
                 id=reachy.l_arm._part_id,
                 goal_pose=Matrix4x4(data=pose.flatten().tolist()),
-                continuous_mode=IKContinuousMode.UNFREEZE,
+                continuous_mode=IKContinuousMode.CONTINUOUS,
                 constrained_mode=IKConstrainedMode.UNCONSTRAINED,
                 preferred_theta=FloatValue(
                     value=-4 * np.pi / 6,
@@ -341,7 +348,7 @@ class RobotController:
         diff_orientation = so_pose[:3, :3] @ self.so_previous_pose[arm][:3, :3].T 
         diff_orientation = R.from_matrix(diff_orientation).as_euler('xyz', degrees=False)
         diff_orientation *= self.orientation_coeff
-        print(diff_orientation)
+        # print(diff_orientation)
         # print("______________________")
         # # if self.mirror:
         # orientation = diff_orientation[2]
@@ -373,16 +380,25 @@ class RobotController:
 
     def rotate_pose(self, pose):
         
-        # orientation = R.from_euler('xyz', [-np.pi/2, 0, 0], degrees=False).as_matrix()
-        # T = self.make_homogenous_matrix_from_rotation_matrix(orientation, [0, 0, 0])
-        
-        # pose = 
+        # self.update_tracker_pose()
 
-        orientation = self.so_init_pose[self.reachy_part][:3, :3]
-        T = self.make_homogenous_matrix_from_rotation_matrix(orientation, [0, 0, 0])
-        pose = np.linalg.inv(T) @ pose  
+        # if self.zero_pose is None:
+        #     print("Warning: Zero pose not set. Returning absolute pose.")
+        #     return self.tracker_pose  # Return absolute pose if not calibrated
 
-        return pose
+        relative_pose = np.linalg.inv(self.so_init_pose["r_arm"]) @ pose
+
+        rotation = R.from_euler("xyz", [0, 0, -30], degrees=True).as_matrix()
+        Trot = make_homogenous_matrix_from_rotation_matrix(
+            rotation, [0, 0, 0])
+        relative_pose = Trot @ relative_pose
+
+        rotation = R.from_euler("xyz", [180, 0, 0], degrees=True).as_matrix()
+        Trot = make_homogenous_matrix_from_rotation_matrix(
+            rotation, [0, 0, 0])
+        relative_pose = Trot @ relative_pose
+
+        return relative_pose
         # return pose 
 
     # def antena_control(self, joint):
@@ -403,10 +419,10 @@ class RobotController:
         reachy_pose_base = self.reachy_init_pose[arm].copy()
 
         so_pose_base = self.so_init_pose[arm]
-        # so_pose_base = self.rotate_pose(so_pose_base)
+        so_pose_base = self.rotate_pose(so_pose_base)
         diff_position = so_pose[:3, 3] - so_pose_base[:3, 3]
         diff_position = so_pose_base[:3, :3].T @ diff_position
-        print(diff_position)
+        # print(diff_position)
 
 
         reachy_pose = reachy_pose_base.copy()
@@ -422,10 +438,10 @@ class RobotController:
         gripper_joints = self.gripper.get_joints()[0]
         pose = self.tracker.tracker_pose
 
-        position = pose[:3, 3]
-        orientation = R.from_matrix(pose[:3, :3]).as_euler('xyz', degrees=True)
-        print(f"position: {position}")
-        print(f"orientation: {orientation}")
+        # position = pose[:3, 3]
+        # orientation = R.from_matrix(pose[:3, :3]).as_euler('xyz', degrees=True)
+        # print(f"position: {position}")
+        # print(f"orientation: {orientation}")
 
         pose = self.rotate_pose(pose)
 
@@ -434,7 +450,7 @@ class RobotController:
         # print(f"position: {position}")
         # print(f"orientation: {orientation}")
 
-        print("__________________________")
+        # print("__________________________")
         # pose = self.tracker.get_relative_tracker_pose()
 
         
@@ -443,7 +459,7 @@ class RobotController:
         # print(pose[:3, :3])
         # orientation = R.from_matrix(pose[:3, :3]).as_euler('XYZ', degrees=True)
         # print(orientation)
-        reachy_pose = self.find_reachy_pose2(pose, arm)
+        reachy_pose = self.find_reachy_pose(pose, arm)
         # print(reachy_pose)
         self.reachy_previous_pose[arm] = reachy_pose
         self.go_to_pose(self.reachy, reachy_pose, arm)
@@ -499,37 +515,37 @@ class RobotController:
 
 if __name__ == "__main__":
     try:
-        # teleop = RobotController("/dev/ttyACM0", "192.168.10.108")
-        teleop = RobotController("/dev/ttyACM0", "localhost")
-        frequency = 10
+        teleop = RobotController("/dev/ttyACM0", "192.168.10.107")
+        # teleop = RobotController("/dev/ttyACM0", "localhost")
+        frequency = 100
         time.sleep(1)
         fig, ax = create_plot()
 
-        while True:
-            teleop.tracker.update_tracker_pose()
-            pose = teleop.tracker.tracker_pose
-            # pose = teleop.rotate_pose(pose)
-            print(pose[:3, 3])
+        # while True:
+        #     teleop.tracker.update_tracker_pose()
+        #     pose = teleop.tracker.tracker_pose
+        #     # pose = teleop.rotate_pose(pose)
+        #     print(pose[:3, 3])
 
-            # orientation = R.from_matrix(pose[:3, :3]).as_euler('xyz', degrees=True)
-            # print(f"orientation: {orientation}")
+        #     # orientation = R.from_matrix(pose[:3, :3]).as_euler('xyz', degrees=True)
+        #     # print(f"orientation: {orientation}")
 
-            position = pose[:3, 3]
-            position = position - teleop.so_init_pose["r_arm"][:3, 3]
-            position = teleop.so_init_pose["r_arm"][:3, :3].T @ position
+        #     position = pose[:3, 3]
+        #     position = position - teleop.so_init_pose["r_arm"][:3, 3]
+        #     position = teleop.so_init_pose["r_arm"][:3, :3].T @ position
 
-            update_plot(ax, np.array([position]), pose[:3, :3])
-            time.sleep(0.01)
+        #     update_plot(ax, np.array([position]), pose[:3, :3])
+        #     time.sleep(0.01)
 
-            # teleop.find_reachy_pose2(pose, teleop.reachy_part)
+        #     # teleop.find_reachy_pose2(pose, teleop.reachy_part)
             
-            # diff_orientation = pose[:3, :3] @ teleop.so_init_pose["r_arm"][:3, :3].T 
-            # # diff_orientation = R.from_matrix(diff_orientation).as_euler('xyz', degrees=True)
-            # orientation1 = teleop.so_init_pose[teleop.reachy_part][:3, :3]
-            # diff_orientation = np.linalg.inv(orientation1) @ diff_orientation
-            # diff_orientation = R.from_matrix(diff_orientation).as_euler('xyz', degrees=True)
-            # print(diff_orientation)
-            # print("______________________")
+        #     # diff_orientation = pose[:3, :3] @ teleop.so_init_pose["r_arm"][:3, :3].T 
+        #     # # diff_orientation = R.from_matrix(diff_orientation).as_euler('xyz', degrees=True)
+        #     # orientation1 = teleop.so_init_pose[teleop.reachy_part][:3, :3]
+        #     # diff_orientation = np.linalg.inv(orientation1) @ diff_orientation
+        #     # diff_orientation = R.from_matrix(diff_orientation).as_euler('xyz', degrees=True)
+        #     # print(diff_orientation)
+        #     # print("______________________")
 
         while True:
             # print("_______")

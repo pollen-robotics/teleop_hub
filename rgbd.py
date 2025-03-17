@@ -29,17 +29,13 @@ from reachy2_sdk_api.kinematics_pb2 import Matrix4x4  # type: ignore
 from scipy.spatial.transform import Rotation as R  # type: ignore
 from scipy.spatial.transform import Slerp  # type: ignore
 
-# original_landmarks constant :
-HANDLANDMARKS_CST = [4, 8]
-# wrist, thumb tip, index mcp, index tip, middle mcp, pinky mcp, pinky tip
-
 SHOULDER_CST = [11, 12]
 ELBOWS_CST = [13, 14]
 WRISTS_CST = [15, 16]
 INDEX_MCP_CST = [19, 20]
 
-FACELANDMARKS_CST = [1, 152, 33, 263]
-# Nose tip, Chin, Left eye left corner, Right eye right corner, Left mouth corner, Right mouth corner
+FACELANDMARKS_CST = [1, 152, 33, 263]  # Nose tip, Chin, Left eye left corner, Right eye right corner
+HANDLANDMARKS_CST = [4, 8]  # thumb tip, index tip
 
 
 def normalize_vector(v):
@@ -210,18 +206,18 @@ class Orbbec:
 
 
 class RotationSmoother:
-    def __init__(self, window_size=5):
+    def __init__(self, window_size=8):
         self.window_size = window_size
         self.buffer = deque(maxlen=window_size)
 
     def update(self, new_rotation_matrix):
         if new_rotation_matrix is not None:
             self.buffer.append(new_rotation_matrix)
-        return np.mean(self.buffer, axis=0) if self.buffer else new_rotation_matrix
+        return np.median(self.buffer, axis=0) if self.buffer else new_rotation_matrix
 
 
 class MedianFilter:
-    def __init__(self, filter_size=5):
+    def __init__(self, filter_size=10):
         self.filter_size = filter_size
         self.measurements = deque(maxlen=filter_size)
 
@@ -320,6 +316,13 @@ class ComputerVision:
         self.left_hand_points = np.zeros((len(HANDLANDMARKS_CST), 3))
         self.right_hand_points = np.zeros((len(HANDLANDMARKS_CST), 3))
         self.face_points = np.zeros((len(FACELANDMARKS_CST), 3))
+
+        # for visualization
+        self.shoulders_visu = np.zeros((2, 3))
+        self.user_center_visu = np.zeros(3)
+        self.elbows_visu = np.zeros((2, 3))
+        self.wrists_visu = np.zeros((2, 3))
+        self.face_points_visu = np.zeros((len(FACELANDMARKS_CST), 3))
 
         # for the orientation of the hands
         self.left_hand_points_3D = np.zeros((len(HANDLANDMARKS_CST), 3))
@@ -526,20 +529,20 @@ class ComputerVision:
         body_landmarks, face_landmarks = self.get_2D_landmarks(results)
         left_hand_landmarks, right_hand_landmarks = self.get_3D_landmarks(results)
 
-        # handpoints_3D = self.get_3D_landmarks(results)
-        # self.get_hand_orientation(handpoints_3D)
-
         if body_landmarks is not None:
             if not fixed_user:
                 # get shoulder landmarks
                 left_shoulder = self.estimate_3D_landmark_with_depth(body_landmarks[SHOULDER_CST[0]], depth_frame)
                 if left_shoulder is not None:
+                    self.shoulders_visu[0] = left_shoulder
                     self.shoulders[0] = self.get_landmarks_with_camera_transformation(left_shoulder)
                 right_shoulder = self.estimate_3D_landmark_with_depth(body_landmarks[SHOULDER_CST[1]], depth_frame)
                 if right_shoulder is not None:
+                    self.shoulders_visu[1] = right_shoulder
                     self.shoulders[1] = self.get_landmarks_with_camera_transformation(right_shoulder)
                 # get user center and distance intershoulder
                 if np.any(self.shoulders[0]) and np.any(self.shoulders[1]):
+                    self.user_center_visu = (self.shoulders_visu[0] + self.shoulders_visu[1]) / 2.0
                     self.user_center = (self.shoulders[0] + self.shoulders[1]) / 2.0
                     self.dist_intershoulder = np.linalg.norm(self.shoulders[0] - self.shoulders[1])
 
@@ -547,9 +550,11 @@ class ComputerVision:
             for i in range(2):
                 elbow = self.estimate_3D_landmark_with_depth(body_landmarks[ELBOWS_CST[i]], depth_frame)
                 if elbow is not None:
+                    self.elbows_visu[i] = elbow
                     self.elbows[i] = self.get_landmarks_with_camera_transformation(elbow)
                 wrist = self.estimate_3D_landmark_with_depth(body_landmarks[WRISTS_CST[i]], depth_frame, radius=10)
                 if wrist is not None:
+                    self.wrists_visu[i] = wrist
                     self.wrists[i] = self.get_landmarks_with_camera_transformation(wrist)
 
         for hand_landmarks, points in zip(
@@ -565,6 +570,7 @@ class ComputerVision:
             for i, lm_cst in enumerate(FACELANDMARKS_CST):
                 face_coord = self.estimate_3D_landmark_with_depth(face_landmarks[lm_cst], depth_frame)
                 if face_coord is not None:
+                    self.face_points_visu[i] = face_coord
                     self.face_points[i] = self.get_landmarks_with_camera_transformation(face_coord)
 
         return True
@@ -582,8 +588,9 @@ class ComputerVision:
         hands_on=True,
         face_on=True,
     ):
+
         color_frame = self.resize_frames(color_frame, self.scale_percent)
-        cv2.circle(color_frame, (int(self.user_center[0]), int(self.user_center[1])), 5, (255, 255, 255), -1)
+        cv2.circle(color_frame, (int(self.user_center_visu[0]), int(self.user_center_visu[1])), 5, (255, 255, 255), -1)
         if text_on:
             cv2.putText(
                 color_frame,
@@ -607,9 +614,11 @@ class ComputerVision:
             )
         if body_on:
             for i in range(2):
-                cv2.circle(color_frame, (int(self.wrists[i][0]), int(self.wrists[i][1])), 5, (0, 255, 0), -1)
-                cv2.circle(color_frame, (int(self.elbows[i][0]), int(self.elbows[i][1])), 5, (255, 0, 0), -1)
-                cv2.circle(color_frame, (int(self.shoulders[i][0]), int(self.shoulders[i][1])), 5, (0, 0, 255), -1)
+                cv2.circle(color_frame, (int(self.wrists_visu[i][0]), int(self.wrists_visu[i][1])), 5, (0, 255, 0), -1)
+                cv2.circle(color_frame, (int(self.elbows_visu[i][0]), int(self.elbows_visu[i][1])), 5, (255, 0, 0), -1)
+                cv2.circle(
+                    color_frame, (int(self.shoulders_visu[i][0]), int(self.shoulders_visu[i][1])), 5, (0, 0, 255), -1
+                )
 
         if hands_on:
             for i in range(len(HANDLANDMARKS_CST)):
@@ -631,7 +640,7 @@ class ComputerVision:
             for i in range(len(FACELANDMARKS_CST)):
                 cv2.circle(
                     color_frame,
-                    (int(self.face_points[i][0]), int(self.face_points[i][1])),
+                    (int(self.face_points_visu[i][0]), int(self.face_points_visu[i][1])),
                     5,
                     (255, 0, 255),
                     -1,
@@ -705,6 +714,8 @@ class RobotController:
         self.mf_gripper = [MedianFilter(), MedianFilter()]
         self.rotation_smoother = [RotationSmoother(window_size=5), RotationSmoother(window_size=5)]
 
+        self.head_rpy = deque(maxlen=10)
+
         self.rpy = np.zeros((2, 3))
 
     # def set_user_center(self, user_center):
@@ -716,7 +727,10 @@ class RobotController:
         x = position_user_frame[0] * normalization_factor
         y = position_user_frame[1] * normalization_factor
         z = position_user_frame[2] * normalization_factor
-        # z = np.clip(z, -0.8, 0)
+
+        # z = 5 / 3 * z + (0.10)
+
+        z = np.clip(z, -0.7, 0)
         position_robot_frame = np.array([-z, x, -y])
         return position_robot_frame
 
@@ -761,7 +775,7 @@ class RobotController:
 
         return rotation_matrix
 
-    def get_effector_pose(self, side, vision, mode="shoulder", dist_filter=True):
+    def get_effector_pose(self, side, vision, mode="shoulder", dist_filter=True, mirror_mode=False):
         side_int = 0 if side == "left" else 1
         wrist_position = vision.wrists[side_int]
         elbow_position = vision.elbows[side_int]
@@ -802,6 +816,10 @@ class RobotController:
 
         goal_pose = recompose_matrix(rotation_matrix, np.round(goal_position_filtered, 4))
 
+        if self.is_command_unreachable(goal_pose):
+            print("Command is unreachable")
+            return self.former_poses[side_int]
+
         if dist_filter and self.is_too_far(goal_pose, side_int):
             print("Goal pose is too far")
             return self.former_poses[side_int]
@@ -813,7 +831,20 @@ class RobotController:
     def is_too_far(self, goal_pose, side_int):
         goal_position = goal_pose[:3, 3]
         former_position = self.former_poses[side_int][:3, 3]
-        return np.linalg.norm(goal_position - former_position) > 0.2
+        return np.linalg.norm(goal_position - former_position) > 0.20
+
+    def is_command_unreachable(self, goal_pose):
+        goal_position = goal_pose[:3, 3]
+        if (
+            goal_position[0] < 0.1
+            or goal_position[0] > 0.8
+            or goal_position[1] < -0.6
+            or goal_position[1] > 0.6
+            or goal_position[2] < -0.6
+            or goal_position[2] > 0.4
+        ):
+            return True
+        return False
 
     def go_to_pose(self, pose: npt.NDArray[np.float64], arm: str) -> None:
         if arm == "r_arm":
@@ -844,7 +875,7 @@ class RobotController:
             )
             self.reachy.l_arm._stub.SendArmCartesianGoal(request)
 
-    def get_head_rotation(self, vision):
+    def get_head_rotation(self, vision, mirror_mode=False):
         face_points_filtered = np.zeros((len(FACELANDMARKS_CST), 3))
         for idx in range(len(FACELANDMARKS_CST)):
             face_point_reachy_frame = self.convert_to_robot_frame(
@@ -858,7 +889,7 @@ class RobotController:
         nose = face_points_filtered[0]
         chin = face_points_filtered[1]
 
-        y_axis = left_eye - right_eye
+        y_axis = right_eye - left_eye
         y_axis = y_axis / np.linalg.norm(y_axis)
         z_axis = nose - chin
         z_axis = z_axis / np.linalg.norm(z_axis)
@@ -868,24 +899,40 @@ class RobotController:
         rot = np.array([x_axis, y_axis, z_axis]).T
         roll, pitch, yaw = R.from_matrix(rot).as_euler("XYZ", degrees=True)
 
-        return roll, pitch, 180 - yaw
+        for angle in [roll, pitch, yaw]:
+            if angle > 180:
+                angle = angle - 360
+            elif angle < -180:
+                angle = angle + 360
+
+        if mirror_mode:
+            return -roll, pitch, -yaw
+
+        return roll, pitch, yaw
 
     def set_head_orientation(self, roll, pitch, yaw):
+        self.head_rpy.append([roll, pitch, yaw])
         self.reachy.head.neck.roll.goal_position = roll
         self.reachy.head.neck.pitch.goal_position = pitch
         self.reachy.head.neck.yaw.goal_position = yaw
         self.reachy.send_goal_positions(check_positions=False)
 
-    def get_gripper_command(self, side, vision, closed_fists=False):
+    def get_gripper_command(self, side, vision, mirror_mode=False):
         if side == "left":
             hand_points = vision.left_hand_points
             kf_hand = self.kf_left_hand
-            gripper = self.reachy.l_arm.gripper
+            if not mirror_mode:
+                gripper = self.reachy.l_arm.gripper
+            else:
+                gripper = self.reachy.r_arm.gripper
             side_int = 0
         else:
             hand_points = vision.right_hand_points
             kf_hand = self.kf_right_hand
-            gripper = self.reachy.r_arm.gripper
+            if not mirror_mode:
+                gripper = self.reachy.r_arm.gripper
+            else:
+                gripper = self.reachy.l_arm.gripper
             side_int = 1
 
         # get the filtered fingers position
@@ -904,14 +951,58 @@ class RobotController:
         elif not gripper.is_moving() and dist_filtered > 0.3:
             gripper.open()
 
+    def get_mirror_pose(self, pose):
+        new_pose = np.copy(pose)
+        new_pose[1, 3] = -new_pose[1, 3]
+        rotation_matrix = new_pose[:3, :3]
+        rotation_quaternion = R.from_matrix(rotation_matrix).as_quat()
+
+        mirrored_quaternion = np.array(
+            [-rotation_quaternion[0], rotation_quaternion[1], -rotation_quaternion[2], rotation_quaternion[3]]
+        )
+
+        mirrored_rotation_matrix = R.from_quat(mirrored_quaternion).as_matrix()
+        new_pose[:3, :3] = mirrored_rotation_matrix
+        return new_pose
+
 
 class TeleopControl:
-    def __init__(self, camera: Orbbec, robot_controller: RobotController, scale_percent: int, timestep: float):
+    def __init__(
+        self, camera: Orbbec, robot_controller: RobotController, scale_percent: int, timestep: float, mirror_mode=False
+    ):
         self.camera = camera
         self.vision = ComputerVision(self.camera, scale_percent, up_mode=True)
         self.robot_controller = robot_controller
         self.timestep = timestep
         self.first_pose_done = False
+        self.mirror_mode = mirror_mode
+
+    def is_first_command_ok(self, command):
+        # check if the first command is in the cube : x 0,3/O,45 y 0,15/0.3 z -0,35/-0.2
+        if (
+            command[0] < 0.3
+            and command[0] > 0.15
+            and command[1] < 0.3
+            and command[1] > 0.15
+            and command[2] < -0.2
+            and command[2] > -0.35
+        ):
+            return True
+        return False
+
+    def raise_command_to_stop(self):
+        if len(self.robot_controller.head_rpy) == 10:
+            pitch_values = [rpy[1] for rpy in self.robot_controller.head_rpy]
+            roll_values = [rpy[0] for rpy in self.robot_controller.head_rpy]
+            yaw_values = [rpy[2] for rpy in self.robot_controller.head_rpy]
+            if (
+                np.all(np.abs(pitch_values) > 25)
+                and np.all(np.abs(roll_values) < 10)
+                and np.all(np.abs(yaw_values) < 10)
+            ):
+                print("Command to stop")
+                return True
+        return False
 
     def run(self):
         self.robot_controller.reachy.goto_posture("elbow_90", wait=True)
@@ -919,6 +1010,7 @@ class TeleopControl:
             self.robot_controller.reachy.l_arm.forward_kinematics(),
             self.robot_controller.reachy.r_arm.forward_kinematics(),
         ]
+
         # fig, ax, scatter = self.vision.init_plot()
         #  first pose
         while not self.first_pose_done:
@@ -927,18 +1019,28 @@ class TeleopControl:
                 depth_frame = self.camera.depth_frame.pop()
                 self.vision.get_landmarks_coordinates(color_frame, depth_frame, fixed_user=False)
                 if np.any(self.vision.user_center) and np.any(self.vision.wrists):
-                    print("get goal poses")
                     left_goal_pose = self.robot_controller.get_effector_pose(
-                        "left", self.vision, "elbow", dist_filter=True
+                        "left", self.vision, "elbow", dist_filter=False, mirror_mode=self.mirror_mode
                     )
                     right_goal_pose = self.robot_controller.get_effector_pose(
-                        "right", self.vision, "elbow", dist_filter=True
+                        "right", self.vision, "elbow", dist_filter=False, mirror_mode=self.mirror_mode
                     )
 
-                    self.robot_controller.reachy.l_arm.goto(left_goal_pose, duration=2)
-                    self.robot_controller.reachy.r_arm.goto(right_goal_pose, duration=2)
-                    self.first_pose_done = True
-                    print("First pose done")
+                    if self.is_first_command_ok(left_goal_pose[:3, 3]) and not self.is_first_command_ok(
+                        right_goal_pose[:3, 3]
+                    ):
+
+                        if self.mirror_mode:
+                            left_goal_pose_mirror = self.robot_controller.get_mirror_pose(right_goal_pose)
+                            right_goal_pose_mirror = self.robot_controller.get_mirror_pose(left_goal_pose)
+                            left_goal_pose = left_goal_pose_mirror
+                            right_goal_pose = right_goal_pose_mirror
+
+                        self.robot_controller.reachy.l_arm.goto(left_goal_pose, duration=2)
+                        self.robot_controller.reachy.r_arm.goto(right_goal_pose, duration=2)
+                        self.first_pose_done = True
+                        print("First pose done")
+
             except IndexError:
                 time.sleep(0.005)
                 continue
@@ -957,20 +1059,27 @@ class TeleopControl:
             # self.vision.update_plot(ax, scatter)
 
             # make the robot follow the user's hands
-            left_goal_pose = self.robot_controller.get_effector_pose("left", self.vision, "elbow")
-            right_goal_pose = self.robot_controller.get_effector_pose("right", self.vision, "elbow")
+            left_goal_pose = self.robot_controller.get_effector_pose("left", self.vision, "elbow", dist_filter=True)
+            right_goal_pose = self.robot_controller.get_effector_pose("right", self.vision, "elbow", dist_filter=True)
+
+            if self.mirror_mode:
+                left_goal_pose_mirror = self.robot_controller.get_mirror_pose(right_goal_pose)
+                right_goal_pose_mirror = self.robot_controller.get_mirror_pose(left_goal_pose)
+                left_goal_pose = left_goal_pose_mirror
+                right_goal_pose = right_goal_pose_mirror
+
             self.robot_controller.go_to_pose(left_goal_pose, "l_arm")
             self.robot_controller.go_to_pose(right_goal_pose, "r_arm")
 
             roll, pitch, yaw = 0, 0, 0
             # make the robot follow the user's head
             if np.any(self.vision.face_points):
-                roll, pitch, yaw = self.robot_controller.get_head_rotation(self.vision)
+                roll, pitch, yaw = self.robot_controller.get_head_rotation(self.vision, self.mirror_mode)
                 self.robot_controller.set_head_orientation(roll, pitch, yaw)
 
             # make the robot grab the objects
-            self.robot_controller.get_gripper_command("left", self.vision)
-            self.robot_controller.get_gripper_command("right", self.vision)
+            self.robot_controller.get_gripper_command("left", self.vision, self.mirror_mode)
+            self.robot_controller.get_gripper_command("right", self.vision, self.mirror_mode)
 
             # to visualize original_landmarks
             self.vision.visualization_landmarks(
@@ -983,14 +1092,14 @@ class TeleopControl:
                 text_on=True,
                 body_on=True,
                 hands_on=False,
-                face_on=False,
+                face_on=True,
             )
 
             if (time.time() - t) // 10 == 0:
                 print(f"Freq: {1/(time.time() - t):.3f}")
 
             # si échap ou ctrl c
-            if cv2.waitKey(1) & 0xFF == 27:
+            if self.raise_command_to_stop() or (cv2.waitKey(1) & 0xFF == 27):
                 break
         # plt.ioff()
         # plt.show()
@@ -1004,6 +1113,6 @@ if __name__ == "__main__":
     scale_percent = 50
     timestep = 0.02
     robot = RobotController("localhost")
-    teleop = TeleopControl(camera, robot, scale_percent, timestep)
+    teleop = TeleopControl(camera, robot, scale_percent, timestep, mirror_mode=True)
     print("Teleoperation started")
     teleop.run()

@@ -175,7 +175,6 @@ class RobotController:
         self.gripper = Feetech(feetech_ports[arm])
         self.reachy = ReachySDK(ip)
 
-        self.mobile_base = MobileBaseController(self.reachy)
         time.sleep(1)
 
         self.tracker = ViveTracker(arm)
@@ -520,40 +519,21 @@ if __name__ == "__main__":
     try:
         # teleop = RobotController("/dev/ttyACM0", "192.168.10.107")
         side = "l_arm"
+        # robot_ip = "192.168.10.109"
+        robot_ip = "localhost"
         teleops = {
-            "l_arm" : RobotController("l_arm", "localhost"),
-            "r_arm" : RobotController("r_arm", "localhost"),
+            "l_arm" : RobotController("l_arm", robot_ip),
+            "r_arm" : RobotController("r_arm", robot_ip),
         }
+
+        mobile_base = MobileBaseController(teleops["l_arm"].reachy, port_joystick=arduino_ports["l_arm"], port_joystick_2=arduino_ports["r_arm"], two_trackers_mode=True)
+
+        # thread = threading.Thread(target=mobile_base.run)
+        # thread.start()
         # teleop = RobotController(side, "localhost")
         frequency = 100
         time.sleep(1)
         fig, ax = create_plot()
-
-        # while True:
-        #     teleop.tracker.update_tracker_pose()
-        #     pose = teleop.tracker.tracker_pose
-        #     # pose = teleop.rotate_pose(pose)
-        #     print(pose[:3, 3])
-
-        #     # orientation = R.from_matrix(pose[:3, :3]).as_euler('xyz', degrees=True)
-        #     # print(f"orientation: {orientation}")
-
-        #     position = pose[:3, 3]
-        #     position = position - teleop.so_init_pose["r_arm"][:3, 3]
-        #     position = teleop.so_init_pose["r_arm"][:3, :3].T @ position
-
-        #     update_plot(ax, np.array([position]), pose[:3, :3])
-        #     time.sleep(0.01)
-
-        #     # teleop.find_reachy_pose2(pose, teleop.reachy_part)
-            
-        #     # diff_orientation = pose[:3, :3] @ teleop.so_init_pose["r_arm"][:3, :3].T 
-        #     # # diff_orientation = R.from_matrix(diff_orientation).as_euler('xyz', degrees=True)
-        #     # orientation1 = teleop.so_init_pose[teleop.reachy_part][:3, :3]
-        #     # diff_orientation = np.linalg.inv(orientation1) @ diff_orientation
-        #     # diff_orientation = R.from_matrix(diff_orientation).as_euler('xyz', degrees=True)
-        #     # print(diff_orientation)
-        #     # print("______________________")
 
         while True:
             # print("_______")

@@ -18,13 +18,14 @@ class JoystickData:
             button_cmd = int(values[2])
             sw2 = int(values[3])
             sw3 = int(values[4])
+            # print(f"VRX: {x_input}, VRY: {y_input}, SW: {button_cmd}", f"SW2: {sw2}, SW3: {sw3}")
 
             return x_input, y_input, button_cmd, sw2, sw3
 
         return None, None, None, None, None
 
 class MobileBaseController:
-    def __init__(self, reachy, two_trackers_mode=False, port_joystick='/dev/ttyACM1', port_joystick_2='/dev/ttyACM2'): #voir les ports
+    def __init__(self, reachy, port_joystick='/dev/ttyACM1', port_joystick_2='/dev/ttyACM2',  two_trackers_mode=False, ): #voir les ports
         self.mobile_base = reachy.mobile_base
         self.two_trackers_mode = two_trackers_mode
 
@@ -77,7 +78,7 @@ class MobileBaseController:
             x_goal, y_goal = self.convert_xy_command(x1_input, y1_input)
 
             # and the rotation from the second joystick
-            vector = [x1_input - center[0], y1_input - center[1]]
+            vector = [x2_input - center[0], y2_input - center[1]]
             norm = math.sqrt(vector[0]**2 + vector[1]**2)
             if norm > rotation_threshold:
                 angle = math.atan2(vector[0], vector[1])
@@ -98,22 +99,56 @@ class MobileBaseController:
                     theta = np.rad2deg(angle)
                     theta /= 2
 
+        print(f"goal : {x_goal}, {y_goal}, {theta}")
         if np.any([x_goal, y_goal, theta]):
-            # print(f"goal : {x_goal}, {y_goal}, {theta}")
-            self.mobile_base.set_goal_speed(vx=x_goal, vy=y_goal, vtheta=theta)
+            
+            self.mobile_base.set_goal_speed(x=x_goal, y=y_goal, theta=theta)
             self.mobile_base.send_speed_command()
 
     def run(self):
+        data = [0, 0, 0, 0, 0]
         while True:
             if self.two_trackers_mode:
+                # print("hey")
                 x1_input, y1_input, button_joystick, sw2, sw3 = self.joystick_data_translation.read()
                 x2_input, y2_input, button_joystick_2, sw2_2, sw3_2 = self.joystick_data_rotation.read()
-                if x1_input is None or x2_input is None:
-                    continue
-                self.send_command(x1_input, y1_input, x2_input, y2_input)
+                # print(x1_input, y1_input, x2_input, y2_input)
+                if x1_input is not None:
+                    data[0] = x1_input
+                if y1_input is not None:
+                    data[1] = y1_input
+                if x2_input is not None:
+                    data[2] = x2_input
+                if y2_input is not None:
+                    data[3] = y2_input
+                if button_joystick is not None:
+                    data[4] = button_joystick
+                # if x1_input is None or x2_input is None:
+                #     continue
+                self.send_command(data[0], data[1], data[2], data[3])
             else:
                 x_input, y_input, button_joystick, buttonA, buttonB = self.joystick_data.read()
                 if x_input is None:
                     continue
                 self.get_button_command(button_joystick)
                 self.send_command(x_input, y_input)
+
+
+# if __name__ == "__main__" :
+#     joystick_data_translation = JoystickData("/dev/noVR_left_arduino")
+#     joystick_data_rotation = JoystickData("/dev/noVR_right_arduino")
+
+#     while True:
+
+#         data= joystick_data_translation.read()
+#         if data is not None:
+#             # print(f"aaaaa {data}")
+
+#         else:
+#             print("None")
+#         data = joystick_data_rotation.read()
+#         if data is not None:
+#             print(f"bbbb {data}")
+#         else:
+#             print("None")
+

@@ -41,11 +41,6 @@ feetech_ports = {
     "r_arm": "/dev/noVR_right_motor",
 }
 
-arduino_ports = {
-    "l_arm": "/dev/noVR_left_arduino",
-    "r_arm": "/dev/noVR_right_arduino",
-}
-
 gripper_joints = {
     "l_arm" : [60, 15],
     "r_arm" : [-60, -15]
@@ -169,11 +164,11 @@ class ViveTracker:
 
 
 class RobotController:
-    def __init__(self, arm, ip):
+    def __init__(self, arm, reachy):
 
 
         self.gripper = Feetech(feetech_ports[arm])
-        self.reachy = ReachySDK(ip)
+        # self.reachy = ReachySDK(ip)
 
         time.sleep(1)
 
@@ -183,9 +178,11 @@ class RobotController:
 
         print("Initializing gripper")
         self.gripper.enable_torque()
-        self.gripper.goto_joints([gripper_joints[arm][1]], 2.0)
-        time.sleep(2)
+        self.gripper.goto_joints([gripper_joints[arm][1]], 1.0)
+        # time.sleep(2)
         print("Gripper initialized")
+
+        self.reachy = reachy
 
         self.reachy_part = arm
         self.init = False
@@ -198,21 +195,21 @@ class RobotController:
         self.mobile_base = False
         self.mirror = False
 
-        position = [0.36, -0.2, -0.28]
-        orientation = R.from_euler('xyz', [0, -np.pi/2, 0], degrees=False)
-        r_pose = self.make_homogenous_matrix_from_rotation_matrix(orientation.as_matrix(), position)
-        position = [0.36, 0.2, -0.28]
-        orientation = R.from_euler('xyz', [0, -np.pi/2, 0], degrees=False)
-        l_pose = self.make_homogenous_matrix_from_rotation_matrix(orientation.as_matrix(), position)
-        self.reachy_previous_pose = {"r_arm" : r_pose, "l_arm" : l_pose}
+        # position = [0.36, -0.2, -0.28]
+        # orientation = R.from_euler('xyz', [0, -np.pi/2, 0], degrees=False)
+        # r_pose = self.make_homogenous_matrix_from_rotation_matrix(orientation.as_matrix(), position)
+        # position = [0.36, 0.2, -0.28]
+        # orientation = R.from_euler('xyz', [0, -np.pi/2, 0], degrees=False)
+        # l_pose = self.make_homogenous_matrix_from_rotation_matrix(orientation.as_matrix(), position)
+        self.reachy_previous_pose = {"r_arm" : self.reachy.r_arm.forward_kinematics(), "l_arm" : self.reachy.l_arm.forward_kinematics()}
         self.reachy_head_joints = [0, 0, 0]
 
-        self.reachy_init_pose = {"r_arm" : r_pose, "l_arm" : l_pose}
+        self.reachy_init_pose = {"r_arm" : self.reachy.r_arm.forward_kinematics(), "l_arm" : self.reachy.l_arm.forward_kinematics()}
 
-        self.init_reachy()
-        self.gripper.disable_torque()
+        # self.init_reachy()
+        # self.gripper.disable_torque()
 
-        self.reachy.reset_default_limits()
+        # self.reachy.reset_default_limits()
 
         self.tracker.update_tracker_pose()
 
@@ -222,23 +219,23 @@ class RobotController:
         self.so_previous_pose = {"r_arm" : self.rotate_pose(self.tracker.tracker_pose, "r_arm"),
                                  "l_arm" : self.rotate_pose(self.tracker.tracker_pose, "l_arm"),}
 
-        keyboard_thread = threading.Thread(target=self.listen_keyboard, daemon=True)
-        keyboard_thread.start()
+        # keyboard_thread = threading.Thread(target=self.listen_keyboard, daemon=True)
+        # keyboard_thread.start()
 
 
-    def init_reachy(self):
-        self.reachy.turn_on()
-        self.reachy.mobile_base.reset_odometry()
-        # self.reachy.head.l_antenna.turn_on()
-        # self.reachy.head.r_antenna.turn_on()
-        self.reachy.r_arm.gripper.open()
-        self.reachy.l_arm.gripper.open()
-        joints = self.reachy.r_arm.inverse_kinematics(self.reachy_previous_pose["r_arm"])
-        self.reachy.r_arm.goto(joints, 3.0, degrees=True, interpolation_mode="minimum_jerk", wait=False)
-        joints = self.reachy.l_arm.inverse_kinematics(self.reachy_previous_pose["l_arm"])
-        self.reachy.l_arm.goto(joints, 3.0, degrees=True, interpolation_mode="minimum_jerk", wait=False)
-        self.reachy.head.goto(self.reachy_head_joints, 3.0, degrees=True, interpolation_mode="minimum_jerk", wait=True)
-        # self.init_antenna()
+    # def init_reachy(self):
+    #     self.reachy.turn_on()
+    #     self.reachy.mobile_base.reset_odometry()
+    #     # self.reachy.head.l_antenna.turn_on()
+    #     # self.reachy.head.r_antenna.turn_on()
+    #     self.reachy.r_arm.gripper.open()
+    #     self.reachy.l_arm.gripper.open()
+    #     joints = self.reachy.r_arm.inverse_kinematics(self.reachy_previous_pose["r_arm"])
+    #     self.reachy.r_arm.goto(joints, 3.0, degrees=True, interpolation_mode="minimum_jerk", wait=False)
+    #     joints = self.reachy.l_arm.inverse_kinematics(self.reachy_previous_pose["l_arm"])
+    #     self.reachy.l_arm.goto(joints, 3.0, degrees=True, interpolation_mode="minimum_jerk", wait=False)
+    #     self.reachy.head.goto(self.reachy_head_joints, 3.0, degrees=True, interpolation_mode="minimum_jerk", wait=True)
+    #     # self.init_antenna()
 
     def make_homogenous_matrix_from_rotation_matrix(self, rotation_matrix, position):
         """Convert a 3x3 rotation matrix to a 4x4 homogenous matrix."""

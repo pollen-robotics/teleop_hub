@@ -31,8 +31,9 @@ from scipy.spatial.transform import Slerp  # type: ignore
 
 SHOULDER_CST = [11, 12]
 ELBOWS_CST = [13, 14]
-WRISTS_CST = [15, 16]
-INDEX_MCP_CST = [19, 20]
+# WRISTS_CST = [15, 16]
+# INDEX_MCP_CST = [19, 20]
+WRISTS_CST = [19, 20]
 
 FACELANDMARKS_CST = [1, 152, 33, 263]  # Nose tip, Chin, Left eye left corner, Right eye right corner
 HANDLANDMARKS_CST = [4, 8]  # thumb tip, index tip
@@ -206,18 +207,51 @@ class Orbbec:
 
 
 class RotationSmoother:
-    def __init__(self, window_size=8):
-        self.window_size = window_size
-        self.buffer = deque(maxlen=window_size)
+    # def __init__(self, window_size=8):
+    #     self.window_size = window_size
+    #     self.buffer = deque(maxlen=window_size)
 
-    def update(self, new_rotation_matrix):
-        if new_rotation_matrix is not None:
-            self.buffer.append(new_rotation_matrix)
-        return np.median(self.buffer, axis=0) if self.buffer else new_rotation_matrix
+    # def update(self, new_rotation_matrix):
+    #     if new_rotation_matrix is not None:
+    #         self.buffer.append(new_rotation_matrix)
+    #     return np.median(self.buffer, axis=0) if self.buffer else new_rotation_matrix
+
+    def __init__(self, alpha=0.3):
+        """
+        Initialise un filtre basé sur une moyenne exponentielle des matrices de rotation.
+
+        - alpha : Coefficient de lissage entre 0 (très lisse) et 1 (aucun filtrage).
+        """
+        self.alpha = alpha
+        self.last_rotation_matrix = None  # Stocke la dernière rotation lissée
+
+    def update(self, current_rotation_matrix):
+        """
+        Applique un lissage EMA sur la rotation.
+
+        - current_rotation_matrix : Matrice 3x3 représentant l'orientation actuelle.
+
+        Retourne :
+        - Matrice de rotation lissée 3x3.
+        """
+        if self.last_rotation_matrix is None:
+            self.last_rotation_matrix = current_rotation_matrix
+            return current_rotation_matrix  # Retourne directement la première valeur
+
+        # Moyenne exponentielle sur les composantes de la matrice de rotation
+        smoothed_rotation_matrix = (1 - self.alpha) * self.last_rotation_matrix + self.alpha * current_rotation_matrix
+
+        # Réorthogonalisation pour rester une vraie matrice de rotation
+        U, _, Vt = np.linalg.svd(smoothed_rotation_matrix)
+        smoothed_rotation_matrix = U @ Vt
+
+        # Mise à jour
+        self.last_rotation_matrix = smoothed_rotation_matrix
+        return smoothed_rotation_matrix
 
 
 class MedianFilter:
-    def __init__(self, filter_size=10):
+    def __init__(self, filter_size=5):
         self.filter_size = filter_size
         self.measurements = deque(maxlen=filter_size)
 
@@ -230,47 +264,106 @@ class MedianFilter:
 
 
 class KalmanFilter3D:
+    # def __init__(
+    #     self,
+    #     process_noise=0.001,
+    #     measurement_noise=0.1,
+    #     error_cov_post=1.0,
+    #     add_median_filter=True,
+    #     median_filter_size=5,
+    # ):
+    #     self.kf = cv2.KalmanFilter(6, 3)
+
+    #     self.kf.measurementMatrix = np.array(
+    #         [[1, 0, 0, 0, 0, 0], [0, 1, 0, 0, 0, 0], [0, 0, 1, 0, 0, 0]], np.float32  # x  # y  # z
+    #     )
+
+    #     self.kf.transitionMatrix = np.array(
+    #         [
+    #             [1, 0, 0, 1, 0, 0],  # x = x + vx
+    #             [0, 1, 0, 0, 1, 0],  # y = y + vy
+    #             [0, 0, 1, 0, 0, 1],  # z = z + vz
+    #             [0, 0, 0, 1, 0, 0],  # vx = vx
+    #             [0, 0, 0, 0, 1, 0],  # vy = vy
+    #             [0, 0, 0, 0, 0, 1],  # vz = vz
+    #         ],
+    #         np.float32,
+    #     )
+
+    #     self.kf.processNoiseCov = np.eye(6, dtype=np.float32) * process_noise
+
+    #     self.kf.measurementNoiseCov = np.eye(3, dtype=np.float32) * measurement_noise
+
+    #     self.kf.errorCovPost = np.eye(6, dtype=np.float32) * error_cov_post
+
+    #     self.initialized = False
+    #     self.kf.statePre = np.zeros((6, 1), dtype=np.float32)
+    #     self.kf.statePost = np.zeros((6, 1), dtype=np.float32)
+
+    #     self.add_median_filter = add_median_filter
+    #     if self.add_median_filter:
+    #         self.median_filter = MedianFilter(median_filter_size)
+
+    # def update(self, measurement):
+    #     if measurement is None:
+    #         return self.kf.statePost[:3].flatten() if self.initialized else None
+
+    #     measurement = np.array([[measurement[0]], [measurement[1]], [measurement[2]]], dtype=np.float32)
+
+    #     if not self.initialized:
+    #         self.kf.statePre[:3] = measurement
+    #         self.kf.statePost[:3] = measurement
+    #         self.initialized = True
+    #         return measurement.flatten()
+
+    #     self.kf.correct(measurement)
+    #     prediction = self.kf.predict()
+    #     filtered_position = np.array(prediction[:3]).flatten()
+
+    #     if self.add_median_filter:
+    #         filtered_position = self.median_filter.update(filtered_position)
+
+    #     return filtered_position
+
     def __init__(
         self,
-        process_noise=0.001,
+        process_noise=0.01,
         measurement_noise=0.1,
         error_cov_post=1.0,
         add_median_filter=True,
         median_filter_size=5,
+        dt=1 / 25,  # Temps entre deux mises à jour (~25 FPS)
     ):
-        self.kf = cv2.KalmanFilter(6, 3)
+        self.kf = cv2.KalmanFilter(9, 3)  # 9 états : position (x,y,z) + vitesse (vx,vy,vz) + accélération (ax,ay,az)
 
-        self.kf.measurementMatrix = np.array(
-            [[1, 0, 0, 0, 0, 0], [0, 1, 0, 0, 0, 0], [0, 0, 1, 0, 0, 0]], np.float32  # x  # y  # z
-        )
+        # Matrice de mesure : on mesure seulement la position
+        self.kf.measurementMatrix = np.zeros((3, 9), dtype=np.float32)
+        self.kf.measurementMatrix[:3, :3] = np.eye(3)
 
-        self.kf.transitionMatrix = np.array(
-            [
-                [1, 0, 0, 1, 0, 0],  # x = x + vx
-                [0, 1, 0, 0, 1, 0],  # y = y + vy
-                [0, 0, 1, 0, 0, 1],  # z = z + vz
-                [0, 0, 0, 1, 0, 0],  # vx = vx
-                [0, 0, 0, 0, 1, 0],  # vy = vy
-                [0, 0, 0, 0, 0, 1],  # vz = vz
-            ],
-            np.float32,
-        )
+        # Matrice de transition (modèle non linéaire avec vitesse et accélération)
+        self.kf.transitionMatrix = np.eye(9, dtype=np.float32)
+        for i in range(3):
+            self.kf.transitionMatrix[i, i + 3] = dt  # x dépend de v
+            self.kf.transitionMatrix[i + 3, i + 6] = dt  # v dépend de a
 
-        self.kf.processNoiseCov = np.eye(6, dtype=np.float32) * process_noise
-
+        # Covariances des bruits
+        self.kf.processNoiseCov = np.eye(9, dtype=np.float32) * process_noise
         self.kf.measurementNoiseCov = np.eye(3, dtype=np.float32) * measurement_noise
-
-        self.kf.errorCovPost = np.eye(6, dtype=np.float32) * error_cov_post
+        self.kf.errorCovPost = np.eye(9, dtype=np.float32) * error_cov_post
 
         self.initialized = False
-        self.kf.statePre = np.zeros((6, 1), dtype=np.float32)
-        self.kf.statePost = np.zeros((6, 1), dtype=np.float32)
+        self.kf.statePre = np.zeros((9, 1), dtype=np.float32)
+        self.kf.statePost = np.zeros((9, 1), dtype=np.float32)
 
         self.add_median_filter = add_median_filter
         if self.add_median_filter:
             self.median_filter = MedianFilter(median_filter_size)
 
     def update(self, measurement):
+        """
+        Met à jour la position avec une nouvelle mesure (x, y, z).
+        Retourne la position lissée.
+        """
         if measurement is None:
             return self.kf.statePost[:3].flatten() if self.initialized else None
 
@@ -712,7 +805,8 @@ class RobotController:
         self.kf_face = [KalmanFilter3D(median_filter_size=3) for _ in range(len(FACELANDMARKS_CST))]
 
         self.mf_gripper = [MedianFilter(), MedianFilter()]
-        self.rotation_smoother = [RotationSmoother(window_size=5), RotationSmoother(window_size=5)]
+        self.rotation_smoother = [RotationSmoother(), RotationSmoother()]
+        # self.rotation_smoother = [RotationSmoother(window_size=5), RotationSmoother(window_size=5)]
 
         self.head_rpy = deque(maxlen=10)
 
@@ -729,6 +823,7 @@ class RobotController:
         z = position_user_frame[2] * normalization_factor
 
         # z = 5 / 3 * z + (0.10)
+        z -= 0.15
 
         z = np.clip(z, -0.7, 0)
         position_robot_frame = np.array([-z, x, -y])
@@ -843,6 +938,7 @@ class RobotController:
             or goal_position[2] < -0.6
             or goal_position[2] > 0.4
         ):
+            print(goal_position)
             return True
         return False
 
@@ -874,6 +970,51 @@ class RobotController:
                 order_id=Int32Value(value=5),
             )
             self.reachy.l_arm._stub.SendArmCartesianGoal(request)
+
+    def make_line(self, end_pose: list[npt.NDArray[np.float64]], duration: float):
+        control_frequency = 100
+        start_pose = [
+            self.reachy.l_arm.forward_kinematics(),
+            self.reachy.r_arm.forward_kinematics(),
+        ]
+        start_position = [start_pose[0][:3, 3], start_pose[1][:3, 3]]
+        end_position = [end_pose[0][:3, 3], end_pose[1][:3, 3]]
+        start_rotation = [
+            R.from_matrix(start_pose[0][:3, :3]),
+            R.from_matrix(start_pose[1][:3, :3]),
+        ]
+        end_rotation = [
+            R.from_matrix(end_pose[0][:3, :3]),
+            R.from_matrix(end_pose[1][:3, :3]),
+        ]
+
+        nbr_points = int(duration * control_frequency)
+
+        left_slerp = Slerp(
+            [0, 1],
+            R.from_matrix([start_rotation[0].as_matrix(), end_rotation[0].as_matrix()]),
+        )
+        right_slerp = Slerp(
+            [0, 1],
+            R.from_matrix([start_rotation[1].as_matrix(), end_rotation[1].as_matrix()]),
+        )
+
+        for i in range(nbr_points):
+            t = time.time()
+            alpha = i / nbr_points
+
+            left_interp_rotation = left_slerp([alpha]).as_matrix()[0]
+            left_interp_position = start_position[0] + alpha * (end_position[0] - start_position[0])
+
+            right_interp_rotation = right_slerp([alpha]).as_matrix()[0]
+            right_interp_position = start_position[1] + alpha * (end_position[1] - start_position[1])
+
+            left_pose = recompose_matrix(left_interp_rotation, left_interp_position)
+            right_pose = recompose_matrix(right_interp_rotation, right_interp_position)
+
+            self.go_to_pose(left_pose, "l_arm")
+            self.go_to_pose(right_pose, "r_arm")
+            time.sleep(max(1.0 / control_frequency - (time.time() - t), 0.0))
 
     def get_head_rotation(self, vision, mirror_mode=False):
         face_points_filtered = np.zeros((len(FACELANDMARKS_CST), 3))
@@ -980,11 +1121,11 @@ class TeleopControl:
     def is_first_command_ok(self, command):
         # check if the first command is in the cube : x 0,3/O,45 y 0,15/0.3 z -0,35/-0.2
         if (
-            command[0] < 0.3
-            and command[0] > 0.15
+            command[0] < 0.45
+            and command[0] > 0.3
             and command[1] < 0.3
             and command[1] > 0.15
-            and command[2] < -0.2
+            and command[2] < -0.15
             and command[2] > -0.35
         ):
             return True
@@ -1036,8 +1177,9 @@ class TeleopControl:
                             left_goal_pose = left_goal_pose_mirror
                             right_goal_pose = right_goal_pose_mirror
 
-                        self.robot_controller.reachy.l_arm.goto(left_goal_pose, duration=2)
-                        self.robot_controller.reachy.r_arm.goto(right_goal_pose, duration=2)
+                        self.robot_controller.make_line([left_goal_pose, right_goal_pose], duration=2)
+                        # self.robot_controller.reachy.l_arm.goto(left_goal_pose, duration=2)
+                        # self.robot_controller.reachy.r_arm.goto(right_goal_pose, duration=2)
                         self.first_pose_done = True
                         print("First pose done")
 
@@ -1112,7 +1254,7 @@ if __name__ == "__main__":
     camera = Orbbec()
     scale_percent = 50
     timestep = 0.02
-    robot = RobotController("localhost")
+    robot = RobotController("172.16.0.64")
     teleop = TeleopControl(camera, robot, scale_percent, timestep, mirror_mode=True)
     print("Teleoperation started")
     teleop.run()

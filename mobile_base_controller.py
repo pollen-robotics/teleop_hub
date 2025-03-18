@@ -3,11 +3,13 @@ import time
 import math
 import numpy as np
 import threading
+import deque
 
 class JoystickData:
     def __init__(self, port):
         self.ser = serial.Serial(port, 9600)
         time.sleep(2)
+
 
     def read(self):
         if self.ser.in_waiting > 0:
@@ -16,16 +18,17 @@ class JoystickData:
             x_input = int(values[0])
             y_input = int(values[1])
             button_cmd = int(values[2])
-            sw2 = int(values[3])
-            sw3 = int(values[4])
-            # print(f"VRX: {x_input}, VRY: {y_input}, SW: {button_cmd}", f"SW2: {sw2}, SW3: {sw3}")
-
-            return x_input, y_input, button_cmd, sw2, sw3
-
+            buttonA = int(values[3])
+            buttonB = int(values[4])
+            
+            return x_input, y_input, button_cmd, buttonA, buttonB
+        
         return None, None, None, None, None
 
+
 class MobileBaseController:
-    def __init__(self, reachy, port_joystick='/dev/ttyACM1', port_joystick_2='/dev/ttyACM2',  two_trackers_mode=False, ): #voir les ports
+    def __init__(self, reachy, two_trackers_mode=False, left_port_joystick='/dev/ttyACM1', right_port_joystick='/dev/ttyACM2'): #voir les ports
+        self.reachy = reachy
         self.mobile_base = reachy.mobile_base
         self.two_trackers_mode = two_trackers_mode
 
@@ -38,23 +41,40 @@ class MobileBaseController:
         else:
             self.joystick_data_translation = JoystickData(port_joystick)
             self.joystick_data_rotation = JoystickData(port_joystick_2)
+            self.mobile_base_mode = True
+            self.antenna_mode = False
+            self.button_ready = True
 
         self.command_getter = threading.Thread(target=self.run)
         self.command_getter.start()
 
-    def change_mode(self):
-        self.translation_mode = not self.translation_mode
-        self.rotation_mode = not self.rotation_mode
+    def change_mode_head(self):
+        self.mobile_base_mode = not self.mobile_base_mode
+        self.antenna_mode = not self.antenna_mode
 
-    def get_button_command(self, button_cmd):
+    def get_button_command_head(self, button_cmd):
         if button_cmd == 1:
             self.button_ready = True
         elif self.button_ready and button_cmd == 0:
-            self.change_mode()
+            self.change_mode_head()
             self.button_ready = False
             print(
-                f"button pressed : change mode to translation : {self.translation_mode}, rotation : {self.rotation_mode}"
+                f"button pressed : change mode to mobile base : {self.mobile_base_mode}, head : {self.antenna_mode}"
             )
+
+    # def change_mode(self):
+    #     self.translation_mode = not self.translation_mode
+    #     self.rotation_mode = not self.rotation_mode
+
+    # def get_button_command(self, button_cmd):
+    #     if button_cmd == 1:
+    #         self.button_ready = True
+    #     elif self.button_ready and button_cmd == 0:
+    #         self.change_mode()
+    #         self.button_ready = False
+    #         print(
+    #             f"button pressed : change mode to translation : {self.translation_mode}, rotation : {self.rotation_mode}"
+    #         )
 
     def convert_xy_command(self, x_input, y_input):
         command_max = 0.4
@@ -68,28 +88,47 @@ class MobileBaseController:
 
         return x_goal, y_goal
 
+    def convert_antenna_control(self, joint):
+        min_joint, max_joint = -0.4, 0.4
+        min_antenna, max_antenna = 30, -160
+        np.clip(joint, min_joint, max_joint)
+        antenna_opening = ((joint - min_joint) / (max_joint - min_joint)) * (max_antenna - min_antenna) + min_antenna
+        return antenna_opening
+
+
     def send_command(self, x1_input, y1_input, x2_input=0, y2_input=0):
         x_goal, y_goal, theta = 0, 0, 0
         rotation_threshold = 300
         center = [1023 // 2, 1023 // 2]
 
         if self.two_trackers_mode:
-            # get the translation from the first joystick
-            x_goal, y_goal = self.convert_xy_command(x1_input, y1_input)
+            if self.mobile_base_mode:
+                # get the translation from the first joystick
+                x_goal, y_goal = self.convert_xy_command(x1_input, y1_input)
 
-            # and the rotation from the second joystick
-            vector = [x2_input - center[0], y2_input - center[1]]
-            norm = math.sqrt(vector[0]**2 + vector[1]**2)
-            if norm > rotation_threshold:
-                angle = math.atan2(vector[0], vector[1])
-                theta = np.rad2deg(angle)
-                theta /= 2
+                # and the rotation from the second joystick
+                vector = [x2_input - center[0], y2_input - center[1]]
+                norm = math.sqrt(vector[0]**2 + vector[1]**2)
+                if norm > rotation_threshold:
+                    angle = math.atan2(vector[0], vector[1])
+                    theta = np.rad2deg(angle)
+                    theta /= 2
+
+            elif self.antenna_mode:
+                x_goal, y_goal = self.convert_xy_command(x1_input, y1_input)
+
+                antenna_opening = self.convert_antenna_control(y2_input)
+                self.reachy.head.antenna.go_to(antenna_opening, wait=True)
+                self.reachy.head.r_antenna.goal_position = antenna_opening
+                self.reachy.head.l_antenna.goal_position = -antenna_opening
+                self.mobile_base.set_goal_speed(x=x_goal, y=y_goal, theta=0)
+                self.reachy.send_goal_positions()
 
         else:
             # get either translation or rotation from the joystick
             if self.translation_mode:
                 x_goal, y_goal = self.convert_xy_command(x1_input, y1_input)
-                self.mobile_base.set_goal_speed(vx=x_goal, vy=y_goal, vtheta=0)
+                self.mobile_base.set_goal_speed(x=x_goal, y=y_goal, theta=0)
 
             elif self.rotation_mode:
                 vector = [x1_input - center[0], y1_input - center[1]]
@@ -98,20 +137,19 @@ class MobileBaseController:
                     angle = math.atan2(vector[0], vector[1])
                     theta = np.rad2deg(angle)
                     theta /= 2
+            if np.any([x_goal, y_goal, theta]):
+                # print(f"goal : {x_goal}, {y_goal}, {theta}")
+                self.mobile_base.set_goal_speed(x=x_goal, y=y_goal, theta=theta)
+                self.mobile_base.send_speed_command()
 
-        print(f"goal : {x_goal}, {y_goal}, {theta}")
-        if np.any([x_goal, y_goal, theta]):
-            
-            self.mobile_base.set_goal_speed(x=x_goal, y=y_goal, theta=theta)
-            self.mobile_base.send_speed_command()
 
     def run(self):
         data = [0, 0, 0, 0, 0]
         while True:
             if self.two_trackers_mode:
+                x1_input, y1_input, button_joystick, buttonA, buttonB = self.joystick_data_translation.read()
+                x2_input, y2_input, button_joystick_2, buttonA_2, buttonB_2 = self.joystick_data_rotation.read()
                 # print("hey")
-                x1_input, y1_input, button_joystick, sw2, sw3 = self.joystick_data_translation.read()
-                x2_input, y2_input, button_joystick_2, sw2_2, sw3_2 = self.joystick_data_rotation.read()
                 # print(x1_input, y1_input, x2_input, y2_input)
                 if x1_input is not None:
                     data[0] = x1_input
@@ -125,6 +163,8 @@ class MobileBaseController:
                     data[4] = button_joystick
                 # if x1_input is None or x2_input is None:
                 #     continue
+                if buttonA_2 is not None:
+                    self.get_button_command_head(buttonA_2)
                 self.send_command(data[0], data[1], data[2], data[3])
             else:
                 x_input, y_input, button_joystick, buttonA, buttonB = self.joystick_data.read()

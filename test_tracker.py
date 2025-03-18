@@ -16,11 +16,45 @@ from utils import (
     update_plot,
 )
 
+trackers = {
+    "left_tracker": "LHR-0D914CCE",
+    "right_tracker": "LHR-D520271F",
+}
+
 
 class ViveTracker:
     def __init__(self, tracker_id):
-        self.vive = triad_openvr.triad_openvr()
         self.tracker_name = tracker_id
+
+        if self.tracker_name not in trackers:
+            print(
+                f"Tracker name '{self.tracker_name}' not found in trackers dictionary. Available trackers:"
+                f" {list(trackers.keys())}"
+            )
+            sys.exit(1)
+
+        self.vive = triad_openvr.triad_openvr()
+
+        serial_number = trackers[self.tracker_name]
+        print(f"Looking for tracker: {self.tracker_name} (Serial: {serial_number})")
+
+        # Find corresponding tracker device in SteamVR
+        matched_tracker = None
+        for dev in self.vive.devices:
+            dev_serial = self.vive.devices[dev].get_serial().decode("utf-8").strip()
+            print(f"Found device: {dev} (Serial: {dev_serial})")
+            if dev_serial == serial_number:
+                matched_tracker = dev
+                break
+
+        if matched_tracker is None:
+            print(f"Tracker with serial '{serial_number}' not found in SteamVR.")
+            sys.exit(1)
+
+        self.tracker_name = matched_tracker
+
+        print(f"Tracker '{tracker_id}' found as '{self.tracker_name}' in SteamVR.")
+
         self.tracker = self.vive.devices[self.tracker_name]
         self.tracker_euler_angles = np.zeros(3)
         self.tracker_position = np.zeros(3)
@@ -95,7 +129,8 @@ class ViveTracker:
 
 
 if __name__ == "__main__":
-    tracker = ViveTracker("tracker_1")
+    # tracker = ViveTracker("tracker_1")
+    tracker = ViveTracker("right_tracker")
 
     # Set new coordinate system
     tracker.calibrate_pose_zero()

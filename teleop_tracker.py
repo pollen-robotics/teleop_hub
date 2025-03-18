@@ -22,6 +22,7 @@ from scipy.spatial.transform import Slerp  # type: ignore
 from feetech import Feetech
 import threading
 from pynput import keyboard
+from mobile_base_controller import MobileBaseController, JoystickData
 
 
 
@@ -173,6 +174,8 @@ class RobotController:
 
         self.gripper = Feetech(feetech_ports[arm])
         self.reachy = ReachySDK(ip)
+
+        self.mobile_base = MobileBaseController(self.reachy)
         time.sleep(1)
 
         self.tracker = ViveTracker(arm)
@@ -226,8 +229,9 @@ class RobotController:
 
     def init_reachy(self):
         self.reachy.turn_on()
-        self.reachy.head.l_antenna.turn_on()
-        self.reachy.head.r_antenna.turn_on()
+        self.reachy.mobile_base.reset_odometry()
+        # self.reachy.head.l_antenna.turn_on()
+        # self.reachy.head.r_antenna.turn_on()
         self.reachy.r_arm.gripper.open()
         self.reachy.l_arm.gripper.open()
         joints = self.reachy.r_arm.inverse_kinematics(self.reachy_previous_pose["r_arm"])

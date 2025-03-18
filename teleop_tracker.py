@@ -24,18 +24,71 @@ import threading
 from pynput import keyboard
 
 
+
+
 from utils import make_homogenous_matrix_from_rotation_matrix, create_plot, plot_orientation, update_plot, fk
+
+SIDE = "left"
+
+trackers = {
+    "l_arm": "LHR-0D914CCE",
+    "r_arm": "LHR-D520271F",
+}
+
+feetech_ports = {
+    "l_arm": "/dev/noVR_left_motor",
+    "r_arm": "/dev/noVR_right_motor",
+}
+
+arduino_ports = {
+    "l_arm": "/dev/noVR_left_arduino",
+    "r_arm": "/dev/noVR_right_arduino",
+}
+
+gripper_joints = {
+    "l_arm" : [60, 15],
+    "r_arm" : [-60, -15]
+}
 
 
 class ViveTracker:
     def __init__(self, tracker_id):
-        self.vive = triad_openvr.triad_openvr()
         self.tracker_name = tracker_id
+
+        if self.tracker_name not in trackers:
+            print(
+                f"Tracker name '{self.tracker_name}' not found in trackers dictionary. Available trackers:"
+                f" {list(trackers.keys())}"
+            )
+            sys.exit(1)
+
+        self.vive = triad_openvr.triad_openvr()
+
+        serial_number = trackers[self.tracker_name]
+        print(f"Looking for tracker: {self.tracker_name} (Serial: {serial_number})")
+
+        # Find corresponding tracker device in SteamVR
+        matched_tracker = None
+        for dev in self.vive.devices:
+            dev_serial = self.vive.devices[dev].get_serial().decode("utf-8").strip()
+            print(f"Found device: {dev} (Serial: {dev_serial})")
+            if dev_serial == serial_number:
+                matched_tracker = dev
+                break
+
+        if matched_tracker is None:
+            print(f"Tracker with serial '{serial_number}' not found in SteamVR.")
+            sys.exit(1)
+
+        self.tracker_name = matched_tracker
+
+        print(f"Tracker '{tracker_id}' found as '{self.tracker_name}' in SteamVR.")
+
         self.tracker = self.vive.devices[self.tracker_name]
         self.tracker_euler_angles = np.zeros(3)
         self.tracker_position = np.zeros(3)
-        self.tracker_pose = np.eye(4)
-        self.zero_pose = np.eye(4)
+        self.tracker_pose = np.eye(4)  # Current pose
+        self.zero_pose = None  # Initial reference frame
 
     def convert_openvr_matrix(self, hmd_matrix):
         """
@@ -115,23 +168,24 @@ class ViveTracker:
 
 
 class RobotController:
-    def __init__(self, port, ip):
+    def __init__(self, arm, ip):
 
 
-        self.gripper = Feetech(port)
+        self.gripper = Feetech(feetech_ports[arm])
         self.reachy = ReachySDK(ip)
         time.sleep(1)
 
-        self.tracker = ViveTracker('tracker_1')
+        self.tracker = ViveTracker(arm)
         # self.tracker.calibrate_pose_zero()
 
 
+        print("Initializing gripper")
         self.gripper.enable_torque()
-        self.gripper.set_position(1, 0)
-        time.sleep(1)
-        self.gripper.disable_torque()
+        self.gripper.goto_joints([gripper_joints[arm][1]], 2.0)
+        time.sleep(2)
+        print("Gripper initialized")
 
-        self.reachy_part = "r_arm"
+        self.reachy_part = arm
         self.init = False
         self.pause = False
         self.mouse = False
@@ -154,6 +208,8 @@ class RobotController:
         self.reachy_init_pose = {"r_arm" : r_pose, "l_arm" : l_pose}
 
         self.init_reachy()
+        self.gripper.disable_torque()
+
         self.reachy.reset_default_limits()
 
         self.tracker.update_tracker_pose()
@@ -161,8 +217,8 @@ class RobotController:
         self.so_init_pose = {"r_arm" : self.tracker.tracker_pose,
                                  "l_arm" : self.tracker.tracker_pose,}
         
-        self.so_previous_pose = {"r_arm" : self.rotate_pose(self.tracker.tracker_pose),
-                                 "l_arm" : self.rotate_pose(self.tracker.tracker_pose),}
+        self.so_previous_pose = {"r_arm" : self.rotate_pose(self.tracker.tracker_pose, "r_arm"),
+                                 "l_arm" : self.rotate_pose(self.tracker.tracker_pose, "l_arm"),}
 
         keyboard_thread = threading.Thread(target=self.listen_keyboard, daemon=True)
         keyboard_thread.start()
@@ -366,7 +422,10 @@ class RobotController:
 
 
     def gripper_control(self, joint, arm):
-        min_joint, max_joint = -60, -15
+        if arm == "r_arm":
+            min_joint, max_joint = -60, -15
+        else:
+            min_joint, max_joint = 60, 15
         min_gripper, max_gripper = 0, 130
         gripper_opening = ((joint - min_joint) / (max_joint - min_joint)) * (max_gripper - min_gripper) + min_gripper
 
@@ -378,28 +437,33 @@ class RobotController:
             self.reachy.l_arm.gripper.send_goal_positions()
 
 
-    def rotate_pose(self, pose):
+    def rotate_pose(self, pose, arm):
         
-        # self.update_tracker_pose()
-
-        # if self.zero_pose is None:
-        #     print("Warning: Zero pose not set. Returning absolute pose.")
-        #     return self.tracker_pose  # Return absolute pose if not calibrated
-
         relative_pose = np.linalg.inv(self.so_init_pose["r_arm"]) @ pose
 
-        rotation = R.from_euler("xyz", [0, 0, -30], degrees=True).as_matrix()
+        if arm == "r_arm":
+            angle_rotation = -30
+        else:
+            angle_rotation = 30
+        rotation = R.from_euler("xyz", [0, 0, angle_rotation], degrees=True).as_matrix()
         Trot = make_homogenous_matrix_from_rotation_matrix(
             rotation, [0, 0, 0])
         relative_pose = Trot @ relative_pose
 
-        rotation = R.from_euler("xyz", [180, 0, 0], degrees=True).as_matrix()
-        Trot = make_homogenous_matrix_from_rotation_matrix(
-            rotation, [0, 0, 0])
-        relative_pose = Trot @ relative_pose
+
+        if arm == "r_arm":
+            rotation = R.from_euler("xyz", [180, 0, 0], degrees=True).as_matrix()
+            Trot = make_homogenous_matrix_from_rotation_matrix(
+                rotation, [0, 0, 0])
+            relative_pose = Trot @ relative_pose
+
+        if arm == "l_arm":
+            rotation = R.from_euler("xyz", [0, 180, 0], degrees=True).as_matrix()
+            Trot = make_homogenous_matrix_from_rotation_matrix(
+                rotation, [0, 0, 0])
+            relative_pose = Trot @ relative_pose
 
         return relative_pose
-        # return pose 
 
     # def antena_control(self, joint):
     #     min_joint, max_joint = -60, 0
@@ -415,50 +479,11 @@ class RobotController:
     #     self.reachy.send_goal_positions()
 
 
-    def find_reachy_pose2(self, so_pose, arm):
-        reachy_pose_base = self.reachy_init_pose[arm].copy()
-
-        so_pose_base = self.so_init_pose[arm]
-        so_pose_base = self.rotate_pose(so_pose_base)
-        diff_position = so_pose[:3, 3] - so_pose_base[:3, 3]
-        diff_position = so_pose_base[:3, :3].T @ diff_position
-        # print(diff_position)
-
-
-        reachy_pose = reachy_pose_base.copy()
-        reachy_pose[:3, 3] += diff_position
-        # print(diff_position)
-
-        diff_orientation = so_pose[:3, :3] @ so_pose_base[:3, :3].T
-        reachy_pose[:3, :3] = diff_orientation @ reachy_pose_base[:3, :3]
-        return reachy_pose
-
-
     def update_control_arm(self, arm):
         gripper_joints = self.gripper.get_joints()[0]
         pose = self.tracker.tracker_pose
 
-        # position = pose[:3, 3]
-        # orientation = R.from_matrix(pose[:3, :3]).as_euler('xyz', degrees=True)
-        # print(f"position: {position}")
-        # print(f"orientation: {orientation}")
-
-        pose = self.rotate_pose(pose)
-
-        # position = pose[:3, 3]
-        # orientation = R.from_matrix(pose[:3, :3]).as_euler('xyz', degrees=True)
-        # print(f"position: {position}")
-        # print(f"orientation: {orientation}")
-
-        # print("__________________________")
-        # pose = self.tracker.get_relative_tracker_pose()
-
-        
-        # print(self.top_grasp[arm])
-        # print(so_joints)
-        # print(pose[:3, :3])
-        # orientation = R.from_matrix(pose[:3, :3]).as_euler('XYZ', degrees=True)
-        # print(orientation)
+        pose = self.rotate_pose(pose, arm)
         reachy_pose = self.find_reachy_pose(pose, arm)
         # print(reachy_pose)
         self.reachy_previous_pose[arm] = reachy_pose
@@ -485,38 +510,17 @@ class RobotController:
     #     self.so_previous_pose["head"] = so_pose
     #     self.so_previous_joints["head"] = so_pose
 
-    # def control_mobile_base(self):
-    #     so_joints = self.so100.get_joints()
-    #     so_pose = fk(so_joints)
-    #     # print(pose)
-    #     diff_position = so_pose[:3, 3] - self.so_previous_pose["mobile_base"][:3, 3]
-    #     print(diff_position)
-
-    #     x = diff_position[0] * 5
-    #     y = diff_position[1] * 5
-    #     diff_orientation = so_pose[:3, :3] @ self.so_previous_pose["mobile_base"][:3, :3].T
-    #     diff_orientation = R.from_matrix(diff_orientation).as_euler('xyz', degrees=False)
-    #     print(f"orientation: {diff_orientation}")
-    #     theta = diff_orientation[2]
-    #     theta = np.rad2deg(theta)
-
-    #     self.reachy.mobile_base.set_goal_speed(x=x, y=y, theta=theta)
-    #     self.reachy.mobile_base.send_speed_command()
-
-    #     # linear_range = [-0.5, 0.5]
-        # angular_range = [-1.5, 1.5]
-        # self.reachy.mobile_base.set_goal_speed(x=1.0, y=0.0, theta=0)
-        # tic=time.time()
-        # while time.time()-tic < 5:
-        #     
-        #     time.sleep(0.01)
-        
 
 
 if __name__ == "__main__":
     try:
-        teleop = RobotController("/dev/ttyACM0", "192.168.10.107")
-        # teleop = RobotController("/dev/ttyACM0", "localhost")
+        # teleop = RobotController("/dev/ttyACM0", "192.168.10.107")
+        side = "l_arm"
+        teleops = {
+            "l_arm" : RobotController("l_arm", "localhost"),
+            "r_arm" : RobotController("r_arm", "localhost"),
+        }
+        # teleop = RobotController(side, "localhost")
         frequency = 100
         time.sleep(1)
         fig, ax = create_plot()
@@ -550,41 +554,32 @@ if __name__ == "__main__":
         while True:
             # print("_______")
             t = time.time()
-            part = teleop.reachy_part
+            # part = teleop.reachy_part
 
-            if teleop.mouse:
+            if teleops["r_arm"].mouse:
                 pass
                 # joints = teleop.so100.get_joints()
                 # pose = teleop.tracker.tracker_pose
 
                 # pose = teleop.find_reachy_pose(fk(joints), part, teleop.top_grasp[part])
                 # teleop.so_previous_joints[part] = joints
-            elif teleop.init:
+            elif teleops["r_arm"].init:
                 print("switching arm")
-                teleop.init_so()
+                teleops["r_arm"].init_so()
                 print("done")
-                teleop.init = False
+                teleops["r_arm"].init = False
             else :
                 # print("ici")
-                teleop.tracker.update_tracker_pose()
-                teleop.update_control_arm(part)
+                teleops["r_arm"].tracker.update_tracker_pose()
+                teleops["r_arm"].update_control_arm("r_arm")
+                teleops["l_arm"].tracker.update_tracker_pose()
+                teleops["l_arm"].update_control_arm("l_arm")
+
 
             # print(max(0, 1/frequency - (time.time() - t)))
             time.sleep(max(0, 1/frequency - (time.time() - t)))
     except KeyboardInterrupt:
-        teleop.so100.close()
-        teleop.reachy.turn_off_smoothly()
+        teleops["r_arm"].so100.close()
+        teleops["r_arm"].reachy.turn_off_smoothly()
         print("Exiting...")
         exit(0)
-            
-
-
-# if __name__ == '__main__':
-#     tracker = ViveTracker('tracker_1')
-#     # robot = RobotController(tracker=tracker)
-#     # robot.convert_to_robot_frame()
-
-#     while True:
-#         tracker.update_rpy()
-#         # goal_pose = robot.convert_to_robot_frame()
-#         # robot.go_to_pose(goal_pose)

@@ -140,16 +140,19 @@ class ViveTracker:
 
 if __name__ == "__main__":
     # tracker = ViveTracker("tracker_1")
-    tracker = ViveTracker("right_tracker")
+    tracker = ViveTracker("left_tracker")
 
     # Set new coordinate system
-    tracker.calibrate_pose_zero()
+    # tracker.calibrate_pose_zero()
 
     while True:
-        position = tracker.get_tracker_position()
-        orientation = tracker.get_tracker_euler_angles()
+        # position = tracker.get_tracker_position()
+        # orientation = tracker.get_tracker_euler_angles()
+        tracker.update_tracker_pose()
+        pose = tracker.tracker_pose
+        print(pose)
 
-        print(f"Relative position: {position}")
+        # print(f"Relative position: {position}")
         # print(f"Relative orientation (Euler XYZ): {orientation}")
 
         time.sleep(0.1)

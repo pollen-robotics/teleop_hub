@@ -49,24 +49,26 @@ class Teleop:
             "r_arm" : RobotController("r_arm", self.reachy),
         }
 
-        time.sleep(1)
+        # time.sleep(1)
         for tracker in self.trackers.values():
             tracker.gripper.disable_torque()
 
 
-        self.mobile_base = MobileBaseController(self.reachy, port_joystick=arduino_ports["l_arm"], port_joystick_2=arduino_ports["r_arm"], two_trackers_mode=True)
-       
+        self.mobile_base = MobileBaseController(self.reachy, left_port_joystick=arduino_ports["l_arm"], right_port_joystick=arduino_ports["r_arm"], two_trackers_mode=True)
+        self.command_getter = threading.Thread(target=self.mobile_base.run, daemon=True)
+        self.command_getter.start()
+
 
         self.reachy.reset_default_limits()
-        keyboard_thread = threading.Thread(target=self.listen_keyboard, daemon=True)
-        keyboard_thread.start()
+        # keyboard_thread = threading.Thread(target=self.listen_keyboard, daemon=True)
+        # keyboard_thread.start()
 
 
     def init_reachy(self):
         self.reachy.turn_on()
         self.reachy.mobile_base.reset_odometry()
-        # self.reachy.head.l_antenna.turn_on()
-        # self.reachy.head.r_antenna.turn_on()
+        self.reachy.head.l_antenna.turn_on()
+        self.reachy.head.r_antenna.turn_on()
         self.reachy.r_arm.gripper.open()
         self.reachy.l_arm.gripper.open()
         joints = self.reachy.r_arm.inverse_kinematics(self.reachy_previous_pose["r_arm"])
@@ -77,6 +79,7 @@ class Teleop:
 
     def teleoperation(self):
 
+        stop_pressed = 0
         frequency = 100
         while True:
             t = time.time()
@@ -84,7 +87,16 @@ class Teleop:
             self.trackers["r_arm"].update_control_arm("r_arm")
             self.trackers["l_arm"].tracker.update_tracker_pose()
             self.trackers["l_arm"].update_control_arm("l_arm")
+            # if self.mobile_base.stop:
+            # print(self.mobile_base.stop)
+            if self.mobile_base.stop:
+                stop_pressed += 1
+            else :
+                stop_pressed = 0
+            if stop_pressed > 100:
+                break
             time.sleep(max(0, 1/frequency - (time.time() - t)))
+
 
 
     def on_press(self, key):
@@ -148,7 +160,9 @@ if __name__ == "__main__":
 
         teleop.teleoperation()
         
-
+        teleop.reachy.turn_off_smoothly()
+        for tracker in teleop.trackers.values():
+            tracker.gripper.close()
         
     except KeyboardInterrupt:
         teleop.reachy.turn_off_smoothly()

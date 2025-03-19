@@ -22,9 +22,9 @@ import threading
 from pynput import keyboard
 from utils import make_homogenous_matrix_from_rotation_matrix, create_plot, fk, ik
 
-SHOW_GRAPH = False
+SHOW_GRAPH = True
 NB_DOF = 5
-INVERTED_TELEOPERATION = True
+INVERTED_TELEOPERATION = False
 
 class Teleoperation:
 
@@ -499,11 +499,11 @@ class Teleoperation:
 
 if __name__ == "__main__":
     try:
-        teleop = Teleoperation("/dev/ttyACM0", "192.168.10.107") #pvt02
+        teleop = Teleoperation("/dev/ttyACM4", "192.168.10.109") #pvt02
         # teleop = Teleoperation("/dev/ttyACM0", "192.168.10.104") #dvt03
         
 
-        # teleop = Teleoperation("/dev/ttyACM0", "localhost")
+        # teleop = Teleoperation("/dev/ttyACM4", "localhost")
         
         frequency = 100
 
@@ -512,8 +512,9 @@ if __name__ == "__main__":
         # thread = threading.Thread(target=teleop.so100.run, daemon=True)
         # thread.start()
 
-        thread = threading.Thread(target=teleop.update_so_pose, daemon=True)
-        thread.start()
+        if INVERTED_TELEOPERATION:
+            thread = threading.Thread(target=teleop.update_so_pose, daemon=True)
+            thread.start()
 
         while True:
 

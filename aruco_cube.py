@@ -2,19 +2,25 @@ import cv2
 import cv2.aruco as aruco
 import numpy as np
 from scipy.spatial.transform import Rotation as R
+import time
 
-class Aruco:
+class ArucoCube:
     def __init__(self, marker_size=0.04):
+
+        self.camera = Camera()
+        self.frame = None
+
         self.marker_size = marker_size
+
         self.aruco_dict = aruco.getPredefinedDictionary(aruco.DICT_6X6_1000)
         aruco_param = aruco.DetectorParameters()
         self.detector = aruco.ArucoDetector(self.aruco_dict, aruco_param)
 
-        self.markers_dict = {}
         self.cube = None
         self.define_cube()
-
         self.cube_pose = None
+
+        self.markers_dict = {}
 
     def define_cube(self):
         c_pt = self.marker_size/2
@@ -25,33 +31,62 @@ class Aruco:
             np.array([[-c_pt, c_pt, -c_pt], [-c_pt, c_pt, c_pt], [-c_pt, -c_pt, c_pt], [-c_pt, -c_pt, -c_pt]], dtype=np.float32),  # ID 2
             np.array([[-c_pt, c_pt, -c_pt], [c_pt, c_pt, -c_pt], [c_pt, c_pt, c_pt], [-c_pt, c_pt, c_pt]], dtype=np.float32),  # ID 3
             np.array([[c_pt, c_pt, c_pt], [c_pt, c_pt, -c_pt], [c_pt, -c_pt, -c_pt], [c_pt, -c_pt, c_pt]], dtype=np.float32),  # ID 4
-            np.array([[-c_pt, -c_pt, -c_pt], [c_pt, -c_pt, -c_pt], [c_pt, c_pt, -c_pt], [-c_pt, c_pt, -c_pt]], dtype=np.float32)   # ID 5
+            np.array([[-c_pt, -c_pt, -c_pt], [c_pt, -c_pt, -c_pt], [c_pt, c_pt, -c_pt], [-c_pt, c_pt, -c_pt]], dtype=np.float32),   # ID 5
         ]
         self.cube = aruco.Board(self.cube_corners, self.aruco_dict, self.cube_ids)
 
-    def detect_markers(self, image):
-        marker_corners, marker_ids, _ = self.detector.detectMarkers(image)
+    def update_cube_pose(self):
+        t0 = time.time()
+        self.frame = self.camera.get_frame() # 0.027
+        if self.frame is None:
+            return False
+        if self.frame is not None:
+            markers_corners, markers_ids = self.detect_markers() #0.002
+
+            if markers_ids is not None and len(markers_ids) > 0:
+                markers_ids = np.array(markers_ids, dtype=np.int32)
+
+                _, rvec, tvec = cv2.aruco.estimatePoseBoard(
+                    markers_corners,
+                    markers_ids,
+                    self.cube,
+                    self.camera.camera_matrix,
+                    self.camera.dist_coeffs,
+                    None,
+                    None
+                ) # 0.001
+
+                if rvec is not None and tvec is not None:
+                    cube_pose = np.eye(4)
+                    cube_pose[:3,:3] = R.from_rotvec(rvec.reshape(1,3)).as_matrix()
+
+                    cube_pose[:3,3] = tvec.flatten()
+                    self.cube_pose = cube_pose
+            return True
+
+    def detect_markers(self):
+        marker_corners, marker_ids, _ = self.detector.detectMarkers(self.frame)
         return marker_corners, marker_ids
 
-    def estimate_PoseSingleMarkers(self, corners, camera_matrix, dist_coeffs):
+    def estimate_PoseSingleMarkers(self, corners):
         marker_points = np.array([[-self.marker_size / 2, self.marker_size / 2, 0],
                                     [self.marker_size / 2, self.marker_size / 2, 0],
                                     [self.marker_size / 2, -self.marker_size / 2, 0],
                                     [-self.marker_size / 2, -self.marker_size / 2, 0]], dtype=np.float32)
         rvecs = []
         tvecs = []
-        for c in corners:
-            _, R, t = cv2.solvePnP(marker_points, c, camera_matrix, dist_coeffs, False, cv2.SOLVEPNP_ITERATIVE)
+        for corner in corners:
+            _, R, t = cv2.solvePnP(marker_points, corner, self.camera.camera_matrix, self.camera.dist_coeffs, False, cv2.SOLVEPNP_ITERATIVE)
             rvecs.append(R)
             tvecs.append(t)
         return np.array(rvecs), np.array(tvecs)
 
-    def get_markers_dict(self, image, camera_matrix, dist_coeffs):
-        marker_corners, marker_ids = self.detect_markers(image)
+    def get_markers_dict(self):
+        marker_corners, marker_ids = self.detect_markers(self.frame)
         markers_dict = {}
 
         if marker_ids is not None:
-            rvecs, tvecs = self.estimate_PoseSingleMarkers(marker_corners, camera_matrix, dist_coeffs)
+            rvecs, tvecs = self.estimate_PoseSingleMarkers(marker_corners, self.camera.camera_matrix, self.camera.dist_coeffs)
 
             for i, marker_id in enumerate(marker_ids):
                 markers_dict[marker_id[0]] = {
@@ -62,38 +97,14 @@ class Aruco:
 
         self.markers_dict = markers_dict
 
-    def get_cube_pose(self, frame, camera_matrix, dist_coeffs):
-        markers_corners, markers_ids = self.detect_markers(frame)
-        if markers_ids is not None and len(markers_ids) > 0:
-            markers_ids = np.array(markers_ids, dtype=np.int32)
-
-            _, rvec, tvec = cv2.aruco.estimatePoseBoard(
-                markers_corners,
-                markers_ids,
-                self.cube,
-                camera_matrix,
-                dist_coeffs,
-                None,
-                None
-            )
-
-            if rvec is not None and tvec is not None:
-                cube_pose = np.eye(4)
-                cube_pose[:3,:3], _ = cv2.Rodrigues(rvec)
-                cube_pose[:3,3] = tvec.flatten()
-                self.cube_pose = cube_pose
-                return True
-
-        self.cube_pose = None
-        return False
-
-    def show_cube_infos(self, frame, camera_matrix, dist_coeffs):
+    def show_cube_infos(self):
         if self.cube_pose is not None:
             rvec = R.from_matrix(self.cube_pose[:3,:3]).as_rotvec()
             tvec = self.cube_pose[:3,3]
-            cv2.drawFrameAxes(frame, camera_matrix, dist_coeffs, rvec, tvec, 0.03)
+            cv2.drawFrameAxes(self.frame, self.camera.camera_matrix, self.camera.dist_coeffs, rvec, tvec, 0.03)
+            
             cv2.putText(
-                frame,
+                self.frame,
                 f"Cube - x: {np.round(tvec[0],3)}, y: {np.round(tvec[1],3)}, z: {np.round(tvec[2],3)}",
                 (10, 20),
                 cv2.FONT_HERSHEY_SIMPLEX,
@@ -101,10 +112,21 @@ class Aruco:
                 (0, 255, 0),
                 2
             )
-        return frame
 
+            roll, pitch, yaw = R.from_matrix(self.cube_pose[:3,:3]).as_euler('xyz', degrees=True)
 
-    def show_markers_infos(self, frame, markers_dict, camera_matrix, dist_coeffs):
+            cv2.putText(
+                self.frame,
+                f"Cube - roll: {np.round(roll)}, pitch: {np.round(pitch)}, yaw: {np.round(yaw)}",
+                (10, 40),
+                cv2.FONT_HERSHEY_SIMPLEX,
+                0.75,
+                (0, 255, 0),
+                2
+            )
+        cv2.imshow('frame', self.frame)
+
+    def show_markers_infos(self, frame, markers_dict):
         markers_corners, markers_ids = self.detect_markers(frame)
         aruco.drawDetectedMarkers(frame, markers_corners, markers_ids)
         for marker_id, data in markers_dict.items():
@@ -112,7 +134,7 @@ class Aruco:
             rvec = data['rvec']
             tvec = data['tvec']
 
-            cv2.drawFrameAxes(frame, camera_matrix, dist_coeffs, rvec, tvec, 0.03)
+            cv2.drawFrameAxes(frame, self.camera.camera_matrix, self.camera.dist_coeffs, rvec, tvec, 0.03)
             translation = tvec.flatten()
             cv2.putText(
                 frame,
@@ -137,6 +159,8 @@ class Camera:
 
     def calibrate_camera(self):
         frame = self.get_frame()
+        while frame is None:
+            frame = self.get_frame()
         focal_length = frame.shape[1]
         center = (frame.shape[1] / 2, frame.shape[0] / 2)
         self.camera_matrix = np.array(
@@ -153,16 +177,13 @@ class Camera:
 
 
 if __name__ == "__main__":
-    aruco_cube = Aruco()
-    camera = Camera()
+    aruco_cube = ArucoCube()
 
     while True:
-        frame = camera.get_frame()
-        success = aruco_cube.get_cube_pose(frame, camera.camera_matrix, camera.dist_coeffs)
+        success = aruco_cube.update_cube_pose()
         if success:
-            frame = aruco_cube.show_cube_infos(frame, camera.camera_matrix, camera.dist_coeffs)
-
-        cv2.imshow('frame', frame)
+            print("success")
+            aruco_cube.show_cube_infos()
 
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break

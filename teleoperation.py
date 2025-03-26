@@ -1,0 +1,84 @@
+import time
+from controller import Controller
+from reachy import Reachy2
+import numpy as np
+
+from scipy.spatial.transform import Rotation as R
+
+DUAL_ARM = "dual_arm"
+LEFT_ARM = "l_arm"
+RIGHT_ARM = "r_arm"
+MODE = RIGHT_ARM
+
+class Teleoperation:
+    def __init__(self):
+
+        if MODE == DUAL_ARM:
+            self.controllers = {
+                LEFT_ARM: Controller(LEFT_ARM),
+                RIGHT_ARM: Controller(RIGHT_ARM)
+            }
+        elif MODE == LEFT_ARM:
+            self.controllers = {
+                LEFT_ARM: Controller(LEFT_ARM)
+            }
+        elif MODE == RIGHT_ARM:
+            self.controllers = {
+                RIGHT_ARM: Controller(RIGHT_ARM)
+            }
+        else:
+            raise ValueError(f"Invalid mode: {MODE}, available modes: {DUAL_ARM}, {LEFT_ARM}, {RIGHT_ARM}")
+        
+        self.robot = Reachy2()
+        self.robot.init_robot()
+
+        self.controller_previous_pose = {
+            LEFT_ARM: None,
+            RIGHT_ARM: None
+        }
+
+        self.robot_previous_pose = {
+            LEFT_ARM: None,
+            RIGHT_ARM: None
+        }
+
+        for controller in self.controllers.values():
+            self.controller_previous_pose[controller.arm] = controller.get_controller_pose()
+            self.robot_previous_pose[controller.arm] = self.robot.fk(controller.arm)
+
+
+    def controller_pose_to_robot_pose(self, controller_pose, arm):
+        robot_pose = self.robot_previous_pose[arm].copy()
+
+        diff_position = controller_pose[:3, 3] - self.controller_previous_pose[arm][:3, 3]
+        robot_pose[:3, 3] += diff_position
+
+        diff_orientation = controller_pose[:3, :3] @ self.controller_previous_pose[arm][:3, :3].T 
+        robot_pose[:3, :3] = diff_orientation @ self.robot_previous_pose[arm][:3, :3]        
+        return robot_pose
+    
+
+    def teleoperation(self):
+        frequency = 100
+        while True:
+            t = time.time()
+            for controller in self.controllers.values():
+                pose = controller.get_controller_pose()
+                robot_pose = self.controller_pose_to_robot_pose(pose, controller.arm)
+                self.robot.go_to_pose(robot_pose, controller.arm)
+                self.controller_previous_pose[controller.arm] = pose
+                self.robot_previous_pose[controller.arm] = robot_pose
+            time.sleep(max(0, 1/frequency - (time.time() - t)))
+
+
+if __name__ == "__main__":
+    teleoperation = Teleoperation()
+
+    try:
+
+        teleoperation.teleoperation()
+
+    except KeyboardInterrupt:
+        for controller in teleoperation.controllers.values():
+            controller.stop()
+        teleoperation.robot.stop()

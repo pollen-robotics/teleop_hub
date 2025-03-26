@@ -7,7 +7,7 @@ import numpy.typing as npt
 from scipy.spatial.transform import Rotation as R
 
 import survive
-from utils import (
+from so100_teleoperation.utils import (
     create_plot,
     fk,
     make_homogenous_matrix_from_rotation_matrix,

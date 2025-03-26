@@ -2,6 +2,7 @@ import time
 from controller import Controller
 from reachy import Reachy2
 import numpy as np
+import cv2
 
 from scipy.spatial.transform import Rotation as R
 
@@ -28,7 +29,7 @@ class Teleoperation:
             }
         else:
             raise ValueError(f"Invalid mode: {MODE}, available modes: {DUAL_ARM}, {LEFT_ARM}, {RIGHT_ARM}")
-        
+
         self.robot = Reachy2()
         self.robot.init_robot()
 
@@ -68,7 +69,11 @@ class Teleoperation:
                 self.robot.go_to_pose(robot_pose, controller.arm)
                 self.controller_previous_pose[controller.arm] = pose
                 self.robot_previous_pose[controller.arm] = robot_pose
+                frame = controller.aruco_cube.show_cube_infos()
+                cv2.imshow('frame', frame)
+                cv2.waitKey(1)
             time.sleep(max(0, 1/frequency - (time.time() - t)))
+
 
 
 if __name__ == "__main__":

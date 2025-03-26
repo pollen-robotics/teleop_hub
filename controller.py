@@ -38,6 +38,6 @@ class Controller:
         relative_pose = T_cam_to_reachy @ relative_pose
 
         return relative_pose
-        
 
-
+    def stop(self):
+        self.aruco_cube.stop()

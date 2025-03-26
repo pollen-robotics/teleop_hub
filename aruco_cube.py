@@ -3,6 +3,41 @@ import cv2.aruco as aruco
 import numpy as np
 from scipy.spatial.transform import Rotation as R
 import time
+import threading
+from collections import deque
+
+class Camera:
+    def __init__(self):
+        self.cap = cv2.VideoCapture(0)
+        self.camera_matrix = np.eye(3)
+        self.dist_coeffs = np.zeros((5, 1))
+
+        self.frame = deque(maxlen=1)
+
+        self.frame_getter = threading.Thread(target=self.get_frame, daemon=True)
+        self.frame_getter.start()
+
+        self.calibrate_camera()
+
+
+    def calibrate_camera(self):
+        while len(self.frame) == 0:
+            time.sleep(0.05)
+        frame = self.frame[0]
+        focal_length = frame.shape[1]
+        center = (frame.shape[1] / 2, frame.shape[0] / 2)
+        self.camera_matrix = np.array(
+            [[focal_length, 0, center[0]], [0, focal_length, center[1]], [0, 0, 1]],
+            dtype="double",
+        )
+
+    def get_frame(self):
+        while True:
+            success, frame = self.cap.read()
+            if success:
+                self.frame.append(frame)
+            time.sleep(0.005)
+
 
 class ArucoCube:
     def __init__(self, marker_size=0.04):
@@ -36,32 +71,34 @@ class ArucoCube:
         self.cube = aruco.Board(self.cube_corners, self.aruco_dict, self.cube_ids)
 
     def update_cube_pose(self):
-        t0 = time.time()
-        self.frame = self.camera.get_frame() # 0.027
-        if self.frame is None:
+        try:
+            self.frame = self.camera.frame[0]
+        except IndexError:
+            time.sleep(0.01)
+            print("No frame")
             return False
-        if self.frame is not None:
-            markers_corners, markers_ids = self.detect_markers() #0.002
 
-            if markers_ids is not None and len(markers_ids) > 0:
-                markers_ids = np.array(markers_ids, dtype=np.int32)
+        markers_corners, markers_ids = self.detect_markers()
 
-                _, rvec, tvec = cv2.aruco.estimatePoseBoard(
-                    markers_corners,
-                    markers_ids,
-                    self.cube,
-                    self.camera.camera_matrix,
-                    self.camera.dist_coeffs,
-                    None,
-                    None
-                ) # 0.001
+        if markers_ids is not None and len(markers_ids) > 0:
+            markers_ids = np.array(markers_ids, dtype=np.int32)
 
-                if rvec is not None and tvec is not None:
-                    cube_pose = np.eye(4)
-                    cube_pose[:3,:3] = R.from_rotvec(rvec.reshape(1,3)).as_matrix()
+            _, rvec, tvec = cv2.aruco.estimatePoseBoard(
+                markers_corners,
+                markers_ids,
+                self.cube,
+                self.camera.camera_matrix,
+                self.camera.dist_coeffs,
+                None,
+                None
+            )
 
-                    cube_pose[:3,3] = tvec.flatten()
-                    self.cube_pose = cube_pose
+            if rvec is not None and tvec is not None:
+                cube_pose = np.eye(4)
+                cube_pose[:3,:3] = R.from_rotvec(rvec.reshape(1,3)).as_matrix()
+
+                cube_pose[:3,3] = tvec.flatten()
+                self.cube_pose = cube_pose
             return True
 
     def detect_markers(self):
@@ -124,7 +161,7 @@ class ArucoCube:
                 (0, 255, 0),
                 2
             )
-        cv2.imshow('frame', self.frame)
+        return self.frame
 
     def show_markers_infos(self, frame, markers_dict):
         markers_corners, markers_ids = self.detect_markers(frame)
@@ -149,32 +186,10 @@ class ArucoCube:
 
         return frame
 
-
-class Camera:
-    def __init__(self):
-        self.cap = cv2.VideoCapture(0)
-        self.camera_matrix = np.eye(3)
-        self.dist_coeffs = np.zeros((5, 1))
-        self.calibrate_camera()
-
-    def calibrate_camera(self):
-        frame = self.get_frame()
-        while frame is None:
-            frame = self.get_frame()
-        focal_length = frame.shape[1]
-        center = (frame.shape[1] / 2, frame.shape[0] / 2)
-        self.camera_matrix = np.array(
-            [[focal_length, 0, center[0]], [0, focal_length, center[1]], [0, 0, 1]],
-            dtype="double",
-        )
-
-    def get_frame(self):
-        ret, frame = self.cap.read()
-        if not ret:
-            return None
-        else:
-            return frame
-
+    def stop(self):
+        self.camera.cap.release()
+        cv2.destroyAllWindows()
+        self.camera.frame_getter.join()
 
 if __name__ == "__main__":
     aruco_cube = ArucoCube()

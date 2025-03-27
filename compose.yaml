@@ -1,0 +1,31 @@
+services:
+  core:
+    image: pollenrobotics/teleop_tracker
+    container_name: teleop_tracker
+    privileged: true
+    environment:
+      # - REACHY_ENABLE_OTEL_SPANS=true
+      # - REACHY_ENABLE_PROFILING_PYROSCOPE=true
+      # - ROS_DOMAIN_ID=$ROS_DOMAIN_ID
+      - DISPLAY=$DISPLAY
+      # - "RCUTILS_CONSOLE_OUTPUT_FORMAT=[{severity}]: {message}"
+      # - REACHY2_CORE_SERVICE_FAKE=${REACHY2_CORE_SERVICE_FAKE:-false}
+      # Now defined at build time with only minmal deps - ETHERCAT_PATH=/home/reachy/ethercat
+      # Disables the CycloneDDS isolation mode
+      # - CYCLONEDDS_URI=
+      # Enables an in-between conf with peer list, and no multicast
+      # - CYCLONEDDS_URI=/home/reachy/reachy_ws/src/ros2_pollen_toolbox/cyclonedds_peer_list.xml
+    volumes:
+      - /dev:/dev
+      - .:/opt/reachy2_noVR_teleoperation
+      # - $HOME/.reachy_config:/home/reachy/.reachy_config_override
+      # - $HOME/.reachy.log:/home/reachy/.ros/log
+    # group_add:
+      # - audio
+    # allow interprocess comunication to handle alsa audio concurrent access
+    # ipc: host
+    # device_cgroup_rules:
+      # - 'c 189:* rmw' # rules for usb cam
+    # network_mode: "host"
+    # entrypoint: /package/launch.sh
+    command: sleep infinity

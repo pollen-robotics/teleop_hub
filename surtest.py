@@ -127,6 +127,7 @@ if __name__ == "__main__":
     # Initialize our libsurvive context
     survive_manager = survive.triad_survive()
     print("Detected devices:")
+    print(survive_manager.devices)
     for device_name, device in survive_manager.devices.items():
         pos, quat = device.get_pose()  # (position, quaternion)
         print(f"Device '{device_name}': Position = {pos}, Quaternion = {quat}")

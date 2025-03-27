@@ -1,6 +1,6 @@
 services:
   core:
-    image: teleop_tracker
+    image: pollenrobotics/teleop_tracker
     container_name: teleop_tracker
     privileged: true
     environment:

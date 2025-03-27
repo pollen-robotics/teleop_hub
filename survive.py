@@ -12,8 +12,10 @@ def update_text(txt):
     sys.stdout.flush()
 
 
-# Convert a quaternion (w, x, y, z) to Euler angles (roll, pitch, yaw) in radians.
 def quaternion_to_euler(q):
+    if isinstance(q, (int, float)):
+        # Handle case when `q` is not iterable (a single float or similar)
+        return numpy.array([0.0, 0.0, 0.0])  # or return an error/empty euler angles
     w, x, y, z = q  # assuming pysurvive returns quaternion in (w, x, y, z)
     # Roll (x-axis rotation)
     sinr_cosp = 2 * (w * x + y * z)
@@ -60,8 +62,20 @@ class vr_tracked_device:
         return self.obj.Name()
 
     def get_pose(self):
-        # pysurvive SimpleContext returns each object's pose as a tuple: (position, quaternion)
-        return self.obj.Pose()
+        pose = self.obj.Pose()  # This is a SurvivePose object
+        # print(pose)
+        pos = pose[0].Pos
+        quat = pose[0].Rot
+        # print(pose[0].Pos)
+
+        # exit(1)
+        # pos = pose.Pos  # Access the Pos array (x, y, z) from SurvivePose
+        # quat = pose.Rot  # Access the Rot array (quaternion: w, x, y, z)
+
+        # Extract x, y, z components from the Pos array
+        x, y, z = pos[0], pos[1], pos[2]
+
+        return (x, y, z), quat
 
     def sample(self, num_samples, sample_rate):
         interval = 1 / sample_rate
@@ -84,23 +98,36 @@ class triad_survive:
         if args is None:
             args = []
         self.ctx = pysurvive.SimpleContext(args)
+        # self.ctx = pysurvive.Context()
+
+        time.sleep(15)  # Wait for the system t
+
+        # # updated = self.ctx.NextUpdated()
+        # time.sleep(1)
+        # print(dir(self.ctx))
+        # # print(self.ctx.Objects())
+        # print(self.ctx.objs)
+        # print(dir(self.ctx.objs))
+        # exit(1)
         # Create a dictionary to store devices keyed by their name.
         self.devices = {}
         # Organize devices by type; here we use basic name matching.
         self.device_types = {"HMD": [], "Controller": [], "Tracker": []}
         for obj in self.ctx.Objects():
             name = obj.Name()
+            print(name)
             lower = name.lower()
-            if "tracker" in lower:
-                self.device_types["Tracker"].append(name)
-            elif "controller" in lower:
-                self.device_types["Controller"].append(name)
-            elif "hmd" in lower:
-                self.device_types["HMD"].append(name)
-            else:
-                # If a device doesn't match any category, store it under its raw name.
-                self.device_types.setdefault("Other", []).append(name)
+            # if "tracker" in lower:
+            #     self.device_types["Tracker"].append(name)
+            # elif "controller" in lower:
+            #     self.device_types["Controller"].append(name)
+            # elif "hmd" in lower:
+            #     self.device_types["HMD"].append(name)
+            # else:
+            # If a device doesn't match any category, store it under its raw name.
+            self.device_types.setdefault("Other", []).append(name)
             self.devices[name] = vr_tracked_device(obj)
+        # exit(1)
 
     def rename_device(self, old_name, new_name):
         if old_name in self.devices:
@@ -130,14 +157,36 @@ class triad_survive:
                     print(f"      Euler (rad) = {euler}")
                 else:
                     print(f"    {name}: (device not found)")
+        # exit(1)
 
     def run(self):
         # An example loop to print out poses continuously.
         try:
             while self.ctx.Running():
-                for name, dev in self.devices.items():
-                    pos, quat = dev.get_pose()
-                    print(f"{name}: Pos = {pos}, Quat = {quat}")
+                updated = self.ctx.NextUpdated()
+                # print(dir(updated))
+                if updated:
+                    poseObj = updated.Pose()
+                    poseData = poseObj[0]
+                    poseTimestamp = poseObj[1]
+                    # print(dir(updated))
+                    print(
+                        "%s: T: %f P: % 9f,% 9f,% 9f R: % 9f,% 9f,% 9f,% 9f"
+                        % (
+                            str(updated.Name(), "utf-8"),
+                            poseTimestamp,
+                            poseData.Pos[0],
+                            poseData.Pos[1],
+                            poseData.Pos[2],
+                            poseData.Rot[0],
+                            poseData.Rot[1],
+                            poseData.Rot[2],
+                            poseData.Rot[3],
+                        )
+                    )
+                # # # # # # # # # # for name, dev in self.devices.items():
+                # # # # # # # # # #     pos, quat = dev.get_pose()
+                # # # # # # # # # #     print(f"{name}: Pos = {pos}, Quat = {quat}")
                 time.sleep(0.1)
         except KeyboardInterrupt:
             print("Exiting run loop.")
@@ -151,16 +200,16 @@ if __name__ == "__main__":
     triad.list_devices()
 
     # For each device, take a short sample (e.g., 10 samples at 30 Hz)
-    for name, dev in triad.devices.items():
-        print(f"\nSampling from {name}...")
-        buf = dev.sample(10, 30)
-        for t, pos, quat, euler in zip(buf.time, buf.x, buf.y, buf.z):
-            # For simplicity, print the timestamp and position.
-            # (You can add printing of quaternion or Euler angles as needed.)
-            print(
-                f"Time: {t:.3f} sec, Position: ({pos:.3f}, {buf.y[buf.time.index(t)]:.3f}, {buf.z[buf.time.index(t)]:.3f})"
-            )
-        print("-----")
+    # for name, dev in triad.devices.items():
+    #     print(f"\nSampling from {name}...")
+    #     buf = dev.sample(10, 30)
+    #     for t, pos, quat, euler in zip(buf.time, buf.x, buf.y, buf.z):
+    #         # For simplicity, print the timestamp and position.
+    #         # (You can add printing of quaternion or Euler angles as needed.)
+    #         print(
+    #             f"Time: {t:.3f} sec, Position: ({pos:.3f}, {buf.y[buf.time.index(t)]:.3f}, {buf.z[buf.time.index(t)]:.3f})"
+    #         )
+    #     print("-----")
 
     # Optionally, you can run a continuous loop:
-    # triad.run()
+    triad.run()

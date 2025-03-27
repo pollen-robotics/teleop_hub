@@ -1,7 +1,7 @@
 import numpy as np
 from reachy2_sdk import ReachySDK  # type: ignore
 from scipy.spatial.transform import Rotation as R  # type: ignore
-from utils import make_homogenous_matrix_from_rotation_matrix
+from utils import make_homogenous_matrix_from_rotation_matrix, limit_orbita3d_joints
 
 from google.protobuf.wrappers_pb2 import FloatValue, Int32Value
 
@@ -56,7 +56,7 @@ class Reachy2:
             request = ArmCartesianGoal(
                 id=self.reachy.r_arm._part_id,
                 goal_pose=Matrix4x4(data=pose.flatten().tolist()),
-                continuous_mode=IKContinuousMode.CONTINUOUS,
+                continuous_mode=IKContinuousMode.UNFREEZE,
                 constrained_mode=IKConstrainedMode.UNCONSTRAINED,
                 preferred_theta=FloatValue(
                     value=-4 * np.pi / 6,
@@ -69,7 +69,7 @@ class Reachy2:
             request = ArmCartesianGoal(
                 id=self.reachy.l_arm._part_id,
                 goal_pose=Matrix4x4(data=pose.flatten().tolist()),
-                continuous_mode=IKContinuousMode.CONTINUOUS,
+                continuous_mode=IKContinuousMode.UNFREEZE,
                 constrained_mode=IKConstrainedMode.UNCONSTRAINED,
                 preferred_theta=FloatValue(
                     value=-4 * np.pi / 6,
@@ -91,12 +91,26 @@ class Reachy2:
         self.reachy.mobile_base.set_goal_speed(vx=x, vy=y, vtheta=theta)
         self.reachy.mobile_base.send_speed_command()
     
-    def move_antenna(self, position, arm):
-        if arm == "r_arm":
+    def move_antenna(self, position, arm=None):
+        if arm == None:
+            self.reachy.head.r_antenna.goal_position = position
+            self.reachy.head.l_antenna.goal_position = -position
+        elif arm == "r_arm":
             self.reachy.head.r_antenna.goal_position = position
         else:
             self.reachy.head.l_antenna.goal_position = position
         self.reachy.send_goal_positions()
+
+    def move_head(self, orientation_matrix):
+        orientation = R.from_matrix(orientation_matrix).as_euler('xyz', degrees=False)
+        # print(orientation)
+        orientation = limit_orbita3d_joints(orientation, np.deg2rad(42))
+        orientation = np.rad2deg(orientation)
+        # print(orientation)
+        self.reachy.head.neck.roll.goal_position = orientation[0]   
+        self.reachy.head.neck.pitch.goal_position = orientation[1]
+        self.reachy.head.neck.yaw.goal_position = orientation[2]
+        self.reachy.head.send_goal_positions()
 
     def stop(self):
         self.reachy.turn_off_smoothly()

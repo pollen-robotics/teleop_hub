@@ -29,7 +29,7 @@ gripper_joints = {
 class Controller:
     def __init__(self, arm):
         self.arduino = ArduinoController(arduino_ports[arm])
-        self.feetech = Feetech(feetech_ports[arm])
+        # self.feetech = Feetech(feetech_ports[arm])
         self.tracker = ViveTracker(arm)
 
         self.stop_flag = False
@@ -46,7 +46,7 @@ class Controller:
         thread.start()
 
         self.gripper_joints_limit = gripper_joints[arm]
-        self.init_gripper(self.gripper_joints_limit[1])
+        # self.init_gripper(self.gripper_joints_limit[1])
 
         self.tracker.update_tracker_pose()
         self.tracker_init_pose = self.tracker.tracker_pose
@@ -54,10 +54,14 @@ class Controller:
 
 
 
-    def init_gripper(self, joint):
-        self.feetech.enable_torque()
-        self.feetech.goto_joints([joint], 1)
-        self.feetech.disable_torque()
+    # def init_gripper(self, joint):
+    #     self.feetech.enable_torque()
+    #     self.feetech.goto_joints([joint], 1)
+    #     self.feetech.disable_torque()
+
+    def init_controller(self):
+        self.tracker.update_tracker_pose()
+        self.tracker_init_pose = self.tracker.tracker_pose
 
 
     def _update_arduino_data(self):
@@ -73,8 +77,8 @@ class Controller:
                 print("No data")
             time.sleep(0.1)
 
-    def get_gripper_joint(self):
-        return self.feetech.get_joints()[0]
+    # def get_gripper_joint(self):
+    #     return self.feetech.get_joints()[0]
     
     def get_controller_pose(self):
         self.tracker.update_tracker_pose()
@@ -113,7 +117,7 @@ class Controller:
     def stop(self):
         self.stop_flag = True
         self.arduino.close()
-        self.feetech.close()
+        # self.feetech.close()
 
 
 if __name__ == "__main__":

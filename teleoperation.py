@@ -1,52 +1,43 @@
 import time
-from controller import Controller
-from reachy import Reachy2
-import numpy as np
+
 import cv2
 
-from scipy.spatial.transform import Rotation as R
+from controller.camera import Camera
+from controller.controller import Controller
+from reachy import Reachy2
 
 DUAL_ARM = "dual_arm"
 LEFT_ARM = "l_arm"
 RIGHT_ARM = "r_arm"
-MODE = RIGHT_ARM
+MODE = DUAL_ARM
+
 
 class Teleoperation:
-    def __init__(self):
+    def __init__(self, marker_size=0.04):
+        self.camera = Camera()
 
         if MODE == DUAL_ARM:
             self.controllers = {
-                LEFT_ARM: Controller(LEFT_ARM),
-                RIGHT_ARM: Controller(RIGHT_ARM)
+                LEFT_ARM: Controller(LEFT_ARM, marker_size, self.camera),
+                RIGHT_ARM: Controller(RIGHT_ARM, marker_size, self.camera),
             }
         elif MODE == LEFT_ARM:
-            self.controllers = {
-                LEFT_ARM: Controller(LEFT_ARM)
-            }
+            self.controllers = {LEFT_ARM: Controller(LEFT_ARM, marker_size, self.camera)}
         elif MODE == RIGHT_ARM:
-            self.controllers = {
-                RIGHT_ARM: Controller(RIGHT_ARM)
-            }
+            self.controllers = {RIGHT_ARM: Controller(RIGHT_ARM, marker_size, self.camera)}
         else:
             raise ValueError(f"Invalid mode: {MODE}, available modes: {DUAL_ARM}, {LEFT_ARM}, {RIGHT_ARM}")
 
         self.robot = Reachy2()
         self.robot.init_robot()
 
-        self.controller_previous_pose = {
-            LEFT_ARM: None,
-            RIGHT_ARM: None
-        }
+        self.controller_previous_pose = {LEFT_ARM: None, RIGHT_ARM: None}
 
-        self.robot_previous_pose = {
-            LEFT_ARM: None,
-            RIGHT_ARM: None
-        }
+        self.robot_previous_pose = {LEFT_ARM: None, RIGHT_ARM: None}
 
         for controller in self.controllers.values():
             self.controller_previous_pose[controller.arm] = controller.get_controller_pose()
             self.robot_previous_pose[controller.arm] = self.robot.fk(controller.arm)
-
 
     def controller_pose_to_robot_pose(self, controller_pose, arm):
         robot_pose = self.robot_previous_pose[arm].copy()
@@ -54,10 +45,9 @@ class Teleoperation:
         diff_position = controller_pose[:3, 3] - self.controller_previous_pose[arm][:3, 3]
         robot_pose[:3, 3] += diff_position
 
-        diff_orientation = controller_pose[:3, :3] @ self.controller_previous_pose[arm][:3, :3].T 
-        robot_pose[:3, :3] = diff_orientation @ self.robot_previous_pose[arm][:3, :3]        
+        diff_orientation = controller_pose[:3, :3] @ self.controller_previous_pose[arm][:3, :3].T
+        robot_pose[:3, :3] = diff_orientation @ self.robot_previous_pose[arm][:3, :3]
         return robot_pose
-    
 
     def teleoperation(self):
         frequency = 100
@@ -69,18 +59,17 @@ class Teleoperation:
                 self.robot.go_to_pose(robot_pose, controller.arm)
                 self.controller_previous_pose[controller.arm] = pose
                 self.robot_previous_pose[controller.arm] = robot_pose
-                frame = controller.aruco_cube.show_cube_infos()
-                cv2.imshow('frame', frame)
-                cv2.waitKey(1)
-            time.sleep(max(0, 1/frequency - (time.time() - t)))
-
+            frame = self.camera.get_frame_with_cube_pose(
+                [self.robot_previous_pose[LEFT_ARM], self.robot_previous_pose[RIGHT_ARM]]
+            )
+            cv2.imshow("frame", frame)
+            cv2.waitKey(1)
+            time.sleep(max(0, 1 / frequency - (time.time() - t)))
 
 
 if __name__ == "__main__":
     teleoperation = Teleoperation()
-
     try:
-
         teleoperation.teleoperation()
 
     except KeyboardInterrupt:

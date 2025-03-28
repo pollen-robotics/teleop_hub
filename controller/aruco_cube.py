@@ -32,61 +32,49 @@ class ArucoCube:
         c_pt = self.marker_size / 2
 
         if self.arm == "r_arm":
-            self.cube_ids = np.arange(6)
-            self.cube_corners = [
-                np.array(
-                    [[-c_pt, c_pt, c_pt], [c_pt, c_pt, c_pt], [c_pt, -c_pt, c_pt], [-c_pt, -c_pt, c_pt]],
-                    dtype=np.float32,
-                ),  # ID 0
-                np.array(
-                    [[-c_pt, -c_pt, c_pt], [c_pt, -c_pt, c_pt], [c_pt, -c_pt, -c_pt], [-c_pt, -c_pt, -c_pt]],
-                    dtype=np.float32,
-                ),  # ID 1
-                np.array(
-                    [[-c_pt, c_pt, -c_pt], [-c_pt, c_pt, c_pt], [-c_pt, -c_pt, c_pt], [-c_pt, -c_pt, -c_pt]],
-                    dtype=np.float32,
-                ),  # ID 2
-                np.array(
-                    [[-c_pt, c_pt, -c_pt], [c_pt, c_pt, -c_pt], [c_pt, c_pt, c_pt], [-c_pt, c_pt, c_pt]],
-                    dtype=np.float32,
-                ),  # ID 3
-                np.array(
-                    [[c_pt, c_pt, c_pt], [c_pt, c_pt, -c_pt], [c_pt, -c_pt, -c_pt], [c_pt, -c_pt, c_pt]],
-                    dtype=np.float32,
-                ),  # ID 4
-                np.array(
-                    [[-c_pt, -c_pt, -c_pt], [c_pt, -c_pt, -c_pt], [c_pt, c_pt, -c_pt], [-c_pt, c_pt, -c_pt]],
-                    dtype=np.float32,
-                ),  # ID 5
-            ]
+            back_marker = 0
+            up_marker = 1
+            left_marker = 2
+            down_marker = 3
+            right_marker = 4
+            front_marker = 5
+
         else:
-            self.cube_ids = np.array([6, 7, 8, 11, 9, 10])
-            self.cube_corners = [
-                np.array(
-                    [[-c_pt, c_pt, c_pt], [c_pt, c_pt, c_pt], [c_pt, -c_pt, c_pt], [-c_pt, -c_pt, c_pt]],
-                    dtype=np.float32,
-                ),  # ID 6
-                np.array(
-                    [[-c_pt, -c_pt, c_pt], [c_pt, -c_pt, c_pt], [c_pt, -c_pt, -c_pt], [-c_pt, -c_pt, -c_pt]],
-                    dtype=np.float32,
-                ),  # ID 7
-                np.array(
-                    [[-c_pt, c_pt, -c_pt], [-c_pt, c_pt, c_pt], [-c_pt, -c_pt, c_pt], [-c_pt, -c_pt, -c_pt]],
-                    dtype=np.float32,
-                ),  # ID 8
-                np.array(
-                    [[-c_pt, c_pt, -c_pt], [c_pt, c_pt, -c_pt], [c_pt, c_pt, c_pt], [-c_pt, c_pt, c_pt]],
-                    dtype=np.float32,
-                ),  # ID 11
-                np.array(
-                    [[c_pt, c_pt, c_pt], [c_pt, c_pt, -c_pt], [c_pt, -c_pt, -c_pt], [c_pt, -c_pt, c_pt]],
-                    dtype=np.float32,
-                ),  # ID 9
-                np.array(
-                    [[-c_pt, -c_pt, -c_pt], [c_pt, -c_pt, -c_pt], [c_pt, c_pt, -c_pt], [-c_pt, c_pt, -c_pt]],
-                    dtype=np.float32,
-                ),  # ID 10
-            ]
+            back_marker = 6
+            up_marker = 7
+            left_marker = 8
+            down_marker = 11
+            right_marker = 9
+            front_marker = 10
+
+        self.cube_ids = np.array([back_marker, up_marker, left_marker, down_marker, right_marker, front_marker])
+
+        self.cube_corners = [
+            np.array(
+                [[-c_pt, c_pt, c_pt], [c_pt, c_pt, c_pt], [c_pt, -c_pt, c_pt], [-c_pt, -c_pt, c_pt]],
+                dtype=np.float32,
+            ),  # back face (left corner at the right bottom)
+            np.array(
+                [[-c_pt, -c_pt, c_pt], [c_pt, -c_pt, c_pt], [c_pt, -c_pt, -c_pt], [-c_pt, -c_pt, -c_pt]],
+                dtype=np.float32,
+            ),  # up face 
+            np.array(
+                [[-c_pt, c_pt, -c_pt], [-c_pt, c_pt, c_pt], [-c_pt, -c_pt, c_pt], [-c_pt, -c_pt, -c_pt]],
+                dtype=np.float32,
+            ),  # left face
+            np.array(
+                [[-c_pt, c_pt, -c_pt], [c_pt, c_pt, -c_pt], [c_pt, c_pt, c_pt], [-c_pt, c_pt, c_pt]],
+                dtype=np.float32,
+            ),  # down face
+            np.array(
+                [[c_pt, c_pt, c_pt], [c_pt, c_pt, -c_pt], [c_pt, -c_pt, -c_pt], [c_pt, -c_pt, c_pt]],
+                dtype=np.float32,
+            ),  # right face
+            np.array(
+                [[-c_pt, -c_pt, -c_pt], [c_pt, -c_pt, -c_pt], [c_pt, c_pt, -c_pt], [-c_pt, c_pt, -c_pt]],
+                dtype=np.float32,
+            ),  # front face
+        ] #0,1,2,3,4,5
 
         self.cube = aruco.Board(self.cube_corners, self.aruco_dict, self.cube_ids)
 

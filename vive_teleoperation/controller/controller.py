@@ -68,11 +68,18 @@ class Controller:
         while not self.stop_flag:
             x, y, button_cmd, buttonA, buttonB = self.arduino.read()
             if x is not None:
-                self.joystick_x = x
-                self.joystick_y = y
+                
                 self.joystick_button = button_cmd
-                self.buttonA = buttonA
-                self.buttonB = buttonB
+                if self.arm == "r_arm":
+                    self.buttonA = buttonA
+                    self.buttonB = buttonB
+                    self.joystick_x = x
+                    self.joystick_y = y
+                else:
+                    self.buttonA = buttonB
+                    self.buttonB = buttonA
+                    self.joystick_x = 1024 - x
+                    self.joystick_y = 1024 - y
             else:
                 print("No data")
             time.sleep(0.1)

@@ -13,6 +13,7 @@ from reachy2_sdk_api.arm_pb2 import (  # type: ignore
 from reachy2_sdk_api.kinematics_pb2 import Matrix4x4  # type: ignore
 
 IP = "localhost"
+# IP = "192.168.10.106"
 
 class Reachy2:
     def __init__(self):
@@ -37,6 +38,9 @@ class Reachy2:
         l_pose = make_homogenous_matrix_from_rotation_matrix(orientation.as_matrix(), position)
         head_joints = [0, 0, 0]
 
+        self.reachy.head.r_antenna.goto(0, 3.0, degrees=True, interpolation_mode="minimum_jerk", wait=False)
+        self.reachy.head.l_antenna.goto(0, 3.0, degrees=True, interpolation_mode="minimum_jerk", wait=False)
+
         joints = self.reachy.r_arm.inverse_kinematics(r_pose)
         self.reachy.r_arm.goto(joints, 3.0, degrees=True, interpolation_mode="minimum_jerk", wait=False)
         joints = self.reachy.l_arm.inverse_kinematics(l_pose)
@@ -51,7 +55,8 @@ class Reachy2:
             return self.reachy.l_arm.forward_kinematics()
         
 
-    def go_to_pose(self, pose, arm):
+    def unfreeze(self, arm):
+        pose = self.fk(arm)
         if arm == "r_arm":
             request = ArmCartesianGoal(
                 id=self.reachy.r_arm._part_id,
@@ -70,6 +75,35 @@ class Reachy2:
                 id=self.reachy.l_arm._part_id,
                 goal_pose=Matrix4x4(data=pose.flatten().tolist()),
                 continuous_mode=IKContinuousMode.UNFREEZE,
+                constrained_mode=IKConstrainedMode.UNCONSTRAINED,
+                preferred_theta=FloatValue(
+                    value=-4 * np.pi / 6,
+                ),
+                d_theta_max=FloatValue(value=0.05),
+                order_id=Int32Value(value=5),
+            )
+            self.reachy.l_arm._stub.SendArmCartesianGoal(request)
+
+
+    def go_to_pose(self, pose, arm):
+        if arm == "r_arm":
+            request = ArmCartesianGoal(
+                id=self.reachy.r_arm._part_id,
+                goal_pose=Matrix4x4(data=pose.flatten().tolist()),
+                continuous_mode=IKContinuousMode.CONTINUOUS,
+                constrained_mode=IKConstrainedMode.UNCONSTRAINED,
+                preferred_theta=FloatValue(
+                    value=-4 * np.pi / 6,
+                ),
+                d_theta_max=FloatValue(value=0.05),
+                order_id=Int32Value(value=5),
+            )
+            self.reachy.r_arm._stub.SendArmCartesianGoal(request)
+        elif arm == "l_arm":
+            request = ArmCartesianGoal(
+                id=self.reachy.l_arm._part_id,
+                goal_pose=Matrix4x4(data=pose.flatten().tolist()),
+                continuous_mode=IKContinuousMode.CONTINUOUS,
                 constrained_mode=IKConstrainedMode.UNCONSTRAINED,
                 preferred_theta=FloatValue(
                     value=-4 * np.pi / 6,

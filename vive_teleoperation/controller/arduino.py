@@ -8,7 +8,7 @@ class ArduinoController:
 
     def read(self):
         if self.ser.in_waiting > 0:
-            data = self.ser.readline().decode('utf-8').strip()
+            data = self.ser.readline().decode('utf-8', errors='ignore').strip()
             values = data.split(',')
             x_input = int(values[0])
             y_input = int(values[1])

@@ -2,9 +2,9 @@ import threading
 import time
 from collections import deque
 
-import cv2
+import cv2  # type: ignore
 import numpy as np
-from scipy.spatial.transform import Rotation as R
+from scipy.spatial.transform import Rotation as R  # type: ignore
 
 
 class Camera:
@@ -37,14 +37,29 @@ class Camera:
             if success:
                 frame_processed = self.post_process_image(frame)
                 self.frame.append(frame_processed)
-            time.sleep(0.05)
+            time.sleep(0.02)
 
     def post_process_image(self, frame):
-        frame_processed = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-        # add CLAHE to improve contrast
-        clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
-        frame_clahe = clahe.apply(frame_processed)
-        return frame_clahe
+        # image_contrast = cv2.convertScaleAbs(frame_processed, alpha=1.5, beta=0)
+        # clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
+        # frame_clahe = clahe.apply(image_contrast)
+        # return frame_clahe
+        frame_gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+
+        blurred = cv2.GaussianBlur(frame_gray, (5, 5), 1)
+        edges = cv2.Canny(blurred, threshold1=50, threshold2=150)
+
+        kernel = np.ones((5, 5), np.uint8)
+        edges_dilated = cv2.dilate(edges, kernel, iterations=1)
+        edges_weight = cv2.normalize(edges_dilated, None, 0, 1, cv2.NORM_MINMAX)
+
+        non_edge_weight = 1 - edges_weight
+        blurred_image = cv2.GaussianBlur(frame_gray, (9, 9), 3)
+
+        enhanced_image = edges_weight * frame_gray + non_edge_weight * blurred_image
+        enhanced_image = cv2.normalize(enhanced_image, None, 0, 255, cv2.NORM_MINMAX)
+
+        return enhanced_image
 
     def get_frame_with_cube_pose(self, cube_pose_list):
         if len(self.frame) == 0:

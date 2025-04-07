@@ -1,6 +1,6 @@
 import time
 
-import cv2
+import cv2  # type: ignore
 
 from controller.camera import Camera
 from controller.controller import Controller
@@ -54,13 +54,14 @@ class Teleoperation:
         while True:
             t = time.time()
             for controller in self.controllers.values():
+
                 pose = controller.get_controller_pose()
                 robot_pose = self.controller_pose_to_robot_pose(pose, controller.arm)
                 self.robot.go_to_pose(robot_pose, controller.arm)
                 self.controller_previous_pose[controller.arm] = pose
                 self.robot_previous_pose[controller.arm] = robot_pose
             frame = self.camera.get_frame_with_cube_pose(
-                [self.robot_previous_pose[LEFT_ARM], self.robot_previous_pose[RIGHT_ARM]]
+                [self.controllers[arm].aruco_cube.cube_pose for arm in self.controllers.keys()]
             )
             cv2.imshow("frame", frame)
             cv2.waitKey(1)

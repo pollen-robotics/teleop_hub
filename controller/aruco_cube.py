@@ -1,9 +1,9 @@
 import time
 
-import cv2
-import cv2.aruco as aruco
+import cv2  # type: ignore
+import cv2.aruco as aruco  # type: ignore
 import numpy as np
-from scipy.spatial.transform import Rotation as R
+from scipy.spatial.transform import Rotation as R  # type: ignore
 
 from controller.camera import Camera
 
@@ -19,7 +19,7 @@ class ArucoCube:
 
         self.aruco_dict = aruco.getPredefinedDictionary(aruco.DICT_6X6_1000)
         aruco_param = aruco.DetectorParameters()
-        aruco_param.cornerRefinementMethod = cv2.aruco.CORNER_REFINE_SUBPIX
+        # aruco_param.cornerRefinementMethod = cv2.aruco.CORNER_REFINE_CONTOUR
         self.detector = aruco.ArucoDetector(self.aruco_dict, aruco_param)
 
         self.cube = None
@@ -57,7 +57,7 @@ class ArucoCube:
             np.array(
                 [[-c_pt, -c_pt, c_pt], [c_pt, -c_pt, c_pt], [c_pt, -c_pt, -c_pt], [-c_pt, -c_pt, -c_pt]],
                 dtype=np.float32,
-            ),  # up face 
+            ),  # up face
             np.array(
                 [[-c_pt, c_pt, -c_pt], [-c_pt, c_pt, c_pt], [-c_pt, -c_pt, c_pt], [-c_pt, -c_pt, -c_pt]],
                 dtype=np.float32,
@@ -74,7 +74,7 @@ class ArucoCube:
                 [[-c_pt, -c_pt, -c_pt], [c_pt, -c_pt, -c_pt], [c_pt, c_pt, -c_pt], [-c_pt, c_pt, -c_pt]],
                 dtype=np.float32,
             ),  # front face
-        ] #0,1,2,3,4,5
+        ]  # 0,1,2,3,4,5
 
         self.cube = aruco.Board(self.cube_corners, self.aruco_dict, self.cube_ids)
 
@@ -155,10 +155,10 @@ class ArucoCube:
             tvec = data["tvec"]
 
             cv2.drawFrameAxes(frame, self.camera.camera_matrix, self.camera.dist_coeffs, rvec, tvec, 0.03)
-            translation = tvec.flatten()
+            trans = tvec.flatten()
             cv2.putText(
                 frame,
-                f"{marker_id} - x: {np.round(translation[0],3)}, y: {np.round(translation[1],3)}, z: {np.round(translation[2],3)}",
+                f"{marker_id} - {np.round(trans,3)}",
                 (10, 20 + 20 * marker_id),
                 cv2.FONT_HERSHEY_SIMPLEX,
                 0.75,

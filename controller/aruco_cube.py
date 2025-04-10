@@ -147,28 +147,6 @@ class ArucoCube:
 
         self.markers_dict = markers_dict
 
-    def show_markers_infos(self, frame, markers_dict):
-        markers_corners, markers_ids = self.detect_markers(frame)
-        aruco.drawDetectedMarkers(frame, markers_corners, markers_ids)
-        for marker_id, data in markers_dict.items():
-            rvec = data["rvec"]
-            tvec = data["tvec"]
-
-            cv2.drawFrameAxes(frame, self.camera.camera_matrix, self.camera.dist_coeffs, rvec, tvec, 0.03)
-            trans = tvec.flatten()
-            cv2.putText(
-                frame,
-                f"{marker_id} - {np.round(trans,3)}",
-                (10, 20 + 20 * marker_id),
-                cv2.FONT_HERSHEY_SIMPLEX,
-                0.75,
-                (0, 255, 0),
-                2,
-            )
-        # cv2.aruco.drawDetectedMarkers(frame, [corners], np.array([[marker_id]]))
-
-        return frame
-
     def stop(self):
         self.camera.cap.release()
         cv2.destroyAllWindows()

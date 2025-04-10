@@ -1,6 +1,9 @@
+import json
+import os
 import threading
 import time
 from collections import deque
+from typing import Deque, Optional
 
 import cv2  # type: ignore
 import numpy as np
@@ -8,28 +11,43 @@ from scipy.spatial.transform import Rotation as R  # type: ignore
 
 
 class Camera:
-    def __init__(self):
-        self.cap = cv2.VideoCapture(0)
-        self.camera_matrix = np.eye(3)
-        self.dist_coeffs = np.zeros((5, 1))
+    def __init__(self, phone_mode: bool = False, camera_ip: Optional[str] = None, with_calibration: bool = False):
+        if phone_mode:
+            camera_ip = '172.16.0.56'
+            self.cap = cv2.VideoCapture(f'http://{camera_ip}:8080/video')
+        else:
+            camera_ip = 'webcam'
+            self.cap = cv2.VideoCapture(0)
 
-        self.frame = deque(maxlen=1)
-
+        self.frame: Deque[np.ndarray] = deque(maxlen=1)
         self.frame_getter = threading.Thread(target=self.get_frame, daemon=True)
         self.frame_getter.start()
 
-        self.calibrate_camera()
+        self.calibrate_camera(with_calibration, camera_ip)
 
-    def calibrate_camera(self):
-        while len(self.frame) == 0:
-            time.sleep(0.05)
-        frame = self.frame[0]
-        focal_length = frame.shape[1]
-        center = (frame.shape[1] / 2, frame.shape[0] / 2)
-        self.camera_matrix = np.array(
-            [[focal_length, 0, center[0]], [0, focal_length, center[1]], [0, 0, 1]],
-            dtype="double",
-        )
+    def calibrate_camera(self, with_calibration: bool, camera_ip: str):
+        if with_calibration:
+            current_dir = os.path.dirname(__file__)
+            json_path = os.path.join(current_dir, '..', 'cameras_param', f'{camera_ip}.json')
+            json_path = os.path.abspath(json_path)
+
+            with open(json_path, 'r') as f:
+                camera_params = json.load(f)
+
+                self.camera_matrix = np.array(camera_params['camera_matrix'], dtype=np.float32)
+                self.dist_coeffs = np.array(camera_params['dist_coeffs'], dtype=np.float32)
+
+        else:
+            while len(self.frame) == 0:
+                time.sleep(0.05)
+            frame = self.frame[0]
+            focal_length = frame.shape[1]
+            center = (frame.shape[1] / 2, frame.shape[0] / 2)
+            self.camera_matrix = np.array(
+                [[focal_length, 0, center[0]], [0, focal_length, center[1]], [0, 0, 1]],
+                dtype="double",
+            )
+            self.dist_coeffs = np.zeros((5, 1), dtype=np.float64)
 
     def get_frame(self):
         while True:
@@ -37,13 +55,9 @@ class Camera:
             if success:
                 frame_processed = self.post_process_image(frame)
                 self.frame.append(frame_processed)
-            time.sleep(0.02)
+            time.sleep(0.005)
 
     def post_process_image(self, frame):
-        # image_contrast = cv2.convertScaleAbs(frame_processed, alpha=1.5, beta=0)
-        # clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
-        # frame_clahe = clahe.apply(image_contrast)
-        # return frame_clahe
         frame_gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 
         blurred = cv2.GaussianBlur(frame_gray, (5, 5), 1)
@@ -95,4 +109,24 @@ class Camera:
                     2,
                 )
 
+        return frame
+
+    def get_frame_with_markers(self, markers_dict):
+        frame = self.frame[0]
+        for marker_id, data in markers_dict.items():
+            rvec = data["rvec"]
+            tvec = data["tvec"]
+
+            cv2.drawFrameAxes(frame, self.camera.camera_matrix, self.camera.dist_coeffs, rvec, tvec, 0.03)
+            trans = tvec.flatten()
+            cv2.putText(
+                frame,
+                f"{marker_id} - {np.round(trans,3)}",
+                (10, 20 + 20 * marker_id),
+                cv2.FONT_HERSHEY_SIMPLEX,
+                0.75,
+                (0, 255, 0),
+                2,
+            )
+        # cv2.aruco.drawDetectedMarkers(frame, [corners], np.array([[marker_id]]))
         return frame

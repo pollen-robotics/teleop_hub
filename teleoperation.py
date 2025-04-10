@@ -13,13 +13,13 @@ MODE = DUAL_ARM
 
 
 class Teleoperation:
-    def __init__(self, marker_size=0.04):
+    def __init__(self, marker_size=[0.06, 0.03]):
         self.camera = Camera()
 
         if MODE == DUAL_ARM:
             self.controllers = {
-                LEFT_ARM: Controller(LEFT_ARM, marker_size, self.camera),
-                RIGHT_ARM: Controller(RIGHT_ARM, marker_size, self.camera),
+                LEFT_ARM: Controller(LEFT_ARM, marker_size[0], self.camera),
+                RIGHT_ARM: Controller(RIGHT_ARM, marker_size[1], self.camera),
             }
         elif MODE == LEFT_ARM:
             self.controllers = {LEFT_ARM: Controller(LEFT_ARM, marker_size, self.camera)}
@@ -32,7 +32,6 @@ class Teleoperation:
         self.robot.init_robot()
 
         self.controller_previous_pose = {LEFT_ARM: None, RIGHT_ARM: None}
-
         self.robot_previous_pose = {LEFT_ARM: None, RIGHT_ARM: None}
 
         for controller in self.controllers.values():
@@ -54,12 +53,12 @@ class Teleoperation:
         while True:
             t = time.time()
             for controller in self.controllers.values():
-
                 pose = controller.get_controller_pose()
                 robot_pose = self.controller_pose_to_robot_pose(pose, controller.arm)
                 self.robot.go_to_pose(robot_pose, controller.arm)
                 self.controller_previous_pose[controller.arm] = pose
                 self.robot_previous_pose[controller.arm] = robot_pose
+
             frame = self.camera.get_frame_with_cube_pose(
                 [self.controllers[arm].aruco_cube.cube_pose for arm in self.controllers.keys()]
             )

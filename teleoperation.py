@@ -22,11 +22,17 @@ class Teleoperation:
                 RIGHT_ARM: Controller(RIGHT_ARM, marker_size[1], self.camera),
             }
         elif MODE == LEFT_ARM:
-            self.controllers = {LEFT_ARM: Controller(LEFT_ARM, marker_size, self.camera)}
+            self.controllers = {
+                LEFT_ARM: Controller(LEFT_ARM, marker_size, self.camera)
+            }
         elif MODE == RIGHT_ARM:
-            self.controllers = {RIGHT_ARM: Controller(RIGHT_ARM, marker_size, self.camera)}
+            self.controllers = {
+                RIGHT_ARM: Controller(RIGHT_ARM, marker_size, self.camera)
+            }
         else:
-            raise ValueError(f"Invalid mode: {MODE}, available modes: {DUAL_ARM}, {LEFT_ARM}, {RIGHT_ARM}")
+            raise ValueError(
+                f"Invalid mode: {MODE}, available modes: {DUAL_ARM}, {LEFT_ARM}, {RIGHT_ARM}"
+            )
 
         self.robot = Reachy2()
         self.robot.init_robot()
@@ -35,16 +41,22 @@ class Teleoperation:
         self.robot_previous_pose = {LEFT_ARM: None, RIGHT_ARM: None}
 
         for controller in self.controllers.values():
-            self.controller_previous_pose[controller.arm] = controller.get_controller_pose()
+            self.controller_previous_pose[
+                controller.arm
+            ] = controller.get_controller_pose()
             self.robot_previous_pose[controller.arm] = self.robot.fk(controller.arm)
 
     def controller_pose_to_robot_pose(self, controller_pose, arm):
         robot_pose = self.robot_previous_pose[arm].copy()
 
-        diff_position = controller_pose[:3, 3] - self.controller_previous_pose[arm][:3, 3]
+        diff_position = (
+            controller_pose[:3, 3] - self.controller_previous_pose[arm][:3, 3]
+        )
         robot_pose[:3, 3] += diff_position
 
-        diff_orientation = controller_pose[:3, :3] @ self.controller_previous_pose[arm][:3, :3].T
+        diff_orientation = (
+            controller_pose[:3, :3] @ self.controller_previous_pose[arm][:3, :3].T
+        )
         robot_pose[:3, :3] = diff_orientation @ self.robot_previous_pose[arm][:3, :3]
         return robot_pose
 
@@ -60,7 +72,10 @@ class Teleoperation:
                 self.robot_previous_pose[controller.arm] = robot_pose
 
             frame = self.camera.get_frame_with_cube_pose(
-                [self.controllers[arm].aruco_cube.cube_pose for arm in self.controllers.keys()]
+                [
+                    self.controllers[arm].aruco_cube.cube_pose
+                    for arm in self.controllers.keys()
+                ]
             )
             cv2.imshow("frame", frame)
             cv2.waitKey(1)

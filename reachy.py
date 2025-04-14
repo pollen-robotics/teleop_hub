@@ -27,17 +27,27 @@ class Reachy2:
 
         position = [0.36, -0.2, -0.28]
         orientation = R.from_euler("xyz", [0, -np.pi / 2, 0], degrees=False)
-        r_pose = make_homogenous_matrix_from_rotation_matrix(orientation.as_matrix(), position)
+        r_pose = make_homogenous_matrix_from_rotation_matrix(
+            orientation.as_matrix(), position
+        )
         position = [0.36, 0.2, -0.28]
         orientation = R.from_euler("xyz", [0, -np.pi / 2, 0], degrees=False)
-        l_pose = make_homogenous_matrix_from_rotation_matrix(orientation.as_matrix(), position)
+        l_pose = make_homogenous_matrix_from_rotation_matrix(
+            orientation.as_matrix(), position
+        )
         head_joints = [0, 0, 0]
 
         joints = self.reachy.r_arm.inverse_kinematics(r_pose)
-        self.reachy.r_arm.goto(joints, 3.0, degrees=True, interpolation_mode="minimum_jerk", wait=False)
+        self.reachy.r_arm.goto(
+            joints, 3.0, degrees=True, interpolation_mode="minimum_jerk", wait=False
+        )
         joints = self.reachy.l_arm.inverse_kinematics(l_pose)
-        self.reachy.l_arm.goto(joints, 3.0, degrees=True, interpolation_mode="minimum_jerk", wait=False)
-        self.reachy.head.goto(head_joints, 3.0, degrees=True, interpolation_mode="minimum_jerk", wait=True)
+        self.reachy.l_arm.goto(
+            joints, 3.0, degrees=True, interpolation_mode="minimum_jerk", wait=False
+        )
+        self.reachy.head.goto(
+            head_joints, 3.0, degrees=True, interpolation_mode="minimum_jerk", wait=True
+        )
 
     def fk(self, arm):
         if arm == "r_arm":

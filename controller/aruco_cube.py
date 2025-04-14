@@ -9,7 +9,18 @@ from controller.camera import Camera
 
 
 class ArucoCube:
-    def __init__(self, camera: Camera, marker_size: float = 0.04, arm: str = "l_arm"):
+    """Class to detect and track an ArUco cube."""
+
+    def __init__(
+        self, camera: Camera, marker_size: float = 0.04, arm: str = "l_arm"
+    ) -> None:
+        """Initialize the ArUco cube.
+
+        Args:
+            camera (Camera): Camera object to get the frame.
+            marker_size (float): Size of the markers in meters.
+            arm (str): Corresponding arm for teleoperation. Either "l_arm" or "r_arm".
+        """
         self.arm = arm
 
         self.camera = camera
@@ -19,7 +30,6 @@ class ArucoCube:
 
         self.aruco_dict = aruco.getPredefinedDictionary(aruco.DICT_6X6_1000)
         aruco_param = aruco.DetectorParameters()
-        # aruco_param.cornerRefinementMethod = cv2.aruco.CORNER_REFINE_CONTOUR
         self.detector = aruco.ArucoDetector(self.aruco_dict, aruco_param)
 
         self.cube = None
@@ -28,7 +38,8 @@ class ArucoCube:
 
         self.markers_dict = {}
 
-    def define_cube(self):
+    def define_cube(self) -> None:
+        """Define the cube with specific markers, depending on the arm."""
         c_pt = self.marker_size / 2
 
         if self.arm == "r_arm":
@@ -47,38 +58,84 @@ class ArucoCube:
             right_marker = 9
             front_marker = 10
 
-        self.cube_ids = np.array([back_marker, up_marker, left_marker, down_marker, right_marker, front_marker])
+        self.cube_ids = np.array(
+            [
+                back_marker,
+                up_marker,
+                left_marker,
+                down_marker,
+                right_marker,
+                front_marker,
+            ]
+        )
 
         self.cube_corners = [
             np.array(
-                [[-c_pt, c_pt, c_pt], [c_pt, c_pt, c_pt], [c_pt, -c_pt, c_pt], [-c_pt, -c_pt, c_pt]],
+                [
+                    [-c_pt, c_pt, c_pt],
+                    [c_pt, c_pt, c_pt],
+                    [c_pt, -c_pt, c_pt],
+                    [-c_pt, -c_pt, c_pt],
+                ],
                 dtype=np.float32,
             ),  # back face (left corner at the right bottom)
             np.array(
-                [[-c_pt, -c_pt, c_pt], [c_pt, -c_pt, c_pt], [c_pt, -c_pt, -c_pt], [-c_pt, -c_pt, -c_pt]],
+                [
+                    [-c_pt, -c_pt, c_pt],
+                    [c_pt, -c_pt, c_pt],
+                    [c_pt, -c_pt, -c_pt],
+                    [-c_pt, -c_pt, -c_pt],
+                ],
                 dtype=np.float32,
             ),  # up face
             np.array(
-                [[-c_pt, c_pt, -c_pt], [-c_pt, c_pt, c_pt], [-c_pt, -c_pt, c_pt], [-c_pt, -c_pt, -c_pt]],
+                [
+                    [-c_pt, c_pt, -c_pt],
+                    [-c_pt, c_pt, c_pt],
+                    [-c_pt, -c_pt, c_pt],
+                    [-c_pt, -c_pt, -c_pt],
+                ],
                 dtype=np.float32,
             ),  # left face
             np.array(
-                [[-c_pt, c_pt, -c_pt], [c_pt, c_pt, -c_pt], [c_pt, c_pt, c_pt], [-c_pt, c_pt, c_pt]],
+                [
+                    [-c_pt, c_pt, -c_pt],
+                    [c_pt, c_pt, -c_pt],
+                    [c_pt, c_pt, c_pt],
+                    [-c_pt, c_pt, c_pt],
+                ],
                 dtype=np.float32,
             ),  # down face
             np.array(
-                [[c_pt, c_pt, c_pt], [c_pt, c_pt, -c_pt], [c_pt, -c_pt, -c_pt], [c_pt, -c_pt, c_pt]],
+                [
+                    [c_pt, c_pt, c_pt],
+                    [c_pt, c_pt, -c_pt],
+                    [c_pt, -c_pt, -c_pt],
+                    [c_pt, -c_pt, c_pt],
+                ],
                 dtype=np.float32,
             ),  # right face
             np.array(
-                [[-c_pt, -c_pt, -c_pt], [c_pt, -c_pt, -c_pt], [c_pt, c_pt, -c_pt], [-c_pt, c_pt, -c_pt]],
+                [
+                    [-c_pt, -c_pt, -c_pt],
+                    [c_pt, -c_pt, -c_pt],
+                    [c_pt, c_pt, -c_pt],
+                    [-c_pt, c_pt, -c_pt],
+                ],
                 dtype=np.float32,
             ),  # front face
         ]  # 0,1,2,3,4,5
 
         self.cube = aruco.Board(self.cube_corners, self.aruco_dict, self.cube_ids)
 
-    def update_cube_pose(self):
+    def update_cube_pose(self) -> np.ndarray:
+        """Update the cube pose using the camera frame.
+
+        This function detects the markers in the frame and estimates the pose of the cube.
+
+        Returns:
+            cube_pose (np.ndarray): The pose of the cube in the camera frame.
+        """
         try:
             self.frame = self.camera.frame[0]
         except IndexError:
@@ -92,7 +149,13 @@ class ArucoCube:
             markers_ids = np.array(markers_ids, dtype=np.int32)
 
             _, rvec, tvec = cv2.aruco.estimatePoseBoard(
-                markers_corners, markers_ids, self.cube, self.camera.camera_matrix, self.camera.dist_coeffs, None, None
+                markers_corners,
+                markers_ids,
+                self.cube,
+                self.camera.camera_matrix,
+                self.camera.dist_coeffs,
+                None,
+                None,
             )
 
             if rvec is not None and tvec is not None:
@@ -104,11 +167,28 @@ class ArucoCube:
 
         return self.cube_pose
 
-    def detect_markers(self):
+    def detect_markers(self) -> tuple[np.ndarray, np.ndarray]:
+        """Detect markers in the current frame.
+
+        Returns:
+            marker_corners (np.ndarray): The corners of the detected markers.
+            marker_ids (np.ndarray): The IDs of the detected markers.
+        """
         marker_corners, marker_ids, _ = self.detector.detectMarkers(self.frame)
         return marker_corners, marker_ids
 
-    def estimate_PoseSingleMarkers(self, corners):
+    def estimate_PoseSingleMarkers(
+        self, corners: np.ndarray
+    ) -> tuple[np.ndarray, np.ndarray]:
+        """Estimate the pose of single markers.
+
+        Args:
+            corners (np.ndarray): The corners of the detected markers.
+
+        Returns:
+            rvecs (np.ndarray): The rotation vectors of the markers.
+            tvecs (np.ndarray): The translation vectors of the markers.
+        """
         marker_points = np.array(
             [
                 [-self.marker_size / 2, self.marker_size / 2, 0],
@@ -133,7 +213,12 @@ class ArucoCube:
             tvecs.append(t)
         return np.array(rvecs), np.array(tvecs)
 
-    def get_markers_dict(self):
+    def get_markers_dict(self) -> None:
+        """Get the markers dictionary.
+
+        This function detects the markers in the current frame and estimates their poses.
+        It stores the poses in a dictionary with the marker IDs as keys.
+        """
         marker_corners, marker_ids = self.detect_markers(self.frame)
         markers_dict = {}
 
@@ -143,11 +228,16 @@ class ArucoCube:
             )
 
             for i, marker_id in enumerate(marker_ids):
-                markers_dict[marker_id[0]] = {"corners": marker_corners[i], "rvec": rvecs[i], "tvec": tvecs[i]}
+                markers_dict[marker_id[0]] = {
+                    "corners": marker_corners[i],
+                    "rvec": rvecs[i],
+                    "tvec": tvecs[i],
+                }
 
         self.markers_dict = markers_dict
 
-    def stop(self):
+    def stop(self) -> None:
+        """Stop the camera and close all windows."""
         self.camera.cap.release()
         cv2.destroyAllWindows()
         self.camera.frame_getter.join()

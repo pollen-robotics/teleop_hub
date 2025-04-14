@@ -11,31 +11,62 @@ from scipy.spatial.transform import Rotation as R  # type: ignore
 
 
 class Camera:
-    def __init__(self, phone_mode: bool = False, camera_ip: Optional[str] = None, with_calibration: bool = False):
-        if phone_mode:
-            camera_ip = '172.16.0.56'
-            self.cap = cv2.VideoCapture(f'http://{camera_ip}:8080/video')
+    def __init__(
+        self,
+        usb_mode: bool = True,
+        camera_id: str = "0",
+        with_calibration: bool = True,
+    ):
+        """Initialize the camera stream.
+
+        Args:
+            usb_mode (bool): If True, use USB camera. If False, use IP camera (such as smartphone).
+            camera_id (str): Camera ID.
+                If usb_mode, this is the camera index ('0' for the integrated one, '-1' for the last plugged one)
+                If not usb_mode, this is the IP address of the camera (for example : '10.0.0.201').
+            with_calibration (bool): If True, use the parameters given by the camera calibration script.
+              If False, use manual camera parameters.
+        """
+        if usb_mode:
+            camera_index = int(camera_id) if camera_id else 0
+            self.cap = cv2.VideoCapture(camera_index)
         else:
-            camera_ip = 'webcam'
-            self.cap = cv2.VideoCapture(0)
+            self.cap = cv2.VideoCapture(f"http://{camera_id}:8080/video")
 
         self.frame: Deque[np.ndarray] = deque(maxlen=1)
         self.frame_getter = threading.Thread(target=self.get_frame, daemon=True)
         self.frame_getter.start()
 
-        self.calibrate_camera(with_calibration, camera_ip)
+        self.calibrate_camera(camera_id, with_calibration)
 
-    def calibrate_camera(self, with_calibration: bool, camera_ip: str):
+    def calibrate_camera(self, camera_id: str, with_calibration: bool) -> None:
+        """Get the camera parameters.
+
+        Args:
+            with_calibration (bool): If True, use the parameters given by the camera calibration script.
+                If False, use manual camera parameters.
+            camera_id (str): Camera ID (either the camera index or the IP address).
+        """
         if with_calibration:
             current_dir = os.path.dirname(__file__)
-            json_path = os.path.join(current_dir, '..', 'cameras_param', f'{camera_ip}.json')
+            json_path = os.path.join(
+                current_dir,
+                "..",
+                "camera_calibration",
+                "camera_parameters",
+                f"camera_{camera_id}.json",
+            )
             json_path = os.path.abspath(json_path)
 
-            with open(json_path, 'r') as f:
+            with open(json_path, "r") as f:
                 camera_params = json.load(f)
 
-                self.camera_matrix = np.array(camera_params['camera_matrix'], dtype=np.float32)
-                self.dist_coeffs = np.array(camera_params['dist_coeffs'], dtype=np.float32)
+                self.camera_matrix = np.array(
+                    camera_params["camera_matrix"], dtype=np.float32
+                )
+                self.dist_coeffs = np.array(
+                    camera_params["dist_coeffs"], dtype=np.float32
+                )
 
         else:
             while len(self.frame) == 0:
@@ -49,7 +80,11 @@ class Camera:
             )
             self.dist_coeffs = np.zeros((5, 1), dtype=np.float64)
 
-    def get_frame(self):
+    def get_frame(self) -> None:
+        """Get the camera frame with post-processing.
+
+        This function runs in a separate thread to avoid blocking the main thread.
+        """
         while True:
             success, frame = self.cap.read()
             if success:
@@ -57,7 +92,16 @@ class Camera:
                 self.frame.append(frame_processed)
             time.sleep(0.005)
 
-    def post_process_image(self, frame):
+    def post_process_image(self, frame: np.ndarray) -> np.ndarray:
+        """Post-process the image.
+
+        This function is used to enhance the image for better cube detection.
+        It applies a Gaussian blur and Canny edge detection to the image.
+        Args:
+            frame: The image frame to process.
+        Returns:
+            The processed image.
+        """
         frame_gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 
         blurred = cv2.GaussianBlur(frame_gray, (5, 5), 1)
@@ -75,9 +119,21 @@ class Camera:
 
         return enhanced_image
 
-    def get_frame_with_cube_pose(self, cube_pose_list):
+    def get_frame_with_cube_pose(self, cube_pose_list: list) -> Optional[np.ndarray]:
+        """Show information about the cubes poses on the frame.
+
+        This function draws the cube poses on the frame and displays their position and orientation.
+        It uses the camera parameters to draw the axes of the cube poses.
+        It also shows the roll, pitch, and yaw angles of the cube poses.
+
+        Args:
+            cube_pose_list: List of cube poses (left and right)
+                Each pose is a 4x4 matrix representing the cube's position and orientation.
+        Returns:
+            The frame with the cube infos.
+        """
         if len(self.frame) == 0:
-            return
+            return None
 
         frame = self.frame[0]
         for i, cube_pose in enumerate(cube_pose_list):
@@ -85,7 +141,9 @@ class Camera:
                 side = "right" if i == 1 else "left"
                 rvec = R.from_matrix(cube_pose[:3, :3]).as_rotvec()
                 tvec = cube_pose[:3, 3]
-                cv2.drawFrameAxes(frame, self.camera_matrix, self.dist_coeffs, rvec, tvec, 0.03)
+                cv2.drawFrameAxes(
+                    frame, self.camera_matrix, self.dist_coeffs, rvec, tvec, 0.03
+                )
 
                 cv2.putText(
                     frame,
@@ -97,7 +155,9 @@ class Camera:
                     2,
                 )
 
-                roll, pitch, yaw = R.from_matrix(cube_pose[:3, :3]).as_euler("xyz", degrees=True)
+                roll, pitch, yaw = R.from_matrix(cube_pose[:3, :3]).as_euler(
+                    "xyz", degrees=True
+                )
 
                 cv2.putText(
                     frame,
@@ -111,13 +171,32 @@ class Camera:
 
         return frame
 
-    def get_frame_with_markers(self, markers_dict):
+    def get_frame_with_markers(self, markers_dict: dict) -> np.ndarray:
+        """Show information about the markers poses on the frame.
+
+        This function draws the markers poses on the frame and displays their position and orientation.
+        It uses the camera parameters to draw the axes of the markers poses.
+
+        Args:
+            markers_dict: Dictionary of markers poses.
+                Each pose is a dictionary containing the rotation and translation vectors.
+                The keys are the marker IDs and the values are dictionaries with the keys 'rvec' and 'tvec'.
+        Returns:
+            The frame with the markers infos.
+        """
         frame = self.frame[0]
         for marker_id, data in markers_dict.items():
             rvec = data["rvec"]
             tvec = data["tvec"]
 
-            cv2.drawFrameAxes(frame, self.camera.camera_matrix, self.camera.dist_coeffs, rvec, tvec, 0.03)
+            cv2.drawFrameAxes(
+                frame,
+                self.camera_matrix,
+                self.dist_coeffs,
+                rvec,
+                tvec,
+                0.03,
+            )
             trans = tvec.flatten()
             cv2.putText(
                 frame,

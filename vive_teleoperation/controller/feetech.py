@@ -77,10 +77,10 @@ class Feetech:
         steps = int(duration * freq)
         current_positions = self.get_joints()
         for i in range(steps):
-            for j in range(1, len([self.ids]) +1):
+            for j in range(1, len(self.ids) +1):
                 self.set_position(j, current_positions[j-1] + (joints[j-1] - current_positions[j-1]) * i / steps)
             time.sleep(1/freq)
-        for j in range(1, len([self.ids]) +1):
+        for j in range(1, len(self.ids) +1):
             self.set_position(j, joints[j-1])
 
     def get_joints(self):
@@ -94,7 +94,7 @@ if __name__ == "__main__":
         
         pos = []
         for id in feetech.ids:
-            position = feetech.get_position(i)
+            position = feetech.get_position(id)
             print(f"Id : {id} Position : {position}")
             pos.append(position)
 

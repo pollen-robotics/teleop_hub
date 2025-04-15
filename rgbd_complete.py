@@ -332,7 +332,7 @@ class KalmanFilter3D:
         error_cov_post=1.0,
         add_median_filter=True,
         median_filter_size=5,
-        dt=1 / 25,  # Temps entre deux mises à jour (~25 FPS)
+        dt=1 / 20,  # Temps entre deux mises à jour (~20 FPS)
     ):
         self.kf = cv2.KalmanFilter(9, 3)  # 9 états : position (x,y,z) + vitesse (vx,vy,vz) + accélération (ax,ay,az)
 
@@ -1254,7 +1254,7 @@ if __name__ == "__main__":
     camera = Orbbec()
     scale_percent = 50
     timestep = 0.02
-    robot = RobotController("172.16.0.64")
+    robot = RobotController("localhost")
     teleop = TeleopControl(camera, robot, scale_percent, timestep, mirror_mode=True)
     print("Teleoperation started")
     teleop.run()

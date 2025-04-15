@@ -8,6 +8,7 @@ trackers = {
     "r_arm": "LHR-D520271F",
 }
 
+
 class ViveTracker:
     def __init__(self, tracker_id):
         self.tracker_name = tracker_id
@@ -54,12 +55,29 @@ class ViveTracker:
         :param hmd_matrix: Matrice OpenVR (hmd_matrix.mDeviceToAbsoluteTracking)
         :return: Matrice 4x4 NumPy
         """
-        m = np.array([
-            [hmd_matrix[0][0], hmd_matrix[0][1], hmd_matrix[0][2], hmd_matrix[0][3]],
-            [hmd_matrix[1][0], hmd_matrix[1][1], hmd_matrix[1][2], hmd_matrix[1][3]],
-            [hmd_matrix[2][0], hmd_matrix[2][1], hmd_matrix[2][2], hmd_matrix[2][3]],
-            [0, 0, 0, 1]
-        ])
+        m = np.array(
+            [
+                [
+                    hmd_matrix[0][0],
+                    hmd_matrix[0][1],
+                    hmd_matrix[0][2],
+                    hmd_matrix[0][3],
+                ],
+                [
+                    hmd_matrix[1][0],
+                    hmd_matrix[1][1],
+                    hmd_matrix[1][2],
+                    hmd_matrix[1][3],
+                ],
+                [
+                    hmd_matrix[2][0],
+                    hmd_matrix[2][1],
+                    hmd_matrix[2][2],
+                    hmd_matrix[2][3],
+                ],
+                [0, 0, 0, 1],
+            ]
+        )
         return m
 
     def update_tracker_pose(self):

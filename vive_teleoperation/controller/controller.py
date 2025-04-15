@@ -1,13 +1,12 @@
 import time
 import threading
 
-from controller.arduino import ArduinoController
-from controller.feetech import Feetech
-from controller.vive_tracker import ViveTracker
+from controller.arduino import ArduinoController  # type: ignore
+from controller.vive_tracker import ViveTracker  # type: ignore
 
 import numpy as np
-from scipy.spatial.transform import Rotation as R
-from utils import make_homogenous_matrix_from_rotation_matrix
+from scipy.spatial.transform import Rotation as R  # type: ignore
+from utils import make_homogenous_matrix_from_rotation_matrix  # type: ignore
 
 
 feetech_ports = {
@@ -20,16 +19,12 @@ arduino_ports = {
     "r_arm": "/dev/noVR_right_arduino",
 }
 
-gripper_joints = {
-    "l_arm" : [65, 30],
-    "r_arm" : [-65, -30]
-}
+gripper_joints = {"l_arm": [65, 30], "r_arm": [-65, -30]}
 
 
 class Controller:
     def __init__(self, arm):
         self.arduino = ArduinoController(arduino_ports[arm])
-        # self.feetech = Feetech(feetech_ports[arm])
         self.tracker = ViveTracker(arm)
 
         self.stop_flag = False
@@ -42,7 +37,7 @@ class Controller:
         self.buttonB = None
 
         thread = threading.Thread(target=self._update_arduino_data)
-        thread.daemon = True    
+        thread.daemon = True
         thread.start()
 
         self.gripper_joints_limit = gripper_joints[arm]
@@ -63,12 +58,10 @@ class Controller:
         self.tracker.update_tracker_pose()
         self.tracker_init_pose = self.tracker.tracker_pose
 
-
     def _update_arduino_data(self):
         while not self.stop_flag:
             x, y, button_cmd, buttonA, buttonB = self.arduino.read()
             if x is not None:
-                
                 self.joystick_button = button_cmd
                 if self.arm == "r_arm":
                     self.buttonA = buttonA
@@ -94,7 +87,6 @@ class Controller:
         return pose
     
     def rotate_pose(self, pose, arm):
-        
         relative_pose = np.linalg.inv(self.tracker_init_pose) @ pose
 
         if arm == "r_arm":
@@ -102,46 +94,44 @@ class Controller:
         else:
             angle_rotation = 30
         rotation = R.from_euler("xyz", [0, 0, angle_rotation], degrees=True).as_matrix()
-        Trot = make_homogenous_matrix_from_rotation_matrix(
-            rotation, [0, 0, 0])
+        Trot = make_homogenous_matrix_from_rotation_matrix(rotation, [0, 0, 0])
         relative_pose = Trot @ relative_pose
-
 
         if arm == "r_arm":
             rotation = R.from_euler("xyz", [180, 0, 0], degrees=True).as_matrix()
-            Trot = make_homogenous_matrix_from_rotation_matrix(
-                rotation, [0, 0, 0])
+            Trot = make_homogenous_matrix_from_rotation_matrix(rotation, [0, 0, 0])
             relative_pose = Trot @ relative_pose
 
         if arm == "l_arm":
             rotation = R.from_euler("xyz", [0, 180, 0], degrees=True).as_matrix()
-            Trot = make_homogenous_matrix_from_rotation_matrix(
-                rotation, [0, 0, 0])
+            Trot = make_homogenous_matrix_from_rotation_matrix(rotation, [0, 0, 0])
             relative_pose = Trot @ relative_pose
 
         return relative_pose
-        
+
     def stop(self):
         self.stop_flag = True
         self.arduino.close()
-        # self.feetech.close()
 
 
 if __name__ == "__main__":
     controller = Controller("r_arm")
-    # time.sleep(0.5)
 
     frequency = 100
-    try :
+    try:
         while True:
-            print(f"x: {controller.joystick_x}, y: {controller.joystick_y}, button_cmd: {controller.joystick_button}, buttonA: {controller.buttonA}, buttonB: {controller.buttonB}")
+            print(
+                (
+                    f"x: {controller.joystick_x}, y: {controller.joystick_y}, "
+                    f"button_cmd: {controller.joystick_button}, buttonA: {controller.buttonA}, "
+                    f"buttonB: {controller.buttonB}"
+                )
+            )
             gripper_joint = controller.get_gripper_joint()
             print(f"Gripper joint: {gripper_joint}")
             pose = controller.get_controller_pose()
             print(f"Controller pose: {pose}")
-            time.sleep(1/frequency)
-            
+            time.sleep(1 / frequency)
+
     except KeyboardInterrupt:
         controller.stop()
-   
-   

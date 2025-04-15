@@ -1,14 +1,12 @@
-from pypot.feetech import FeetechSTS3215IO
+from pypot.feetech import FeetechSTS3215IO  # type: ignore
 import time
-import threading
 import math
 # from lerobot.common.utils.kinematics import RobotKinematics
 
 
-#create Class feetech
+# Create Class feetech
 class Feetech:
     def __init__(self, port, nb_dof=5):
-
 
         self.io = FeetechSTS3215IO(
             port,
@@ -37,10 +35,6 @@ class Feetech:
         self.t = 0.01
         # self.pwm = 0
         self.stop = False
-
-    def set_torque_limit(self, torque):
-        for id in self.ids:
-            self.io.set_torque_limit({id: torque})
 
     def set_pwm(self, pwm):
         self.pwm = pwm
@@ -73,7 +67,6 @@ class Feetech:
             if self.stop:
                 break
 
-
     def close(self):
         self.stop = True
         self.disable_torque()
@@ -81,7 +74,7 @@ class Feetech:
 
     def get_position(self, id):
         return self.io.get_present_position([id])[0]
-    
+
     def set_position(self, id, position):
         self.io.set_goal_position({id: position})
 
@@ -100,7 +93,7 @@ class Feetech:
     def set_torque_limit(self, torque):
         for id in self.ids:
             self.io.set_torque_limit({id: torque})
-    
+
     def goto_position(self, id, position, duration):
         freq = 100
         steps = int(duration * freq)
@@ -126,21 +119,18 @@ class Feetech:
     def get_joints(self):
         return [self.get_position(id) for id in self.ids]
 
+
 if __name__ == "__main__":
-    try: 
+    try:
         feetech = Feetech("/dev/ttyACM0")
         time.sleep(1)
-        
+
         pos = []
         for id in feetech.ids:
             position = feetech.get_position(id)
             print(f"Id : {id} Position : {position}")
             pos.append(position)
 
-        
     except KeyboardInterrupt:
         feetech.close()
         print("Bye")
-
-
-    

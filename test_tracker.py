@@ -116,13 +116,11 @@ class ViveTracker:
         relative_pose = np.linalg.inv(self.zero_pose) @ self.tracker_pose
 
         rotation = R.from_euler("xyz", [0, 0, -30], degrees=True).as_matrix()
-        Trot = make_homogenous_matrix_from_rotation_matrix(
-            rotation, [0, 0, 0])
+        Trot = make_homogenous_matrix_from_rotation_matrix(rotation, [0, 0, 0])
         relative_pose = Trot @ relative_pose
 
         rotation = R.from_euler("xyz", [180, 0, 0], degrees=True).as_matrix()
-        Trot = make_homogenous_matrix_from_rotation_matrix(
-            rotation, [0, 0, 0])
+        Trot = make_homogenous_matrix_from_rotation_matrix(rotation, [0, 0, 0])
         relative_pose = Trot @ relative_pose
 
         return relative_pose

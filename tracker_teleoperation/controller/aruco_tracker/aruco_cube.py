@@ -1,18 +1,23 @@
 import time
+from typing import Optional
 
 import cv2  # type: ignore
 import cv2.aruco as aruco  # type: ignore
 import numpy as np
 from scipy.spatial.transform import Rotation as R  # type: ignore
 
-from controller.camera import Camera
+from tracker_teleoperation.controller.aruco_tracker.camera import Camera
+from tracker_teleoperation.controller.tracker import (  # type: ignore
+    Tracker,
+    TrackerType,
+)
 
 
-class ArucoCube:
+class ArucoCube(Tracker):
     """Class to detect and track an ArUco cube."""
 
     def __init__(
-        self, camera: Camera, marker_size: float = 0.04, arm: str = "l_arm"
+        self, arm: str, camera: Camera, marker_size: float = 0.05
     ) -> None:
         """Initialize the ArUco cube.
 
@@ -21,10 +26,11 @@ class ArucoCube:
             marker_size (float): Size of the markers in meters.
             arm (str): Corresponding arm for teleoperation. Either "l_arm" or "r_arm".
         """
-        self.arm = arm
+        super().__init__(arm)
+        self.tracker_type = TrackerType.ARUCO
 
         self.camera = camera
-        self.frame = None
+        self.frame: Optional[np.ndarray] = None
 
         self.marker_size = marker_size
 
@@ -34,9 +40,8 @@ class ArucoCube:
 
         self.cube = None
         self.define_cube()
-        self.cube_pose = None
 
-        self.markers_dict = {}
+        self.markers_dict: dict = {}
 
     def define_cube(self) -> None:
         """Define the cube with specific markers, depending on the arm."""
@@ -128,13 +133,13 @@ class ArucoCube:
 
         self.cube = aruco.Board(self.cube_corners, self.aruco_dict, self.cube_ids)
 
-    def update_cube_pose(self) -> np.ndarray:
+    def update_tracker_pose(self) -> Optional[np.ndarray]:
         """Update the cube pose using the camera frame.
 
         This function detects the markers in the frame and estimates the pose of the cube.
 
         Returns:
-            cube_pose (np.ndarray): The pose of the cube in the camera frame.
+            tracker_pose (np.ndarray): The pose of the cube in the camera frame.
         """
         try:
             self.frame = self.camera.frame[0]
@@ -159,13 +164,13 @@ class ArucoCube:
             )
 
             if rvec is not None and tvec is not None:
-                cube_pose = np.eye(4)
-                cube_pose[:3, :3] = R.from_rotvec(rvec.reshape(1, 3)).as_matrix()
+                tracker_pose = np.eye(4)
+                tracker_pose[:3, :3] = R.from_rotvec(rvec.reshape(1, 3)).as_matrix()
 
-                cube_pose[:3, 3] = tvec.flatten()
-                self.cube_pose = cube_pose
+                tracker_pose[:3, 3] = tvec.flatten()
+                self.tracker_pose = tracker_pose
 
-        return self.cube_pose
+        return self.tracker_pose
 
     def detect_markers(self) -> tuple[np.ndarray, np.ndarray]:
         """Detect markers in the current frame.
@@ -219,13 +224,11 @@ class ArucoCube:
         This function detects the markers in the current frame and estimates their poses.
         It stores the poses in a dictionary with the marker IDs as keys.
         """
-        marker_corners, marker_ids = self.detect_markers(self.frame)
+        marker_corners, marker_ids = self.detect_markers()
         markers_dict = {}
 
         if marker_ids is not None:
-            rvecs, tvecs = self.estimate_PoseSingleMarkers(
-                marker_corners, self.camera.camera_matrix, self.camera.dist_coeffs
-            )
+            rvecs, tvecs = self.estimate_PoseSingleMarkers(marker_corners)
 
             for i, marker_id in enumerate(marker_ids):
                 markers_dict[marker_id[0]] = {
@@ -245,12 +248,12 @@ class ArucoCube:
 
 if __name__ == "__main__":
     camera = Camera()
-    aruco_cube_left = ArucoCube(camera, arm="l_arm")
-    aruco_cube_right = ArucoCube(camera, arm="r_arm")
+    aruco_cube_left = ArucoCube(arm="l_arm", camera=camera, marker_size=0.06)
+    aruco_cube_right = ArucoCube(arm="r_arm", camera=camera, marker_size=0.03)
 
     while True:
-        left_pose = aruco_cube_left.update_cube_pose()
-        right_pose = aruco_cube_right.update_cube_pose()
+        left_pose = aruco_cube_left.update_tracker_pose()
+        right_pose = aruco_cube_right.update_tracker_pose()
         frame = camera.get_frame_with_cube_pose([left_pose, right_pose])
         cv2.imshow("Cube", frame)
 

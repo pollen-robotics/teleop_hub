@@ -1,7 +1,10 @@
 import time
-from controller.controller import Controller
-from robots.reachy2 import Reachy2
+
 import numpy as np
+from controller.aruco_tracker.camera import Camera  # type: ignore
+from controller.controller import Controller
+from controller.tracker import TrackerType  # type: ignore
+from robots.reachy2 import Reachy2
 
 DUAL_ARM = "dual_arm"
 LEFT_ARM = "l_arm"
@@ -10,18 +13,31 @@ MODE = RIGHT_ARM
 
 
 class Teleoperation:
-    def __init__(self):
+    def __init__(self, tracker_type: TrackerType, marker_size=[0.06, 0.03]):
         self.stop = True
+
+        if tracker_type == TrackerType.ARUCO:
+            self.camera = Camera()
+            self.marker_size = marker_size
+
+        elif tracker_type == TrackerType.VIVE:
+            self.camera = None
+            self.marker_size = np.zeros(2)
+
+        else:
+            raise ValueError(
+                f"Invalid controller type: {tracker_type}, available types: {TrackerType.ARUCO}, {TrackerType.VIVE}"
+            )
 
         if MODE == DUAL_ARM:
             self.controllers = {
-                LEFT_ARM: Controller(LEFT_ARM),
-                RIGHT_ARM: Controller(RIGHT_ARM),
+                LEFT_ARM: Controller(LEFT_ARM, self.camera, self.marker_size[0]),
+                RIGHT_ARM: Controller(RIGHT_ARM, self.camera, self.marker_size[1]),
             }
         elif MODE == LEFT_ARM:
-            self.controllers = {LEFT_ARM: Controller(LEFT_ARM)}
+            self.controllers = {LEFT_ARM: Controller(LEFT_ARM, self.camera, self.marker_size[0])}
         elif MODE == RIGHT_ARM:
-            self.controllers = {RIGHT_ARM: Controller(RIGHT_ARM)}
+            self.controllers = {RIGHT_ARM: Controller(RIGHT_ARM, self.camera, self.marker_size[1])}
         else:
             raise ValueError(
                 f"Invalid mode: {MODE}, available modes: {DUAL_ARM}, {LEFT_ARM}, {RIGHT_ARM}"
@@ -234,7 +250,6 @@ class Teleoperation:
                         for controller in self.controllers.values():
                             pose = controller.get_controller_pose()
 
-                            # print(pose[:3, :3])
                             if controller.arm == RIGHT_ARM and self.mode == 1:
                                 head_orientation = self.controller_to_head_orientation(
                                     pose, controller.arm
@@ -276,9 +291,11 @@ class Teleoperation:
                             self.robot.move_antenna(antenna, LEFT_ARM)
                             self.antenna_previous_position[LEFT_ARM] = antenna
                         self.robot.move_mobile_base(x, y, theta)
+
                 elif MODE == RIGHT_ARM or MODE == LEFT_ARM:
                     controller = self.controllers[MODE]
                     pose = controller.get_controller_pose()
+
                     if self.mode == 0:
                         robot_pose = self.controller_pose_to_robot_pose(
                             pose, controller.arm
@@ -295,6 +312,7 @@ class Teleoperation:
                             x = joystick_x
                             theta = joystick_y * 100
                         self.robot.move_mobile_base(x, y, theta)
+
                     elif self.mode == 1:
                         head_orientation = self.controller_to_head_orientation(
                             pose, controller.arm
@@ -307,6 +325,7 @@ class Teleoperation:
                         self.robot.move_antenna(antenna)
                         self.antenna_previous_position[controller.arm] = antenna
                     self.controller_previous_pose[controller.arm] = pose
+
                 else:
                     raise ValueError(
                         f"Invalid mode: {MODE}, available modes: {DUAL_ARM}, {LEFT_ARM}, {RIGHT_ARM}"

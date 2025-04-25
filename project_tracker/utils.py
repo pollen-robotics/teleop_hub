@@ -1,6 +1,7 @@
 import copy
 
 import numpy as np
+import yaml  # type: ignore
 from scipy.spatial.transform import Rotation as R  # type: ignore
 
 
@@ -70,3 +71,9 @@ def limit_orbita3d_joints(joints: list[float], orbita3D_max_angle: float) -> lis
     [roll, pitch, yaw] = rotation.as_euler("XYZ", degrees=False)
     joints = [float(roll), float(pitch), float(yaw)]
     return joints
+
+
+def load_config(path="config.yaml"):
+    with open(path, "r") as file:
+        config = yaml.safe_load(file)
+    return config

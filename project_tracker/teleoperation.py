@@ -7,24 +7,25 @@ import numpy as np
 from camera.camera import Camera  # type: ignore
 from camera.orbbec import Orbbec  # type: ignore
 from camera.rgb_camera import RGBCamera  # type: ignore
-from controller.controller import (
-    ArmRGBDController,
-    HeadRGBDController,
-    JoystickController,
-)
+from controller.joystick_controller import JoystickController  # type: ignore
+from controller.rgbd_controller import ArmRGBDController, HeadRGBDController
 from robots.reachy import Reachy2
 from trackers.rgbd_tracker.computer_vision import ComputerVision  # type: ignore
 from trackers.tracker import TrackerType  # type: ignore
+from utils import load_config
 
 DUAL_ARM = "dual_arm"
 LEFT_ARM = "l_arm"
 RIGHT_ARM = "r_arm"
-MODE = DUAL_ARM
 
 
 class Teleoperation(ABC):
-    def __init__(self, robot_ip="localhost", mirror_mode=False):
-        self.mirror_mode = mirror_mode
+    def __init__(self):
+        config = load_config("config.yaml")
+        robot_ip = config.get("robot_ip", "localhost")
+        mirror_mode = config.get("mirror_mode", False)
+        self.control_mode = config.get("control_mode", "dual_arm")
+
         self.robot = Reachy2(robot_ip, mirror_mode)
         self.controllers = {}
         self.controller_previous_pose = {LEFT_ARM: None, RIGHT_ARM: None}
@@ -64,15 +65,15 @@ class Teleoperation(ABC):
 
 
 class TeleoperationRGBD(Teleoperation):
-    def __init__(self, robot_ip="localhost", mirror_mode=False):
-        super().__init__(robot_ip, mirror_mode)
+    def __init__(self):
+        super().__init__()
         self.camera = Orbbec()
         self.computer_vision = ComputerVision(self.camera)
         self.controllers = {
-            LEFT_ARM: ArmRGBDController(self.computer_vision, LEFT_ARM, self.mirror_mode),
-            RIGHT_ARM: ArmRGBDController(self.computer_vision, RIGHT_ARM, self.mirror_mode),
+            LEFT_ARM: ArmRGBDController(self.computer_vision, LEFT_ARM),
+            RIGHT_ARM: ArmRGBDController(self.computer_vision, RIGHT_ARM),
         }
-        self.head_controller = HeadRGBDController(self.computer_vision, self.mirror_mode)
+        self.head_controller = HeadRGBDController(self.computer_vision)
         self.first_command_ok = False
 
     def init_teleoperation(self):
@@ -141,9 +142,9 @@ class TeleoperationRGBD(Teleoperation):
         cv2.waitKey(1)
 
 
-class TeleoperationWithButtons(Teleoperation):
-    def __init__(self, robot_ip: str, tracker_type: TrackerType, marker_size=[0.06, 0.03], mirror_mode=False):
-        super().__init__(robot_ip, mirror_mode)
+class JoystickTeleoperation(Teleoperation):
+    def __init__(self, tracker_type: TrackerType):
+        super().__init__()
         self.tracker_type = tracker_type
         self.mode = 0
         self.camera: Optional[Camera]
@@ -156,8 +157,8 @@ class TeleoperationWithButtons(Teleoperation):
             self.stop = True
 
         self.controllers = {
-            LEFT_ARM: JoystickController(tracker_type, LEFT_ARM, self.camera, marker_size[0], mirror_mode),
-            RIGHT_ARM: JoystickController(tracker_type, RIGHT_ARM, self.camera, marker_size[1], mirror_mode),
+            LEFT_ARM: JoystickController(tracker_type, LEFT_ARM, self.camera),
+            RIGHT_ARM: JoystickController(tracker_type, RIGHT_ARM, self.camera),
         }
 
         self.head_previous_pose = np.eye(3)
@@ -222,7 +223,7 @@ class TeleoperationWithButtons(Teleoperation):
         return antenna_position
 
     def manage_mode(self):
-        if MODE == DUAL_ARM:
+        if self.control_mode == DUAL_ARM:
             self._handle_stop_button(self.controllers[LEFT_ARM])
             self._handle_mode_toggle(self.controllers[RIGHT_ARM])
             self._handle_mode_set(self.controllers[LEFT_ARM])
@@ -232,8 +233,8 @@ class TeleoperationWithButtons(Teleoperation):
             for controller in self.controllers.values():
                 self._update_previous_buttons(controller)
 
-        elif MODE in [LEFT_ARM, RIGHT_ARM]:
-            controller = self.controllers[MODE]
+        elif self.control_mode in [LEFT_ARM, RIGHT_ARM]:
+            controller = self.controllers[self.control_mode]
             self._handle_stop_button(controller)
             self._handle_mode_toggle(controller)
             self._handle_joystick_toggle(controller, single_arm=True)
@@ -292,12 +293,12 @@ class TeleoperationWithButtons(Teleoperation):
                 cv2.waitKey(1)
 
     def update_robot_state(self):
-        if MODE == DUAL_ARM:
+        if self.control_mode == DUAL_ARM:
             self.update_dual_arm_state()
-        elif MODE in [RIGHT_ARM, LEFT_ARM]:
+        elif self.control_mode in [RIGHT_ARM, LEFT_ARM]:
             self.update_single_arm_state()
         else:
-            raise ValueError(f"Invalid mode: {MODE}")
+            raise ValueError(f"Invalid mode: {self.control_mode}")
 
     def update_dual_arm_state(self):
         if self.mode == 2:
@@ -343,7 +344,7 @@ class TeleoperationWithButtons(Teleoperation):
             # self.robot.move_mobile_base(x, y, theta)
 
     def update_single_arm_state(self):
-        controller = self.controllers[MODE]
+        controller = self.controllers[self.mode]
         pose = controller.get_controller_pose()
         if self.mode == 0:
             robot_pose = self.controller_pose_to_robot_pose(pose, controller.arm)
@@ -351,7 +352,7 @@ class TeleoperationWithButtons(Teleoperation):
             self.robot_previous_pose[controller.arm] = robot_pose
             x, y, theta = 0, 0, 0
             joystick_x, joystick_y = self.joystick_to_mobile_base(controller.joystick_x, controller.joystick_y)
-            if self.joystick_mode[MODE] == 0:
+            if self.joystick_mode[self.mode] == 0:
                 x, y = joystick_x, joystick_y
             else:
                 x = joystick_x
@@ -374,16 +375,17 @@ class TeleoperationWithButtons(Teleoperation):
 
 
 if __name__ == "__main__":
-    robot_ip = "localhost"
-    tracker_type = TrackerType.ARUCO
-    marker_size = [0.06, 0.03]
-    mirror_mode = False
+
+    config = load_config("config.yaml")
+    tracker_type_str = config.get("tracker_type", TrackerType.ARUCO).upper()
+    tracker_type = getattr(TrackerType, tracker_type_str, None)
+
     teleoperation: Teleoperation
 
     if tracker_type == TrackerType.ARUCO or tracker_type == TrackerType.VIVE:
-        teleoperation = TeleoperationWithButtons(robot_ip, tracker_type, marker_size, mirror_mode)
+        teleoperation = JoystickTeleoperation(tracker_type)
     elif tracker_type == TrackerType.RGBD:
-        teleoperation = TeleoperationRGBD(robot_ip, mirror_mode)
+        teleoperation = TeleoperationRGBD()
     else:
         raise ValueError(f"Invalid tracker type: {tracker_type}")
 

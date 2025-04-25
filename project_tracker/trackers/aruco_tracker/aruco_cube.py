@@ -7,12 +7,13 @@ import numpy as np
 from camera.rgb_camera import RGBCamera  # type: ignore
 from scipy.spatial.transform import Rotation as R  # type: ignore
 from trackers.tracker import Tracker, TrackerType  # type: ignore
+from utils import load_config  # type: ignore
 
 
 class ArucoCube(Tracker):
     """Class to detect and track an ArUco cube."""
 
-    def __init__(self, arm: str, camera: RGBCamera, marker_size: float = 0.05) -> None:
+    def __init__(self, arm: str, camera: RGBCamera) -> None:
         """Initialize the ArUco cube.
 
         Args:
@@ -23,40 +24,29 @@ class ArucoCube(Tracker):
         super().__init__(arm)
         self.tracker_type = TrackerType.ARUCO
 
+        config = load_config("config.yaml")
+
         self.camera = camera
         self.frame: Optional[np.ndarray] = None
 
-        self.marker_size = marker_size
+        self.marker_size = config.get("marker_size", {}).get(self.arm, 0.05)
+        self.marker_ids = config.get("marker_ids", {}).get(self.arm, [0, 1, 2, 3, 4, 5])
 
         self.aruco_dict = aruco.getPredefinedDictionary(aruco.DICT_6X6_1000)
         aruco_param = aruco.DetectorParameters()
         self.detector = aruco.ArucoDetector(self.aruco_dict, aruco_param)
 
         self.cube = None
-        self.define_cube()
+        self.define_cube(self.marker_ids)
 
         self.markers_dict: dict = {}
 
-    def define_cube(self) -> None:
+        print(f"Cube initialized with arm: {self.arm}, marker size: {self.marker_size}, marker ids: {self.marker_ids}")
+
+    def define_cube(self, marker_ids) -> None:
         """Define the cube with specific markers, depending on the arm."""
         c_pt = self.marker_size / 2
-
-        if self.arm == "r_arm":
-            back_marker = 0
-            up_marker = 1
-            left_marker = 2
-            down_marker = 3
-            right_marker = 4
-            front_marker = 5
-
-        else:
-            back_marker = 6
-            up_marker = 7
-            left_marker = 8
-            down_marker = 11
-            right_marker = 9
-            front_marker = 10
-
+        back_marker, up_marker, left_marker, down_marker, right_marker, front_marker = marker_ids
         self.cube_ids = np.array(
             [
                 back_marker,
@@ -67,7 +57,6 @@ class ArucoCube(Tracker):
                 front_marker,
             ]
         )
-
         self.cube_corners = [
             np.array(
                 [
@@ -240,8 +229,8 @@ class ArucoCube(Tracker):
 
 if __name__ == "__main__":
     camera = RGBCamera()
-    aruco_cube_left = ArucoCube(arm="l_arm", camera=camera, marker_size=0.06)
-    aruco_cube_right = ArucoCube(arm="r_arm", camera=camera, marker_size=0.03)
+    aruco_cube_left = ArucoCube(arm="l_arm", camera=camera)
+    aruco_cube_right = ArucoCube(arm="r_arm", camera=camera)
 
     while True:
         left_pose = aruco_cube_left.update_tracker_pose()

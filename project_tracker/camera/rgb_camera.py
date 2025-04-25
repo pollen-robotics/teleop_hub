@@ -1,23 +1,17 @@
-import json
-import os
 import threading
 import time
 from collections import deque
-from typing import Deque, Optional
+from typing import Optional
 
 import cv2  # type: ignore
 import numpy as np
 from camera.camera import Camera  # type: ignore
 from scipy.spatial.transform import Rotation as R  # type: ignore
+from utils import load_config  # type: ignore
 
 
 class RGBCamera(Camera):
-    def __init__(
-        self,
-        usb_mode: bool = True,
-        camera_id: str = "0",
-        with_calibration: bool = False,
-    ):
+    def __init__(self):
         """Initialize the camera stream.
 
         Args:
@@ -28,19 +22,26 @@ class RGBCamera(Camera):
             with_calibration (bool): If True, use the parameters given by the camera calibration script.
               If False, use manual camera parameters.
         """
+        super().__init__()
+        config = load_config("config.yaml")
+
+        usb_mode = config.get("camera", {}).get("usb_mode", True)
+        camera_id = config.get("camera", {}).get("camera_id", "0")
+        with_calibration = config.get("camera", {}).get("with_calibration", False)
+
         if usb_mode:
             camera_index = int(camera_id) if camera_id else 0
             self.cap = cv2.VideoCapture(camera_index)
         else:
             self.cap = cv2.VideoCapture(f"http://{camera_id}:8080/video")
 
-        self.frame: Deque[np.ndarray] = deque(maxlen=1)
+        self.frame = deque(maxlen=1)
         self.frame_getter = threading.Thread(target=self.get_frame, daemon=True)
         self.frame_getter.start()
 
-        self.calibrate_camera(camera_id, with_calibration)
+        self.calibrate_camera(camera_id, with_calibration, config)
 
-    def calibrate_camera(self, camera_id: str, with_calibration: bool) -> None:
+    def calibrate_camera(self, camera_id: str, with_calibration: bool, config) -> None:
         """Get the camera parameters.
 
         Args:
@@ -49,21 +50,25 @@ class RGBCamera(Camera):
             camera_id (str): Camera ID (either the camera index or the IP address).
         """
         if with_calibration:
-            current_dir = os.path.dirname(__file__)
-            json_path = os.path.join(
-                current_dir,
-                "..",
-                "camera_calibration",
-                "camera_parameters",
-                f"camera_{camera_id}.json",
-            )
-            json_path = os.path.abspath(json_path)
+            camera_config = config.get("camera", {})
+            self.camera_matrix = np.array(camera_config["camera_matrix"], dtype=np.float32)
+            self.dist_coeffs = np.array(camera_config["dist_coeffs"], dtype=np.float32)
 
-            with open(json_path, "r") as f:
-                camera_params = json.load(f)
+            # current_dir = os.path.dirname(__file__)
+            # json_path = os.path.join(
+            #     current_dir,
+            #     "..",
+            #     "camera_calibration",
+            #     "camera_parameters",
+            #     f"camera_{camera_id}.json",
+            # )
+            # json_path = os.path.abspath(json_path)
 
-                self.camera_matrix = np.array(camera_params["camera_matrix"], dtype=np.float32)
-                self.dist_coeffs = np.array(camera_params["dist_coeffs"], dtype=np.float32)
+            # with open(json_path, "r") as f:
+            #     camera_params = json.load(f)
+
+            #     self.camera_matrix = np.array(camera_params["camera_matrix"], dtype=np.float32)
+            #     self.dist_coeffs = np.array(camera_params["dist_coeffs"], dtype=np.float32)
 
         else:
             while len(self.frame) == 0:

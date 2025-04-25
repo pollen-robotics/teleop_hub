@@ -603,3 +603,818 @@ transform: {rot: [0.99413, 0.0075963, 0.00133729, -0.00769639, 0.994101, 0.10818
 [04/25 14:07:10.568918][debug][224092][GlobalTimestampFitter.cpp:143] GlobalTimestampFitter update: coefficientA = 999.9932219812439, constantB = 1745566216194316
 [04/25 14:07:12.567491][debug][224095][PropertyAccessor.cpp:50] get firmware data success! propertyId: 1003, dataLen: 24
 [04/25 14:07:15.568198][debug][224095][PropertyAccessor.cpp:50] get firmware data success! propertyId: 1003, dataLen: 24
+[04/25 15:55:04.523525][debug][295192][Context.cpp:30] Context creating, work_dir=/home/claire/Dev/reachy2_noVR_teleoperation/project_tracker
+[04/25 15:55:04.523561][debug][295192][Context.cpp:49] Config file version=1.1
+[04/25 15:55:04.523574][debug][295192][FrameBufferManager.cpp:23] Max global frame buffer size updated! size=2048.000MB
+[04/25 15:55:04.523579][info][295192][Context.cpp:68] Context created with config: default config!
+[04/25 15:55:04.523595][info][295192][Context.cpp:73] Work directory=/home/claire/Dev/reachy2_noVR_teleoperation/project_tracker, SDK version=v1.10.16-20241021-5113dad
+[04/25 15:55:04.523609][debug][295192][DeviceManager.cpp:30] DeviceManager init ...
+[04/25 15:55:04.523612][info][295192][LinuxPal.cpp:32] createObPal: create LinuxPal!
+[04/25 15:55:04.525172][debug][295192][DeviceManager.cpp:34] Enable USB Device Enumerator ...
+[04/25 15:55:04.526742][debug][295192][EnumeratorLibusb.cpp:324] queryDevicesInfo done!
+[04/25 15:55:04.526783][debug][295192][UsbDeviceEnumerator.cpp:163] Current usb device port list:
+[04/25 15:55:04.526789][debug][295192][UsbDeviceEnumerator.cpp:166]  - 4-2-4.0 | Orbbec Femto Bolt RGB Camera
+[04/25 15:55:04.526792][debug][295192][UsbDeviceEnumerator.cpp:166]  - 4-2-4.2 | Orbbec Femto Bolt Depth Camera
+[04/25 15:55:04.526795][debug][295192][UsbDeviceEnumerator.cpp:166]  - 4-2-4.4 | HID Interface
+[04/25 15:55:04.526874][info][295192][LinuxPal.cpp:166] Create PollingDeviceWatcher!
+[04/25 15:55:04.526892][debug][295192][UsbDeviceEnumerator.cpp:71] Found 1 device(s):
+[04/25 15:55:04.526897][debug][295192][UsbDeviceEnumerator.cpp:74]   - Name: Femto Bolt, PID: 0x066B, SN/ID: CL8R24100B5, connection: USB3.1
+[04/25 15:55:04.526903][info][295192][DeviceManager.cpp:15] Current found device(s): (1)
+[04/25 15:55:04.526910][info][295192][DeviceManager.cpp:24] 	- Name: Femto Bolt, PID: 0x066b, SN/ID: CL8R24100B5, Connection: USB3.1
+[04/25 15:55:04.526915][debug][295192][DeviceManager.cpp:52] DeviceManager construct done!
+[04/25 15:55:04.526940][info][295192][Pipeline.cpp:15] Try to create pipeline with default device.
+[04/25 15:55:04.526946][debug][295192][DeviceManager.cpp:109] DeviceManager  createDevice...
+[04/25 15:55:04.526950][debug][295192][UsbDeviceEnumerator.cpp:291] UsbDeviceEnumerator createDevice...
+[04/25 15:55:04.526977][info][295192][FemtoBoltUvcDevice.cpp:23] FemtoBoltUvcDevice init ...
+[04/25 15:55:04.527051][info][295192][FemtoBoltUvcDevice.cpp:122] Create command start!
+[04/25 15:55:04.527998][debug][295192][ObLibuvcDevicePort.cpp:58] uvc_open success
+[04/25 15:55:04.528631][info][295192][MSDEConverterDevice.cpp:726] Succeed to load depth engine plugin
+[04/25 15:55:04.528654][debug][295192][ObLibuvcDevicePort.cpp:75] ObLibuvcDevicePort::startStream()...
+[04/25 15:55:04.528665][debug][295192][ObLibuvcDevicePort.cpp:90] playProfile: infIndex=2, selected_format.width=1024, height=512, format=OB_FORMAT_Y16
+[04/25 15:55:04.530819][debug][295192][ObLibuvcDevicePort.cpp:143] ObLibuvcDevicePort::startStream() done
+[04/25 15:55:04.530946][debug][295192][VendorCommand.cpp:205] VendorCommand constructor c83c230
+[04/25 15:55:04.734404][debug][295192][PropertyAccessor.cpp:50] get firmware data success! propertyId: 1000, dataLen: 164
+[04/25 15:55:04.734799][debug][295192][HostProtocol.cpp:466] get property value success! propertyId=98, cur={intValue: 0, floatValue: 0}, max={intValue: 1, floatValue: 1.4013e-45}, min={intValue: 0, floatValue: 0},def={intValue: 0, floatValue: 0},step={intValue: 1, floatValue: 1.4013e-45}
+[04/25 15:55:04.734806][debug][295192][PropertyAccessor.cpp:28] get property value success! propertyId: 98, value: {intValue: 0, floatValue: 0}
+[04/25 15:55:04.735230][debug][295343][VendorCommand.cpp:436] get TimeStamp: tsp=23088715, rtt=0
+[04/25 15:55:04.786762][debug][295343][VendorCommand.cpp:436] get TimeStamp: tsp=23088765, rtt=0
+[04/25 15:55:04.837192][debug][295343][VendorCommand.cpp:436] get TimeStamp: tsp=23088817, rtt=0
+[04/25 15:55:04.837259][debug][295343][GlobalTimestampFitter.cpp:143] GlobalTimestampFitter update: coefficientA = 999.4794976934905, constantB = 1745566228038156.8
+[04/25 15:55:04.837276][debug][295192][GlobalTimestampFitter.cpp:27] GlobalTimestampFitter created: maxQueueSize_=10, refreshIntervalMsec_=8000
+[04/25 15:55:04.838002][debug][295192][PropertyAccessor.cpp:50] get firmware data success! propertyId: 1000, dataLen: 164
+[04/25 15:55:04.838010][info][295192][AbstractDevice.cpp:125] 	- Firmware version: 1.0.9
+[04/25 15:55:04.838026][info][295192][FemtoBoltUvcDevice.cpp:281] Create command done!
+[04/25 15:55:04.838047][info][295192][FemtoBoltUvcDevice.cpp:356] init sensor map start!
+[04/25 15:55:04.838056][info][295192][FemtoBoltUvcDevice.cpp:383] init sensor map done!
+[04/25 15:55:04.838126][info][295192][FemtoBoltUvcDevice.cpp:285] Init depth process param start!
+[04/25 15:55:04.839476][debug][295192][FemtoBoltAlgParamManager.cpp:43] Get align calibration camera params success! num=4
+[04/25 15:55:04.839509][debug][295192][FemtoBoltAlgParamManager.cpp:47] - {
+depthDistortion: {k1: 11.5712, k2: 7.83305, k3: 0.396152, k4: 11.8777, k5: 11.7852, k6: 2.11315, p1: 6.26389e-05, p2: -2.43805e-05},
+depthIntrinsic: {cx: 519.167, cy: 512.992, fx: 505.093, fy: 505.003, width: 1024, height: 1024}, 
+rgbDistortion: {k1: 0.0779919, k2: -0.110731, k3: 0.0465888, k4: 0, k5: 0, k6: 0, p1: 0.000108204, p2: -0.000131961},
+rgbIntrinsic: {cx: 319.791, cy: 178.768, fx: 374.011, fy: 373.725, width: 640, height: 360}, 
+transform: {rot: [0.99413, 0.0075963, 0.00133729, -0.00769639, 0.994101, 0.108184, -0.000507608, -0.108191, 0.99413], trans: [-32.5305, -0.842216, 2.07257]}
+}
+[04/25 15:55:04.839524][debug][295192][FemtoBoltAlgParamManager.cpp:47] - {
+depthDistortion: {k1: 11.5712, k2: 7.83305, k3: 0.396152, k4: 11.8777, k5: 11.7852, k6: 2.11315, p1: 6.26389e-05, p2: -2.43805e-05},
+depthIntrinsic: {cx: 519.167, cy: 512.992, fx: 505.093, fy: 505.003, width: 1024, height: 1024}, 
+rgbDistortion: {k1: 0.0779919, k2: -0.110731, k3: 0.0465888, k4: 0, k5: 0, k6: 0, p1: 0.000108204, p2: -0.000131961},
+rgbIntrinsic: {cx: 319.721, cy: 238.357, fx: 498.681, fy: 498.3, width: 640, height: 480}, 
+transform: {rot: [0.99413, 0.0075963, 0.00133729, -0.00769639, 0.994101, 0.108184, -0.000507608, -0.108191, 0.99413], trans: [-32.5305, -0.842216, 2.07257]}
+}
+[04/25 15:55:04.839538][debug][295192][FemtoBoltAlgParamManager.cpp:47] - {
+depthDistortion: {k1: 11.5712, k2: 7.83305, k3: 0.396152, k4: 11.8777, k5: 11.7852, k6: 2.11315, p1: 6.26389e-05, p2: -2.43805e-05},
+depthIntrinsic: {cx: 327.167, cy: 332.992, fx: 505.093, fy: 505.003, width: 640, height: 576}, 
+rgbDistortion: {k1: 0.0779919, k2: -0.110731, k3: 0.0465888, k4: 0, k5: 0, k6: 0, p1: 0.000108204, p2: -0.000131961},
+rgbIntrinsic: {cx: 319.791, cy: 178.768, fx: 374.011, fy: 373.725, width: 640, height: 360}, 
+transform: {rot: [0.99413, 0.0075963, 0.00133729, -0.00769639, 0.994101, 0.108184, -0.000507608, -0.108191, 0.99413], trans: [-32.5305, -0.842216, 2.07257]}
+}
+[04/25 15:55:04.839552][debug][295192][FemtoBoltAlgParamManager.cpp:47] - {
+depthDistortion: {k1: 11.5712, k2: 7.83305, k3: 0.396152, k4: 11.8777, k5: 11.7852, k6: 2.11315, p1: 6.26389e-05, p2: -2.43805e-05},
+depthIntrinsic: {cx: 327.167, cy: 332.992, fx: 505.093, fy: 505.003, width: 640, height: 576}, 
+rgbDistortion: {k1: 0.0779919, k2: -0.110731, k3: 0.0465888, k4: 0, k5: 0, k6: 0, p1: 0.000108204, p2: -0.000131961},
+rgbIntrinsic: {cx: 319.721, cy: 238.357, fx: 498.681, fy: 498.3, width: 640, height: 480}, 
+transform: {rot: [0.99413, 0.0075963, 0.00133729, -0.00769639, 0.994101, 0.108184, -0.000507608, -0.108191, 0.99413], trans: [-32.5305, -0.842216, 2.07257]}
+}
+[04/25 15:55:04.840955][debug][295192][FemtoBoltAlgParamManager.cpp:75] Get depth to color profile list success! num=20
+[04/25 15:55:04.840974][debug][295192][FemtoBoltAlgParamManager.cpp:79]  - {alignType: 2, colorWidth: 3840, colorHeight: 2160, depthWidth: 1024, depthHeight: 1024, paramIndex: 0, postProcessParam: {alignLeft: 0, alignTop: 0, alignRight: 0, alignBottom: 0, depthScale: 6}}
+[04/25 15:55:04.840981][debug][295192][FemtoBoltAlgParamManager.cpp:79]  - {alignType: 2, colorWidth: 2560, colorHeight: 1440, depthWidth: 1024, depthHeight: 1024, paramIndex: 0, postProcessParam: {alignLeft: 0, alignTop: 0, alignRight: 0, alignBottom: 0, depthScale: 4}}
+[04/25 15:55:04.840987][debug][295192][FemtoBoltAlgParamManager.cpp:79]  - {alignType: 2, colorWidth: 1920, colorHeight: 1080, depthWidth: 1024, depthHeight: 1024, paramIndex: 0, postProcessParam: {alignLeft: 0, alignTop: 0, alignRight: 0, alignBottom: 0, depthScale: 3}}
+[04/25 15:55:04.840992][debug][295192][FemtoBoltAlgParamManager.cpp:79]  - {alignType: 2, colorWidth: 1280, colorHeight: 720, depthWidth: 1024, depthHeight: 1024, paramIndex: 0, postProcessParam: {alignLeft: 0, alignTop: 0, alignRight: 0, alignBottom: 0, depthScale: 2}}
+[04/25 15:55:04.840999][debug][295192][FemtoBoltAlgParamManager.cpp:79]  - {alignType: 2, colorWidth: 3840, colorHeight: 2160, depthWidth: 512, depthHeight: 512, paramIndex: 0, postProcessParam: {alignLeft: 0, alignTop: 0, alignRight: 0, alignBottom: 0, depthScale: 12}}
+[04/25 15:55:04.841004][debug][295192][FemtoBoltAlgParamManager.cpp:79]  - {alignType: 2, colorWidth: 2560, colorHeight: 1440, depthWidth: 512, depthHeight: 512, paramIndex: 0, postProcessParam: {alignLeft: 0, alignTop: 0, alignRight: 0, alignBottom: 0, depthScale: 8}}
+[04/25 15:55:04.841010][debug][295192][FemtoBoltAlgParamManager.cpp:79]  - {alignType: 2, colorWidth: 1920, colorHeight: 1080, depthWidth: 512, depthHeight: 512, paramIndex: 0, postProcessParam: {alignLeft: 0, alignTop: 0, alignRight: 0, alignBottom: 0, depthScale: 6}}
+[04/25 15:55:04.841015][debug][295192][FemtoBoltAlgParamManager.cpp:79]  - {alignType: 2, colorWidth: 1280, colorHeight: 720, depthWidth: 512, depthHeight: 512, paramIndex: 0, postProcessParam: {alignLeft: 0, alignTop: 0, alignRight: 0, alignBottom: 0, depthScale: 4}}
+[04/25 15:55:04.841020][debug][295192][FemtoBoltAlgParamManager.cpp:79]  - {alignType: 2, colorWidth: 3840, colorHeight: 2160, depthWidth: 640, depthHeight: 576, paramIndex: 2, postProcessParam: {alignLeft: 0, alignTop: 0, alignRight: 0, alignBottom: 0, depthScale: 6}}
+[04/25 15:55:04.841026][debug][295192][FemtoBoltAlgParamManager.cpp:79]  - {alignType: 2, colorWidth: 2560, colorHeight: 1440, depthWidth: 640, depthHeight: 576, paramIndex: 2, postProcessParam: {alignLeft: 0, alignTop: 0, alignRight: 0, alignBottom: 0, depthScale: 4}}
+[04/25 15:55:04.841065][debug][295192][FemtoBoltAlgParamManager.cpp:79]  - {alignType: 2, colorWidth: 1920, colorHeight: 1080, depthWidth: 640, depthHeight: 576, paramIndex: 2, postProcessParam: {alignLeft: 0, alignTop: 0, alignRight: 0, alignBottom: 0, depthScale: 3}}
+[04/25 15:55:04.841082][debug][295192][FemtoBoltAlgParamManager.cpp:79]  - {alignType: 2, colorWidth: 1280, colorHeight: 720, depthWidth: 640, depthHeight: 576, paramIndex: 2, postProcessParam: {alignLeft: 0, alignTop: 0, alignRight: 0, alignBottom: 0, depthScale: 2}}
+[04/25 15:55:04.841090][debug][295192][FemtoBoltAlgParamManager.cpp:79]  - {alignType: 2, colorWidth: 3840, colorHeight: 2160, depthWidth: 320, depthHeight: 288, paramIndex: 2, postProcessParam: {alignLeft: 0, alignTop: 0, alignRight: 0, alignBottom: 0, depthScale: 12}}
+[04/25 15:55:04.841105][debug][295192][FemtoBoltAlgParamManager.cpp:79]  - {alignType: 2, colorWidth: 2560, colorHeight: 1440, depthWidth: 320, depthHeight: 288, paramIndex: 2, postProcessParam: {alignLeft: 0, alignTop: 0, alignRight: 0, alignBottom: 0, depthScale: 8}}
+[04/25 15:55:04.841111][debug][295192][FemtoBoltAlgParamManager.cpp:79]  - {alignType: 2, colorWidth: 1920, colorHeight: 1080, depthWidth: 320, depthHeight: 288, paramIndex: 2, postProcessParam: {alignLeft: 0, alignTop: 0, alignRight: 0, alignBottom: 0, depthScale: 6}}
+[04/25 15:55:04.841117][debug][295192][FemtoBoltAlgParamManager.cpp:79]  - {alignType: 2, colorWidth: 1280, colorHeight: 720, depthWidth: 320, depthHeight: 288, paramIndex: 2, postProcessParam: {alignLeft: 0, alignTop: 0, alignRight: 0, alignBottom: 0, depthScale: 4}}
+[04/25 15:55:04.841122][debug][295192][FemtoBoltAlgParamManager.cpp:79]  - {alignType: 2, colorWidth: 1280, colorHeight: 960, depthWidth: 1024, depthHeight: 1024, paramIndex: 1, postProcessParam: {alignLeft: 0, alignTop: 0, alignRight: 0, alignBottom: 0, depthScale: 2}}
+[04/25 15:55:04.841127][debug][295192][FemtoBoltAlgParamManager.cpp:79]  - {alignType: 2, colorWidth: 1280, colorHeight: 960, depthWidth: 512, depthHeight: 512, paramIndex: 1, postProcessParam: {alignLeft: 0, alignTop: 0, alignRight: 0, alignBottom: 0, depthScale: 4}}
+[04/25 15:55:04.841133][debug][295192][FemtoBoltAlgParamManager.cpp:79]  - {alignType: 2, colorWidth: 1280, colorHeight: 960, depthWidth: 640, depthHeight: 576, paramIndex: 3, postProcessParam: {alignLeft: 0, alignTop: 0, alignRight: 0, alignBottom: 0, depthScale: 2}}
+[04/25 15:55:04.841138][debug][295192][FemtoBoltAlgParamManager.cpp:79]  - {alignType: 2, colorWidth: 1280, colorHeight: 960, depthWidth: 320, depthHeight: 288, paramIndex: 3, postProcessParam: {alignLeft: 0, alignTop: 0, alignRight: 0, alignBottom: 0, depthScale: 4}}
+[04/25 15:55:04.843871][debug][295192][FemtoBoltAlgParamManager.cpp:102] Get imu calibration params success!
+[04/25 15:55:04.843900][debug][295192][FemtoBoltUvcDevice.cpp:302] init default softFilterParam: maxSpeckleSize: 25, maxDiff: 300, filterType: 1
+[04/25 15:55:04.843903][info][295192][MSDEConverterDevice.cpp:777] got nvram data succeed.
+[04/25 15:55:04.843925][debug][295192][ObLibuvcDevicePort.cpp:148] ObLibuvcDevicePort::stopStream()...
+[04/25 15:55:04.852492][debug][295192][ObLibuvcDevicePort.cpp:172] ObLibuvcDevicePort::stopStream() done
+[04/25 15:55:04.852557][debug][295192][HostProtocol.cpp:433] Set property value, propertyId=38, value={intValue: 1, floatValue: 1.4013e-45}
+[04/25 15:55:05.193581][debug][295192][PropertyAccessor.cpp:17] set property value success! propertyId: 38, value: {intValue: 1, floatValue: 1.4013e-45}
+[04/25 15:55:05.193622][info][295192][FemtoBoltUvcDevice.cpp:313] setNvramDataStreamStopFunc succeed
+[04/25 15:55:05.193695][info][295192][FemtoBoltUvcDevice.cpp:352] Init depth process param done!
+[04/25 15:55:05.193717][debug][295192][HostProtocol.cpp:433] Set property value, propertyId=38, value={intValue: 1, floatValue: 1.4013e-45}
+[04/25 15:55:05.194060][debug][295192][PropertyAccessor.cpp:17] set property value success! propertyId: 38, value: {intValue: 1, floatValue: 1.4013e-45}
+[04/25 15:55:05.194079][debug][295192][HostProtocol.cpp:433] Set property value, propertyId=77, value={intValue: 1, floatValue: 1.4013e-45}
+[04/25 15:55:05.194356][debug][295192][PropertyAccessor.cpp:17] set property value success! propertyId: 77, value: {intValue: 1, floatValue: 1.4013e-45}
+[04/25 15:55:05.194365][info][295192][FemtoBoltUvcDevice.cpp:39] FemtoBoltUvcDevice init done!
+[04/25 15:55:05.194376][debug][295192][UsbDeviceEnumerator.cpp:359] Device created successfully! Name: Femto Bolt, PID: 0x066b, SN/ID: CL8R24100B5
+[04/25 15:55:05.194383][info][295192][DeviceManager.cpp:150] Device created successfully! Name: Femto Bolt, PID: 0x066b, SN/ID: CL8R24100B5
+[04/25 15:55:05.194400][debug][295192][Pipeline.cpp:29] Pipeline init ...
+[04/25 15:55:05.194411][debug][295192][Pipeline.cpp:168] loadFrameQueueSizeConfig() config queue size: 10
+[04/25 15:55:05.194416][info][295192][Pipeline.cpp:47] Pipeline created with device: {name: Femto Bolt, sn: CL8R24100B5}, @0xC75AB80
+[04/25 15:55:05.194880][debug][295345][PropertyAccessor.cpp:50] get firmware data success! propertyId: 1003, dataLen: 24
+[04/25 15:55:05.194903][debug][295192][LinuxPal.cpp:292] Uvc backend have been set to LibUVC(1)
+[04/25 15:55:05.195936][debug][295192][ObLibuvcDevicePort.cpp:58] uvc_open success
+[04/25 15:55:05.195959][debug][295192][LinuxPal.cpp:127] UVC device have been create with LibUVC backend! dev: 4-2-4, inf: 4-2-4.0
+[04/25 15:55:05.195968][debug][295192][FrameProcessor.cpp:90] FrameProcessor init with 3 blocks! @133694547306320
+[04/25 15:55:05.195991][debug][295192][FrameProcessingBlock.cpp:26] Block created with frame queue size: 10
+[04/25 15:55:05.195996][debug][295192][FrameProcessor.cpp:98]  - block: FormatConverter, status: disable
+[04/25 15:55:05.196003][debug][295192][FrameProcessingBlock.cpp:26] Block created with frame queue size: 10
+[04/25 15:55:05.196007][debug][295192][FrameProcessor.cpp:98]  - block: FrameFlip, status: disable
+[04/25 15:55:05.196012][debug][295192][FrameProcessingBlock.cpp:26] Block created with frame queue size: 10
+[04/25 15:55:05.196016][debug][295192][FrameProcessor.cpp:98]  - block: FrameRotate, status: disable
+[04/25 15:55:05.196047][debug][295192][VideoSensor.cpp:252] VideoSensor construct!
+[04/25 15:55:05.196059][debug][295192][VideoSensor.cpp:278] VideoSensor created, @OB_SENSOR_COLOR
+[04/25 15:55:05.196064][info][295192][FemtoBoltUvcDevice.cpp:528] Color sensor has been created!
+[04/25 15:55:05.197159][debug][295192][PropertyAccessor.cpp:71] get raw data! propertyId: 4035, async: false
+[04/25 15:55:05.197183][debug][295192][FemtoBoltProfileFilter.cpp:36] uvcProfileList size: 24, output profile size: 24
+[04/25 15:55:05.197189][debug][295192][VideoSensor.cpp:372] Query stream profile! filter profile list success. size = 24, valid size = 24
+[04/25 15:55:05.197254][info][295192][VideoSensor.cpp:384] Query stream profile! size= 84, SensorType=OB_SENSOR_COLOR
+[04/25 15:55:05.197265][info][295192][VideoSensor.cpp:386]  - {type: OB_STREAM_COLOR, format: OB_FORMAT_MJPG, width: 1920, height: 1080, fps: 15}
+[04/25 15:55:05.197274][info][295192][VideoSensor.cpp:386]  - {type: OB_STREAM_COLOR, format: OB_FORMAT_YUYV, width: 1280, height: 720, fps: 30}
+[04/25 15:55:05.197281][info][295192][VideoSensor.cpp:386]  - {type: OB_STREAM_COLOR, format: OB_FORMAT_YUYV, width: 1280, height: 720, fps: 25}
+[04/25 15:55:05.197287][info][295192][VideoSensor.cpp:386]  - {type: OB_STREAM_COLOR, format: OB_FORMAT_YUYV, width: 1280, height: 720, fps: 15}
+[04/25 15:55:05.197291][info][295192][VideoSensor.cpp:386]  - {type: OB_STREAM_COLOR, format: OB_FORMAT_YUYV, width: 1280, height: 720, fps: 5}
+[04/25 15:55:05.197296][info][295192][VideoSensor.cpp:386]  - {type: OB_STREAM_COLOR, format: OB_FORMAT_MJPG, width: 1280, height: 720, fps: 30}
+[04/25 15:55:05.197300][info][295192][VideoSensor.cpp:386]  - {type: OB_STREAM_COLOR, format: OB_FORMAT_MJPG, width: 1280, height: 720, fps: 25}
+[04/25 15:55:05.197305][info][295192][VideoSensor.cpp:386]  - {type: OB_STREAM_COLOR, format: OB_FORMAT_MJPG, width: 1280, height: 720, fps: 15}
+[04/25 15:55:05.197309][info][295192][VideoSensor.cpp:386]  - {type: OB_STREAM_COLOR, format: OB_FORMAT_MJPG, width: 1280, height: 720, fps: 5}
+[04/25 15:55:05.197314][info][295192][VideoSensor.cpp:386]  - {type: OB_STREAM_COLOR, format: OB_FORMAT_MJPG, width: 1280, height: 960, fps: 30}
+[04/25 15:55:05.197318][info][295192][VideoSensor.cpp:386]  - {type: OB_STREAM_COLOR, format: OB_FORMAT_MJPG, width: 1280, height: 960, fps: 25}
+[04/25 15:55:05.197323][info][295192][VideoSensor.cpp:386]  - {type: OB_STREAM_COLOR, format: OB_FORMAT_MJPG, width: 1280, height: 960, fps: 15}
+[04/25 15:55:05.197327][info][295192][VideoSensor.cpp:386]  - {type: OB_STREAM_COLOR, format: OB_FORMAT_MJPG, width: 1280, height: 960, fps: 5}
+[04/25 15:55:05.197331][info][295192][VideoSensor.cpp:386]  - {type: OB_STREAM_COLOR, format: OB_FORMAT_MJPG, width: 1920, height: 1080, fps: 30}
+[04/25 15:55:05.197336][info][295192][VideoSensor.cpp:386]  - {type: OB_STREAM_COLOR, format: OB_FORMAT_MJPG, width: 1920, height: 1080, fps: 25}
+[04/25 15:55:05.197351][info][295192][VideoSensor.cpp:386]  - {type: OB_STREAM_COLOR, format: OB_FORMAT_MJPG, width: 1920, height: 1080, fps: 5}
+[04/25 15:55:05.197358][info][295192][VideoSensor.cpp:386]  - {type: OB_STREAM_COLOR, format: OB_FORMAT_MJPG, width: 2560, height: 1440, fps: 30}
+[04/25 15:55:05.197364][info][295192][VideoSensor.cpp:386]  - {type: OB_STREAM_COLOR, format: OB_FORMAT_MJPG, width: 2560, height: 1440, fps: 25}
+[04/25 15:55:05.197368][info][295192][VideoSensor.cpp:386]  - {type: OB_STREAM_COLOR, format: OB_FORMAT_MJPG, width: 2560, height: 1440, fps: 15}
+[04/25 15:55:05.197373][info][295192][VideoSensor.cpp:386]  - {type: OB_STREAM_COLOR, format: OB_FORMAT_MJPG, width: 2560, height: 1440, fps: 5}
+[04/25 15:55:05.197377][info][295192][VideoSensor.cpp:386]  - {type: OB_STREAM_COLOR, format: OB_FORMAT_MJPG, width: 3840, height: 2160, fps: 30}
+[04/25 15:55:05.197382][info][295192][VideoSensor.cpp:386]  - {type: OB_STREAM_COLOR, format: OB_FORMAT_MJPG, width: 3840, height: 2160, fps: 25}
+[04/25 15:55:05.197387][info][295192][VideoSensor.cpp:386]  - {type: OB_STREAM_COLOR, format: OB_FORMAT_MJPG, width: 3840, height: 2160, fps: 15}
+[04/25 15:55:05.197393][info][295192][VideoSensor.cpp:386]  - {type: OB_STREAM_COLOR, format: OB_FORMAT_MJPG, width: 3840, height: 2160, fps: 5}
+[04/25 15:55:05.197399][info][295192][VideoSensor.cpp:386]  - {type: OB_STREAM_COLOR, format: OB_FORMAT_RGB888, width: 1280, height: 720, fps: 30}
+[04/25 15:55:05.197404][info][295192][VideoSensor.cpp:386]  - {type: OB_STREAM_COLOR, format: OB_FORMAT_RGB888, width: 1280, height: 720, fps: 25}
+[04/25 15:55:05.197408][info][295192][VideoSensor.cpp:386]  - {type: OB_STREAM_COLOR, format: OB_FORMAT_RGB888, width: 1280, height: 720, fps: 15}
+[04/25 15:55:05.197413][info][295192][VideoSensor.cpp:386]  - {type: OB_STREAM_COLOR, format: OB_FORMAT_RGB888, width: 1280, height: 720, fps: 5}
+[04/25 15:55:05.197418][info][295192][VideoSensor.cpp:386]  - {type: OB_STREAM_COLOR, format: OB_FORMAT_RGB888, width: 1280, height: 960, fps: 30}
+[04/25 15:55:05.197425][info][295192][VideoSensor.cpp:386]  - {type: OB_STREAM_COLOR, format: OB_FORMAT_RGB888, width: 1280, height: 960, fps: 25}
+[04/25 15:55:05.197431][info][295192][VideoSensor.cpp:386]  - {type: OB_STREAM_COLOR, format: OB_FORMAT_RGB888, width: 1280, height: 960, fps: 15}
+[04/25 15:55:05.197435][info][295192][VideoSensor.cpp:386]  - {type: OB_STREAM_COLOR, format: OB_FORMAT_RGB888, width: 1280, height: 960, fps: 5}
+[04/25 15:55:05.197440][info][295192][VideoSensor.cpp:386]  - {type: OB_STREAM_COLOR, format: OB_FORMAT_RGB888, width: 1920, height: 1080, fps: 30}
+[04/25 15:55:05.197444][info][295192][VideoSensor.cpp:386]  - {type: OB_STREAM_COLOR, format: OB_FORMAT_RGB888, width: 1920, height: 1080, fps: 25}
+[04/25 15:55:05.197451][info][295192][VideoSensor.cpp:386]  - {type: OB_STREAM_COLOR, format: OB_FORMAT_RGB888, width: 1920, height: 1080, fps: 15}
+[04/25 15:55:05.197457][info][295192][VideoSensor.cpp:386]  - {type: OB_STREAM_COLOR, format: OB_FORMAT_RGB888, width: 1920, height: 1080, fps: 5}
+[04/25 15:55:05.197461][info][295192][VideoSensor.cpp:386]  - {type: OB_STREAM_COLOR, format: OB_FORMAT_RGB888, width: 2560, height: 1440, fps: 30}
+[04/25 15:55:05.197466][info][295192][VideoSensor.cpp:386]  - {type: OB_STREAM_COLOR, format: OB_FORMAT_RGB888, width: 2560, height: 1440, fps: 25}
+[04/25 15:55:05.197470][info][295192][VideoSensor.cpp:386]  - {type: OB_STREAM_COLOR, format: OB_FORMAT_RGB888, width: 2560, height: 1440, fps: 15}
+[04/25 15:55:05.197476][info][295192][VideoSensor.cpp:386]  - {type: OB_STREAM_COLOR, format: OB_FORMAT_RGB888, width: 2560, height: 1440, fps: 5}
+[04/25 15:55:05.197482][info][295192][VideoSensor.cpp:386]  - {type: OB_STREAM_COLOR, format: OB_FORMAT_RGB888, width: 3840, height: 2160, fps: 30}
+[04/25 15:55:05.197487][info][295192][VideoSensor.cpp:386]  - {type: OB_STREAM_COLOR, format: OB_FORMAT_RGB888, width: 3840, height: 2160, fps: 25}
+[04/25 15:55:05.197498][info][295192][VideoSensor.cpp:386]  - {type: OB_STREAM_COLOR, format: OB_FORMAT_RGB888, width: 3840, height: 2160, fps: 15}
+[04/25 15:55:05.197505][info][295192][VideoSensor.cpp:386]  - {type: OB_STREAM_COLOR, format: OB_FORMAT_RGB888, width: 3840, height: 2160, fps: 5}
+[04/25 15:55:05.197511][info][295192][VideoSensor.cpp:386]  - {type: OB_STREAM_COLOR, format: OB_FORMAT_BGRA, width: 1280, height: 720, fps: 30}
+[04/25 15:55:05.197516][info][295192][VideoSensor.cpp:386]  - {type: OB_STREAM_COLOR, format: OB_FORMAT_BGRA, width: 1280, height: 720, fps: 25}
+[04/25 15:55:05.197520][info][295192][VideoSensor.cpp:386]  - {type: OB_STREAM_COLOR, format: OB_FORMAT_BGRA, width: 1280, height: 720, fps: 15}
+[04/25 15:55:05.197525][info][295192][VideoSensor.cpp:386]  - {type: OB_STREAM_COLOR, format: OB_FORMAT_BGRA, width: 1280, height: 720, fps: 5}
+[04/25 15:55:05.197529][info][295192][VideoSensor.cpp:386]  - {type: OB_STREAM_COLOR, format: OB_FORMAT_BGRA, width: 1280, height: 960, fps: 30}
+[04/25 15:55:05.197533][info][295192][VideoSensor.cpp:386]  - {type: OB_STREAM_COLOR, format: OB_FORMAT_BGRA, width: 1280, height: 960, fps: 25}
+[04/25 15:55:05.197538][info][295192][VideoSensor.cpp:386]  - {type: OB_STREAM_COLOR, format: OB_FORMAT_BGRA, width: 1280, height: 960, fps: 15}
+[04/25 15:55:05.197543][info][295192][VideoSensor.cpp:386]  - {type: OB_STREAM_COLOR, format: OB_FORMAT_BGRA, width: 1280, height: 960, fps: 5}
+[04/25 15:55:05.197548][info][295192][VideoSensor.cpp:386]  - {type: OB_STREAM_COLOR, format: OB_FORMAT_BGRA, width: 1920, height: 1080, fps: 30}
+[04/25 15:55:05.197552][info][295192][VideoSensor.cpp:386]  - {type: OB_STREAM_COLOR, format: OB_FORMAT_BGRA, width: 1920, height: 1080, fps: 25}
+[04/25 15:55:05.197557][info][295192][VideoSensor.cpp:386]  - {type: OB_STREAM_COLOR, format: OB_FORMAT_BGRA, width: 1920, height: 1080, fps: 15}
+[04/25 15:55:05.197561][info][295192][VideoSensor.cpp:386]  - {type: OB_STREAM_COLOR, format: OB_FORMAT_BGRA, width: 1920, height: 1080, fps: 5}
+[04/25 15:55:05.197565][info][295192][VideoSensor.cpp:386]  - {type: OB_STREAM_COLOR, format: OB_FORMAT_BGRA, width: 2560, height: 1440, fps: 30}
+[04/25 15:55:05.197570][info][295192][VideoSensor.cpp:386]  - {type: OB_STREAM_COLOR, format: OB_FORMAT_BGRA, width: 2560, height: 1440, fps: 25}
+[04/25 15:55:05.197575][info][295192][VideoSensor.cpp:386]  - {type: OB_STREAM_COLOR, format: OB_FORMAT_BGRA, width: 2560, height: 1440, fps: 15}
+[04/25 15:55:05.197579][info][295192][VideoSensor.cpp:386]  - {type: OB_STREAM_COLOR, format: OB_FORMAT_BGRA, width: 2560, height: 1440, fps: 5}
+[04/25 15:55:05.197583][info][295192][VideoSensor.cpp:386]  - {type: OB_STREAM_COLOR, format: OB_FORMAT_BGRA, width: 3840, height: 2160, fps: 30}
+[04/25 15:55:05.197588][info][295192][VideoSensor.cpp:386]  - {type: OB_STREAM_COLOR, format: OB_FORMAT_BGRA, width: 3840, height: 2160, fps: 25}
+[04/25 15:55:05.197592][info][295192][VideoSensor.cpp:386]  - {type: OB_STREAM_COLOR, format: OB_FORMAT_BGRA, width: 3840, height: 2160, fps: 15}
+[04/25 15:55:05.197596][info][295192][VideoSensor.cpp:386]  - {type: OB_STREAM_COLOR, format: OB_FORMAT_BGRA, width: 3840, height: 2160, fps: 5}
+[04/25 15:55:05.197601][info][295192][VideoSensor.cpp:386]  - {type: OB_STREAM_COLOR, format: OB_FORMAT_NV12, width: 1280, height: 720, fps: 30}
+[04/25 15:55:05.197605][info][295192][VideoSensor.cpp:386]  - {type: OB_STREAM_COLOR, format: OB_FORMAT_NV12, width: 1280, height: 720, fps: 25}
+[04/25 15:55:05.197610][info][295192][VideoSensor.cpp:386]  - {type: OB_STREAM_COLOR, format: OB_FORMAT_NV12, width: 1280, height: 720, fps: 15}
+[04/25 15:55:05.197614][info][295192][VideoSensor.cpp:386]  - {type: OB_STREAM_COLOR, format: OB_FORMAT_NV12, width: 1280, height: 720, fps: 5}
+[04/25 15:55:05.197619][info][295192][VideoSensor.cpp:386]  - {type: OB_STREAM_COLOR, format: OB_FORMAT_NV12, width: 1280, height: 960, fps: 30}
+[04/25 15:55:05.197623][info][295192][VideoSensor.cpp:386]  - {type: OB_STREAM_COLOR, format: OB_FORMAT_NV12, width: 1280, height: 960, fps: 25}
+[04/25 15:55:05.197627][info][295192][VideoSensor.cpp:386]  - {type: OB_STREAM_COLOR, format: OB_FORMAT_NV12, width: 1280, height: 960, fps: 15}
+[04/25 15:55:05.197635][info][295192][VideoSensor.cpp:386]  - {type: OB_STREAM_COLOR, format: OB_FORMAT_NV12, width: 1280, height: 960, fps: 5}
+[04/25 15:55:05.197640][info][295192][VideoSensor.cpp:386]  - {type: OB_STREAM_COLOR, format: OB_FORMAT_NV12, width: 1920, height: 1080, fps: 30}
+[04/25 15:55:05.197644][info][295192][VideoSensor.cpp:386]  - {type: OB_STREAM_COLOR, format: OB_FORMAT_NV12, width: 1920, height: 1080, fps: 25}
+[04/25 15:55:05.197649][info][295192][VideoSensor.cpp:386]  - {type: OB_STREAM_COLOR, format: OB_FORMAT_NV12, width: 1920, height: 1080, fps: 15}
+[04/25 15:55:05.197653][info][295192][VideoSensor.cpp:386]  - {type: OB_STREAM_COLOR, format: OB_FORMAT_NV12, width: 1920, height: 1080, fps: 5}
+[04/25 15:55:05.197658][info][295192][VideoSensor.cpp:386]  - {type: OB_STREAM_COLOR, format: OB_FORMAT_NV12, width: 2560, height: 1440, fps: 30}
+[04/25 15:55:05.197662][info][295192][VideoSensor.cpp:386]  - {type: OB_STREAM_COLOR, format: OB_FORMAT_NV12, width: 2560, height: 1440, fps: 25}
+[04/25 15:55:05.197666][info][295192][VideoSensor.cpp:386]  - {type: OB_STREAM_COLOR, format: OB_FORMAT_NV12, width: 2560, height: 1440, fps: 15}
+[04/25 15:55:05.197671][info][295192][VideoSensor.cpp:386]  - {type: OB_STREAM_COLOR, format: OB_FORMAT_NV12, width: 2560, height: 1440, fps: 5}
+[04/25 15:55:05.197675][info][295192][VideoSensor.cpp:386]  - {type: OB_STREAM_COLOR, format: OB_FORMAT_NV12, width: 3840, height: 2160, fps: 30}
+[04/25 15:55:05.197680][info][295192][VideoSensor.cpp:386]  - {type: OB_STREAM_COLOR, format: OB_FORMAT_NV12, width: 3840, height: 2160, fps: 25}
+[04/25 15:55:05.197684][info][295192][VideoSensor.cpp:386]  - {type: OB_STREAM_COLOR, format: OB_FORMAT_NV12, width: 3840, height: 2160, fps: 15}
+[04/25 15:55:05.197688][info][295192][VideoSensor.cpp:386]  - {type: OB_STREAM_COLOR, format: OB_FORMAT_NV12, width: 3840, height: 2160, fps: 5}
+[04/25 15:55:05.197909][debug][295192][FrameProcessor.cpp:90] FrameProcessor init with 6 blocks! @210228384
+[04/25 15:55:05.197920][debug][295192][FrameProcessingBlock.cpp:26] Block created with frame queue size: 10
+[04/25 15:55:05.197923][debug][295192][FrameProcessor.cpp:98]  - block: FrameSoftFilter, status: disable
+[04/25 15:55:05.197926][debug][295192][FrameProcessingBlock.cpp:26] Block created with frame queue size: 10
+[04/25 15:55:05.197929][debug][295192][FrameProcessor.cpp:98]  - block: FrameMirror, status: disable
+[04/25 15:55:05.197937][debug][295192][FrameProcessingBlock.cpp:26] Block created with frame queue size: 10
+[04/25 15:55:05.197940][debug][295192][FrameProcessor.cpp:98]  - block: D2CFilter, status: disable
+[04/25 15:55:05.197944][debug][295192][FrameProcessingBlock.cpp:26] Block created with frame queue size: 10
+[04/25 15:55:05.197946][debug][295192][FrameProcessor.cpp:98]  - block: PostProcessFilter, status: disable
+[04/25 15:55:05.197949][debug][295192][FrameProcessingBlock.cpp:26] Block created with frame queue size: 10
+[04/25 15:55:05.197952][debug][295192][FrameProcessor.cpp:98]  - block: FrameFlip, status: disable
+[04/25 15:55:05.197955][debug][295192][FrameProcessingBlock.cpp:26] Block created with frame queue size: 10
+[04/25 15:55:05.197958][debug][295192][FrameProcessor.cpp:98]  - block: FrameRotate, status: disable
+[04/25 15:55:05.197968][debug][295192][VideoSensor.cpp:252] VideoSensor construct!
+[04/25 15:55:05.197971][debug][295192][VideoSensor.cpp:278] VideoSensor created, @OB_SENSOR_DEPTH
+[04/25 15:55:05.197975][info][295192][FemtoBoltUvcDevice.cpp:483] Depth sensor has been created!
+[04/25 15:55:05.197989][debug][295192][VideoSensor.cpp:119] device has original Y16 format, no need to add virtual format!
+[04/25 15:55:05.198000][info][295192][VideoSensor.cpp:384] Query stream profile! size= 14, SensorType=OB_SENSOR_DEPTH
+[04/25 15:55:05.198006][info][295192][VideoSensor.cpp:386]  - {type: OB_STREAM_DEPTH, format: OB_FORMAT_Y16, width: 640, height: 576, fps: 15}
+[04/25 15:55:05.198012][info][295192][VideoSensor.cpp:386]  - {type: OB_STREAM_DEPTH, format: OB_FORMAT_Y16, width: 1024, height: 1024, fps: 15}
+[04/25 15:55:05.198021][info][295192][VideoSensor.cpp:386]  - {type: OB_STREAM_DEPTH, format: OB_FORMAT_Y16, width: 1024, height: 1024, fps: 5}
+[04/25 15:55:05.198025][info][295192][VideoSensor.cpp:386]  - {type: OB_STREAM_DEPTH, format: OB_FORMAT_Y16, width: 640, height: 576, fps: 30}
+[04/25 15:55:05.198039][info][295192][VideoSensor.cpp:386]  - {type: OB_STREAM_DEPTH, format: OB_FORMAT_Y16, width: 320, height: 288, fps: 30}
+[04/25 15:55:05.198044][info][295192][VideoSensor.cpp:386]  - {type: OB_STREAM_DEPTH, format: OB_FORMAT_Y16, width: 640, height: 576, fps: 25}
+[04/25 15:55:05.198048][info][295192][VideoSensor.cpp:386]  - {type: OB_STREAM_DEPTH, format: OB_FORMAT_Y16, width: 320, height: 288, fps: 25}
+[04/25 15:55:05.198054][info][295192][VideoSensor.cpp:386]  - {type: OB_STREAM_DEPTH, format: OB_FORMAT_Y16, width: 320, height: 288, fps: 15}
+[04/25 15:55:05.198062][info][295192][VideoSensor.cpp:386]  - {type: OB_STREAM_DEPTH, format: OB_FORMAT_Y16, width: 640, height: 576, fps: 5}
+[04/25 15:55:05.198069][info][295192][VideoSensor.cpp:386]  - {type: OB_STREAM_DEPTH, format: OB_FORMAT_Y16, width: 320, height: 288, fps: 5}
+[04/25 15:55:05.198076][info][295192][VideoSensor.cpp:386]  - {type: OB_STREAM_DEPTH, format: OB_FORMAT_Y16, width: 512, height: 512, fps: 30}
+[04/25 15:55:05.198083][info][295192][VideoSensor.cpp:386]  - {type: OB_STREAM_DEPTH, format: OB_FORMAT_Y16, width: 512, height: 512, fps: 25}
+[04/25 15:55:05.198087][info][295192][VideoSensor.cpp:386]  - {type: OB_STREAM_DEPTH, format: OB_FORMAT_Y16, width: 512, height: 512, fps: 15}
+[04/25 15:55:05.198092][info][295192][VideoSensor.cpp:386]  - {type: OB_STREAM_DEPTH, format: OB_FORMAT_Y16, width: 512, height: 512, fps: 5}
+[04/25 15:55:05.198346][debug][295192][Pipeline.cpp:227] Pipeline start() start!
+[04/25 15:55:05.198350][info][295192][Pipeline.cpp:188] Check and set config start!
+[04/25 15:55:05.198360][info][295192][Pipeline.cpp:223] Check and set config done!
+[04/25 15:55:05.198388][debug][295192][PropertyAccessor.cpp:28] get property value success! propertyId: 14, value: {intValue: 0, floatValue: 0}
+[04/25 15:55:05.198393][debug][295192][PropertyAccessor.cpp:28] get property value success! propertyId: 15, value: {intValue: 0, floatValue: 0}
+[04/25 15:55:05.198397][debug][295192][PropertyAccessor.cpp:28] get property value success! propertyId: 118, value: {intValue: 0, floatValue: 0}
+[04/25 15:55:05.198404][debug][295192][HostProtocol.cpp:433] Set property value, propertyId=63, value={intValue: 2, floatValue: 2.8026e-45}
+[04/25 15:55:05.198756][debug][295192][PropertyAccessor.cpp:17] set property value success! propertyId: 63, value: {intValue: 2, floatValue: 2.8026e-45}
+[04/25 15:55:05.198764][debug][295192][PropertyAccessor.cpp:28] get property value success! propertyId: 14, value: {intValue: 0, floatValue: 0}
+[04/25 15:55:05.198768][debug][295192][PropertyAccessor.cpp:28] get property value success! propertyId: 15, value: {intValue: 0, floatValue: 0}
+[04/25 15:55:05.198772][debug][295192][PropertyAccessor.cpp:28] get property value success! propertyId: 118, value: {intValue: 0, floatValue: 0}
+[04/25 15:55:05.198776][debug][295192][HostProtocol.cpp:433] Set property value, propertyId=63, value={intValue: 2, floatValue: 2.8026e-45}
+[04/25 15:55:05.199106][debug][295192][PropertyAccessor.cpp:17] set property value success! propertyId: 63, value: {intValue: 2, floatValue: 2.8026e-45}
+[04/25 15:55:05.199117][debug][295192][PropertyAccessor.cpp:28] get property value success! propertyId: 14, value: {intValue: 0, floatValue: 0}
+[04/25 15:55:05.199121][debug][295192][PropertyAccessor.cpp:28] get property value success! propertyId: 15, value: {intValue: 0, floatValue: 0}
+[04/25 15:55:05.199125][debug][295192][PropertyAccessor.cpp:28] get property value success! propertyId: 118, value: {intValue: 0, floatValue: 0}
+[04/25 15:55:05.199131][debug][295192][PropertyAccessor.cpp:28] get property value success! propertyId: 14, value: {intValue: 0, floatValue: 0}
+[04/25 15:55:05.199134][debug][295192][PropertyAccessor.cpp:28] get property value success! propertyId: 15, value: {intValue: 0, floatValue: 0}
+[04/25 15:55:05.199143][debug][295192][PropertyAccessor.cpp:28] get property value success! propertyId: 118, value: {intValue: 0, floatValue: 0}
+[04/25 15:55:05.199147][debug][295192][PropertyAccessor.cpp:28] get property value success! propertyId: 118, value: {intValue: 0, floatValue: 0}
+[04/25 15:55:05.199154][debug][295192][FrameProcessingBlockManager.cpp:75]  FrameProcessingBlockManager started, 0 blocks contained!
+[04/25 15:55:05.199157][info][295192][Pipeline.cpp:288] Try to start streams!
+[04/25 15:55:05.199165][debug][295192][VideoSensor.cpp:566] VideoSensor::start, @OB_SENSOR_COLOR
+[04/25 15:55:05.199169][debug][295192][FrameMemoryPool.cpp:35] FrameMemoryPool created!
+[04/25 15:55:05.199174][debug][295192][FrameBufferManager.hpp:65] FrameBufferManager created! frame type:N11libobsensor10ColorFrameE, obj addr:0xc9b99a0, frame obj total size:1.978MB
+[04/25 15:55:05.199177][debug][295192][FrameMemoryPool.cpp:76] ColorFrame bufferManager created!
+[04/25 15:55:05.199187][debug][295192][FrameProcessor.cpp:144] Frame processor active blocks chain update: input -> output
+[04/25 15:55:05.199190][debug][295192][FrameProcessor.cpp:155] FrameProcessor started, 3 blocks contained!
+[04/25 15:55:05.199194][info][295192][VideoSensor.cpp:646] start OB_SENSOR_COLOR stream with profile: {type: OB_STREAM_COLOR, format: OB_FORMAT_MJPG, width: 1920, height: 1080, fps: 15}, Backend Format: OB_FORMAT_MJPG
+[04/25 15:55:05.199201][debug][295192][ObLibuvcDevicePort.cpp:75] ObLibuvcDevicePort::startStream()...
+[04/25 15:55:05.199208][debug][295192][ObLibuvcDevicePort.cpp:90] playProfile: infIndex=0, selected_format.width=1920, height=1080, format=OB_FORMAT_MJPG
+[04/25 15:55:05.201133][debug][295192][ObLibuvcDevicePort.cpp:143] ObLibuvcDevicePort::startStream() done
+[04/25 15:55:05.201171][debug][295192][VideoSensor.cpp:672] Stream state changed to STREAM_STATE_STARTING. @OB_SENSOR_COLOR
+[04/25 15:55:05.201175][debug][295192][VideoSensor.cpp:674] Stream starting! @OB_SENSOR_COLOR
+[04/25 15:55:05.201179][debug][295192][Pipeline.cpp:299] Sensor stream started, sensorType=OB_SENSOR_COLOR
+[04/25 15:55:05.201184][debug][295192][VideoSensor.cpp:566] VideoSensor::start, @OB_SENSOR_DEPTH
+[04/25 15:55:05.201194][debug][295192][FrameBufferManager.hpp:65] FrameBufferManager created! frame type:N11libobsensor10DepthFrameE, obj addr:0xcd60fc0, frame obj total size:0.704MB
+[04/25 15:55:05.201196][debug][295192][FrameMemoryPool.cpp:60] DepthFrame bufferManager created!
+[04/25 15:55:05.201203][debug][295192][FrameProcessor.cpp:144] Frame processor active blocks chain update: input ->D2CFilter -> PostProcessFilter -> output
+[04/25 15:55:05.201206][debug][295192][FrameProcessor.cpp:155] FrameProcessor started, 6 blocks contained!
+[04/25 15:55:05.201212][info][295192][VideoSensor.cpp:646] start OB_SENSOR_DEPTH stream with profile: {type: OB_STREAM_DEPTH, format: OB_FORMAT_Y16, width: 640, height: 576, fps: 15}, Backend Format: OB_FORMAT_Y16
+[04/25 15:55:05.201225][info][295192][MSDEConverterDevice.cpp:549] Start real profile,width:7680 height:434
+[04/25 15:55:05.201233][debug][295192][ObLibuvcDevicePort.cpp:75] ObLibuvcDevicePort::startStream()...
+[04/25 15:55:05.201240][debug][295192][ObLibuvcDevicePort.cpp:90] playProfile: infIndex=2, selected_format.width=7680, height=434, format=OB_FORMAT_Y16
+[04/25 15:55:05.212211][debug][295192][ObLibuvcDevicePort.cpp:143] ObLibuvcDevicePort::startStream() done
+[04/25 15:55:05.212350][info][295355][MSDEConverterDevice.cpp:67] Depth engine got nvram data size:493072
+[04/25 15:55:05.212395][info][295355][MSDEConverterDevice.cpp:94] use dynlib load depthengine lib......
+[04/25 15:55:05.335792][info][295355][MSDEConverterDevice.cpp:105] Depth engine init succeed!
+[04/25 15:55:05.335919][debug][295192][FrameBufferManager.hpp:65] FrameBufferManager created! frame type:N11libobsensor13RawPhaseFrameE, obj addr:0xcd61030, frame obj total size:6.358MB
+[04/25 15:55:05.335934][debug][295192][FrameMemoryPool.cpp:96] RawPhaseFrame bufferManager created!
+[04/25 15:55:05.335967][debug][295192][FemtoBoltUvcDevice.cpp:474] Depth sensor update FrameSoftFilter: maxdiff:300, maxSpeckleSize:25!
+[04/25 15:55:05.335983][debug][295192][FrameProcessor.cpp:144] Frame processor active blocks chain update: input ->FrameSoftFilter -> D2CFilter -> PostProcessFilter -> output
+[04/25 15:55:05.336002][debug][295192][VideoSensor.cpp:672] Stream state changed to STREAM_STATE_STARTING. @OB_SENSOR_DEPTH
+[04/25 15:55:05.336006][debug][295192][VideoSensor.cpp:674] Stream starting! @OB_SENSOR_DEPTH
+[04/25 15:55:05.336011][debug][295192][Pipeline.cpp:299] Sensor stream started, sensorType=OB_SENSOR_DEPTH
+[04/25 15:55:05.336016][info][295192][Pipeline.cpp:301] Start streams done!
+[04/25 15:55:05.336035][info][295192][Pipeline.cpp:277] Pipeline start done!
+[04/25 15:55:05.836315][warning][295192][Pipeline.cpp:377] Wait for frame timeout, you can try to increase the wait time! current timeout=500
+[04/25 15:55:06.166693][debug][295354][FrameBufferManager.cpp:35] New frame buffer allocated=6.358MB, total usage: allocated=6.358MB, max limit=2048.000MB
+[04/25 15:55:06.196981][debug][295355][FrameBufferManager.cpp:35] New frame buffer allocated=0.704MB, total usage: allocated=7.061MB, max limit=2048.000MB
+[04/25 15:55:06.197046][debug][295355][VideoSensor.cpp:460] Stream state changed to STREAM_STATE_STREAMING. @OB_SENSOR_DEPTH
+[04/25 15:55:06.197759][debug][295355][FrameProcessingBlock.cpp:59] FrameProcessingBlock@N11libobsensor15FrameSoftFilterE process thread started!
+[04/25 15:55:06.198974][debug][295373][FrameProcessingBlock.cpp:59] FrameProcessingBlock@N11libobsensor9D2CFilterE process thread started!
+[04/25 15:55:06.199043][debug][295374][FrameBufferManager.hpp:65] FrameBufferManager created! frame type:N11libobsensor10DepthFrameE, obj addr:0x7997ac000d30, frame obj total size:0.440MB
+[04/25 15:55:06.199056][debug][295374][FrameMemoryPool.cpp:60] DepthFrame bufferManager created!
+[04/25 15:55:06.231883][debug][295355][FrameBufferManager.cpp:35] New frame buffer allocated=0.704MB, total usage: allocated=7.765MB, max limit=2048.000MB
+[04/25 15:55:06.237413][debug][295374][FrameBufferManager.cpp:35] New frame buffer allocated=0.440MB, total usage: allocated=8.205MB, max limit=2048.000MB
+[04/25 15:55:06.240197][debug][295374][FrameProcessingBlock.cpp:59] FrameProcessingBlock@N11libobsensor17PostProcessFilterE process thread started!
+[04/25 15:55:06.240240][debug][295374][FrameBufferManager.cpp:35] New frame buffer allocated=0.440MB, total usage: allocated=8.645MB, max limit=2048.000MB
+[04/25 15:55:06.240276][debug][295376][FrameBufferManager.hpp:65] FrameBufferManager created! frame type:N11libobsensor10DepthFrameE, obj addr:0x7997a4000b70, frame obj total size:3.956MB
+[04/25 15:55:06.240290][debug][295376][FrameMemoryPool.cpp:60] DepthFrame bufferManager created!
+[04/25 15:55:06.240403][debug][295376][FrameBufferManager.cpp:35] New frame buffer allocated=3.956MB, total usage: allocated=12.600MB, max limit=2048.000MB
+[04/25 15:55:06.243231][debug][295376][FrameBufferManager.hpp:65] FrameBufferManager created! frame type:N11libobsensor8FrameSetE, obj addr:0x7997a43f59d0, frame obj total size:0.000MB
+[04/25 15:55:06.243248][debug][295376][FrameMemoryPool.cpp:92] Frameset bufferManager created!
+[04/25 15:55:06.243270][debug][295376][Pipeline.cpp:319] Frame received on pipeline! type=OB_FRAME_DEPTH
+[04/25 15:55:06.243287][debug][295376][FrameBufferManager.cpp:35] New frame buffer allocated=3.956MB, total usage: allocated=16.556MB, max limit=2048.000MB
+[04/25 15:55:06.301673][debug][295376][FrameBufferManager.cpp:35] New frame buffer allocated=3.956MB, total usage: allocated=20.511MB, max limit=2048.000MB
+[04/25 15:55:06.367136][debug][295376][FrameBufferManager.cpp:35] New frame buffer allocated=3.956MB, total usage: allocated=24.467MB, max limit=2048.000MB
+[04/25 15:55:06.401286][debug][295346][FrameBufferManager.cpp:35] New frame buffer allocated=1.978MB, total usage: allocated=26.445MB, max limit=2048.000MB
+[04/25 15:55:06.401329][debug][295346][VideoSensor.cpp:460] Stream state changed to STREAM_STATE_STREAMING. @OB_SENSOR_COLOR
+[04/25 15:55:06.401397][debug][295346][FrameBufferManager.cpp:35] New frame buffer allocated=0.000MB, total usage: allocated=26.445MB, max limit=2048.000MB
+[04/25 15:55:06.401411][debug][295346][FrameBufferManager.cpp:35] New frame buffer allocated=0.000MB, total usage: allocated=26.446MB, max limit=2048.000MB
+[04/25 15:55:06.401415][debug][295346][FrameBufferManager.cpp:35] New frame buffer allocated=0.000MB, total usage: allocated=26.446MB, max limit=2048.000MB
+[04/25 15:55:06.401418][debug][295346][FrameBufferManager.cpp:35] New frame buffer allocated=0.000MB, total usage: allocated=26.447MB, max limit=2048.000MB
+[04/25 15:55:06.401430][debug][295346][Pipeline.cpp:319] Frame received on pipeline! type=OB_FRAME_COLOR
+[04/25 15:55:06.671026][debug][295346][FrameBufferManager.cpp:35] New frame buffer allocated=1.978MB, total usage: allocated=28.425MB, max limit=2048.000MB
+[04/25 15:55:08.197049][debug][295345][PropertyAccessor.cpp:50] get firmware data success! propertyId: 1003, dataLen: 24
+[04/25 15:55:09.246357][debug][295377][Pipeline.cpp:319] Frame received on pipeline! type=OB_FRAME_DEPTH [**46 logs in 3003ms, last: 15:55:09.220809**]
+[04/25 15:55:09.336710][warning][295379][Pipeline.cpp:377] Wait for frame timeout, you can try to increase the wait time! current timeout=500 [**1 logs in 3500ms, last: 15:55:06.336451**]
+[04/25 15:55:09.525335][debug][295346][Pipeline.cpp:319] Frame received on pipeline! type=OB_FRAME_COLOR [**44 logs in 3123ms**]
+[04/25 15:55:11.198503][debug][295345][PropertyAccessor.cpp:50] get firmware data success! propertyId: 1003, dataLen: 24
+[04/25 15:55:11.211712][debug][295355][VideoSensor.cpp:427] OB_SENSOR_DEPTH Streaming... frameRate=15.353939fps
+[04/25 15:55:11.446885][debug][295346][VideoSensor.cpp:427] OB_SENSOR_COLOR Streaming... frameRate=14.667988fps
+[04/25 15:55:11.446963][debug][295346][Pipeline.cpp:323] Pipeline streaming... frameset output rate=15.857285fps
+[04/25 15:55:12.837656][debug][295343][VendorCommand.cpp:436] get TimeStamp: tsp=23096817, rtt=0
+[04/25 15:55:12.837705][debug][295343][GlobalTimestampFitter.cpp:143] GlobalTimestampFitter update: coefficientA = 1000.0133567984109, constantB = 1745566215712009.2
+[04/25 15:55:14.199180][debug][295345][PropertyAccessor.cpp:50] get firmware data success! propertyId: 1003, dataLen: 24
+[04/25 15:55:15.267110][debug][295376][Pipeline.cpp:319] Frame received on pipeline! type=OB_FRAME_DEPTH [**91 logs in 6020ms**]
+[04/25 15:55:15.565818][debug][295346][Pipeline.cpp:319] Frame received on pipeline! type=OB_FRAME_COLOR [**91 logs in 6040ms**]
+[04/25 15:55:16.265239][debug][295355][VideoSensor.cpp:427] OB_SENSOR_DEPTH Streaming... frameRate=15.037594fps
+[04/25 15:55:16.495782][debug][295346][VideoSensor.cpp:427] OB_SENSOR_COLOR Streaming... frameRate=15.052486fps
+[04/25 15:55:16.495862][debug][295346][Pipeline.cpp:323] Pipeline streaming... frameset output rate=15.052486fps
+[04/25 15:55:17.199937][debug][295345][PropertyAccessor.cpp:50] get firmware data success! propertyId: 1003, dataLen: 24
+[04/25 15:55:20.200622][debug][295345][PropertyAccessor.cpp:50] get firmware data success! propertyId: 1003, dataLen: 24
+[04/25 15:55:20.838211][debug][295343][VendorCommand.cpp:436] get TimeStamp: tsp=23104818, rtt=0
+[04/25 15:55:20.838268][debug][295343][GlobalTimestampFitter.cpp:143] GlobalTimestampFitter update: coefficientA = 999.9803917698937, constantB = 1745566216473168.8
+[04/25 15:55:21.309690][debug][295355][VideoSensor.cpp:427] OB_SENSOR_DEPTH Streaming... frameRate=15.067407fps
+[04/25 15:55:21.545242][debug][295346][VideoSensor.cpp:427] OB_SENSOR_COLOR Streaming... frameRate=15.049504fps
+[04/25 15:55:21.545335][debug][295346][Pipeline.cpp:323] Pipeline streaming... frameset output rate=15.049504fps
+[04/25 15:55:23.201324][debug][295345][PropertyAccessor.cpp:50] get firmware data success! propertyId: 1003, dataLen: 24
+[04/25 15:55:26.202859][debug][295345][PropertyAccessor.cpp:50] get firmware data success! propertyId: 1003, dataLen: 24
+[04/25 15:55:26.359462][debug][295355][VideoSensor.cpp:427] OB_SENSOR_DEPTH Streaming... frameRate=15.049504fps
+[04/25 15:55:26.595624][debug][295346][VideoSensor.cpp:427] OB_SENSOR_COLOR Streaming... frameRate=14.851484fps
+[04/25 15:55:26.595706][debug][295346][Pipeline.cpp:323] Pipeline streaming... frameset output rate=15.049504fps
+[04/25 15:55:27.297509][debug][295376][Pipeline.cpp:319] Frame received on pipeline! type=OB_FRAME_DEPTH [**181 logs in 12030ms**]
+[04/25 15:55:27.609850][debug][295346][Pipeline.cpp:319] Frame received on pipeline! type=OB_FRAME_COLOR [**180 logs in 12044ms**]
+[04/25 15:55:28.838664][debug][295343][VendorCommand.cpp:436] get TimeStamp: tsp=23112819, rtt=0
+[04/25 15:55:28.838711][debug][295343][GlobalTimestampFitter.cpp:143] GlobalTimestampFitter update: coefficientA = 999.9663976328553, constantB = 1745566216796313.5
+[04/25 15:55:29.203926][debug][295345][PropertyAccessor.cpp:50] get firmware data success! propertyId: 1003, dataLen: 24
+[04/25 15:55:31.407610][debug][295355][VideoSensor.cpp:427] OB_SENSOR_DEPTH Streaming... frameRate=15.055468fps
+[04/25 15:55:35.743061][debug][295715][Context.cpp:30] Context creating, work_dir=/home/claire/Dev/reachy2_noVR_teleoperation/project_tracker
+[04/25 15:55:35.743099][debug][295715][Context.cpp:49] Config file version=1.1
+[04/25 15:55:35.743113][debug][295715][FrameBufferManager.cpp:23] Max global frame buffer size updated! size=2048.000MB
+[04/25 15:55:35.743118][info][295715][Context.cpp:68] Context created with config: default config!
+[04/25 15:55:35.743135][info][295715][Context.cpp:73] Work directory=/home/claire/Dev/reachy2_noVR_teleoperation/project_tracker, SDK version=v1.10.16-20241021-5113dad
+[04/25 15:55:35.743149][debug][295715][DeviceManager.cpp:30] DeviceManager init ...
+[04/25 15:55:35.743153][info][295715][LinuxPal.cpp:32] createObPal: create LinuxPal!
+[04/25 15:55:35.743992][debug][295715][DeviceManager.cpp:34] Enable USB Device Enumerator ...
+[04/25 15:55:35.824583][debug][295715][EnumeratorLibusb.cpp:324] queryDevicesInfo done!
+[04/25 15:55:35.824637][debug][295715][UsbDeviceEnumerator.cpp:163] Current usb device port list:
+[04/25 15:55:35.824646][debug][295715][UsbDeviceEnumerator.cpp:166]  - 4-2-4.0 | Orbbec Femto Bolt RGB Camera
+[04/25 15:55:35.824654][debug][295715][UsbDeviceEnumerator.cpp:166]  - 4-2-4.2 | Orbbec Femto Bolt Depth Camera
+[04/25 15:55:35.824661][debug][295715][UsbDeviceEnumerator.cpp:166]  - 4-2-4.4 | HID Interface
+[04/25 15:55:35.824802][info][295715][LinuxPal.cpp:166] Create PollingDeviceWatcher!
+[04/25 15:55:35.824830][debug][295715][UsbDeviceEnumerator.cpp:71] Found 1 device(s):
+[04/25 15:55:35.824839][debug][295715][UsbDeviceEnumerator.cpp:74]   - Name: Femto Bolt, PID: 0x066B, SN/ID: CL8R24100B5, connection: USB3.1
+[04/25 15:55:35.824851][info][295715][DeviceManager.cpp:15] Current found device(s): (1)
+[04/25 15:55:35.824864][info][295715][DeviceManager.cpp:24] 	- Name: Femto Bolt, PID: 0x066b, SN/ID: CL8R24100B5, Connection: USB3.1
+[04/25 15:55:35.824877][debug][295715][DeviceManager.cpp:52] DeviceManager construct done!
+[04/25 15:55:35.825270][info][295715][Pipeline.cpp:15] Try to create pipeline with default device.
+[04/25 15:55:35.825291][debug][295715][DeviceManager.cpp:109] DeviceManager  createDevice...
+[04/25 15:55:35.825298][debug][295715][UsbDeviceEnumerator.cpp:291] UsbDeviceEnumerator createDevice...
+[04/25 15:55:35.825343][info][295715][FemtoBoltUvcDevice.cpp:23] FemtoBoltUvcDevice init ...
+[04/25 15:55:35.825403][info][295715][FemtoBoltUvcDevice.cpp:122] Create command start!
+[04/25 15:55:35.826009][debug][295715][ObLibuvcDevicePort.cpp:58] uvc_open success
+[04/25 15:55:35.826503][info][295715][MSDEConverterDevice.cpp:726] Succeed to load depth engine plugin
+[04/25 15:55:35.826521][debug][295715][ObLibuvcDevicePort.cpp:75] ObLibuvcDevicePort::startStream()...
+[04/25 15:55:35.826530][debug][295715][ObLibuvcDevicePort.cpp:90] playProfile: infIndex=2, selected_format.width=1024, height=512, format=OB_FORMAT_Y16
+[04/25 15:55:35.830169][debug][295715][ObLibuvcDevicePort.cpp:143] ObLibuvcDevicePort::startStream() done
+[04/25 15:55:35.830298][debug][295715][VendorCommand.cpp:205] VendorCommand constructor 1afc9af0
+[04/25 15:55:36.685211][debug][295715][PropertyAccessor.cpp:50] get firmware data success! propertyId: 1000, dataLen: 164
+[04/25 15:55:36.685598][debug][295715][HostProtocol.cpp:466] get property value success! propertyId=98, cur={intValue: 0, floatValue: 0}, max={intValue: 1, floatValue: 1.4013e-45}, min={intValue: 0, floatValue: 0},def={intValue: 0, floatValue: 0},step={intValue: 1, floatValue: 1.4013e-45}
+[04/25 15:55:36.685607][debug][295715][PropertyAccessor.cpp:28] get property value success! propertyId: 98, value: {intValue: 0, floatValue: 0}
+[04/25 15:55:36.686036][debug][295851][VendorCommand.cpp:436] get TimeStamp: tsp=23120666, rtt=0
+[04/25 15:55:36.736508][debug][295851][VendorCommand.cpp:436] get TimeStamp: tsp=23120717, rtt=0
+[04/25 15:55:36.787038][debug][295851][VendorCommand.cpp:436] get TimeStamp: tsp=23120767, rtt=0
+[04/25 15:55:36.787108][debug][295851][GlobalTimestampFitter.cpp:143] GlobalTimestampFitter update: coefficientA = 999.5290158149262, constantB = 1745566226909185.5
+[04/25 15:55:36.787130][debug][295715][GlobalTimestampFitter.cpp:27] GlobalTimestampFitter created: maxQueueSize_=10, refreshIntervalMsec_=8000
+[04/25 15:55:36.787866][debug][295715][PropertyAccessor.cpp:50] get firmware data success! propertyId: 1000, dataLen: 164
+[04/25 15:55:36.787880][info][295715][AbstractDevice.cpp:125] 	- Firmware version: 1.0.9
+[04/25 15:55:36.787904][info][295715][FemtoBoltUvcDevice.cpp:281] Create command done!
+[04/25 15:55:36.787915][info][295715][FemtoBoltUvcDevice.cpp:356] init sensor map start!
+[04/25 15:55:36.787945][info][295715][FemtoBoltUvcDevice.cpp:383] init sensor map done!
+[04/25 15:55:36.788057][info][295715][FemtoBoltUvcDevice.cpp:285] Init depth process param start!
+[04/25 15:55:36.789356][debug][295715][FemtoBoltAlgParamManager.cpp:43] Get align calibration camera params success! num=4
+[04/25 15:55:36.789399][debug][295715][FemtoBoltAlgParamManager.cpp:47] - {
+depthDistortion: {k1: 11.5712, k2: 7.83305, k3: 0.396152, k4: 11.8777, k5: 11.7852, k6: 2.11315, p1: 6.26389e-05, p2: -2.43805e-05},
+depthIntrinsic: {cx: 519.167, cy: 512.992, fx: 505.093, fy: 505.003, width: 1024, height: 1024}, 
+rgbDistortion: {k1: 0.0779919, k2: -0.110731, k3: 0.0465888, k4: 0, k5: 0, k6: 0, p1: 0.000108204, p2: -0.000131961},
+rgbIntrinsic: {cx: 319.791, cy: 178.768, fx: 374.011, fy: 373.725, width: 640, height: 360}, 
+transform: {rot: [0.99413, 0.0075963, 0.00133729, -0.00769639, 0.994101, 0.108184, -0.000507608, -0.108191, 0.99413], trans: [-32.5305, -0.842216, 2.07257]}
+}
+[04/25 15:55:36.789415][debug][295715][FemtoBoltAlgParamManager.cpp:47] - {
+depthDistortion: {k1: 11.5712, k2: 7.83305, k3: 0.396152, k4: 11.8777, k5: 11.7852, k6: 2.11315, p1: 6.26389e-05, p2: -2.43805e-05},
+depthIntrinsic: {cx: 519.167, cy: 512.992, fx: 505.093, fy: 505.003, width: 1024, height: 1024}, 
+rgbDistortion: {k1: 0.0779919, k2: -0.110731, k3: 0.0465888, k4: 0, k5: 0, k6: 0, p1: 0.000108204, p2: -0.000131961},
+rgbIntrinsic: {cx: 319.721, cy: 238.357, fx: 498.681, fy: 498.3, width: 640, height: 480}, 
+transform: {rot: [0.99413, 0.0075963, 0.00133729, -0.00769639, 0.994101, 0.108184, -0.000507608, -0.108191, 0.99413], trans: [-32.5305, -0.842216, 2.07257]}
+}
+[04/25 15:55:36.789429][debug][295715][FemtoBoltAlgParamManager.cpp:47] - {
+depthDistortion: {k1: 11.5712, k2: 7.83305, k3: 0.396152, k4: 11.8777, k5: 11.7852, k6: 2.11315, p1: 6.26389e-05, p2: -2.43805e-05},
+depthIntrinsic: {cx: 327.167, cy: 332.992, fx: 505.093, fy: 505.003, width: 640, height: 576}, 
+rgbDistortion: {k1: 0.0779919, k2: -0.110731, k3: 0.0465888, k4: 0, k5: 0, k6: 0, p1: 0.000108204, p2: -0.000131961},
+rgbIntrinsic: {cx: 319.791, cy: 178.768, fx: 374.011, fy: 373.725, width: 640, height: 360}, 
+transform: {rot: [0.99413, 0.0075963, 0.00133729, -0.00769639, 0.994101, 0.108184, -0.000507608, -0.108191, 0.99413], trans: [-32.5305, -0.842216, 2.07257]}
+}
+[04/25 15:55:36.789442][debug][295715][FemtoBoltAlgParamManager.cpp:47] - {
+depthDistortion: {k1: 11.5712, k2: 7.83305, k3: 0.396152, k4: 11.8777, k5: 11.7852, k6: 2.11315, p1: 6.26389e-05, p2: -2.43805e-05},
+depthIntrinsic: {cx: 327.167, cy: 332.992, fx: 505.093, fy: 505.003, width: 640, height: 576}, 
+rgbDistortion: {k1: 0.0779919, k2: -0.110731, k3: 0.0465888, k4: 0, k5: 0, k6: 0, p1: 0.000108204, p2: -0.000131961},
+rgbIntrinsic: {cx: 319.721, cy: 238.357, fx: 498.681, fy: 498.3, width: 640, height: 480}, 
+transform: {rot: [0.99413, 0.0075963, 0.00133729, -0.00769639, 0.994101, 0.108184, -0.000507608, -0.108191, 0.99413], trans: [-32.5305, -0.842216, 2.07257]}
+}
+[04/25 15:55:36.790760][debug][295715][FemtoBoltAlgParamManager.cpp:75] Get depth to color profile list success! num=20
+[04/25 15:55:36.790798][debug][295715][FemtoBoltAlgParamManager.cpp:79]  - {alignType: 2, colorWidth: 3840, colorHeight: 2160, depthWidth: 1024, depthHeight: 1024, paramIndex: 0, postProcessParam: {alignLeft: 0, alignTop: 0, alignRight: 0, alignBottom: 0, depthScale: 6}}
+[04/25 15:55:36.790809][debug][295715][FemtoBoltAlgParamManager.cpp:79]  - {alignType: 2, colorWidth: 2560, colorHeight: 1440, depthWidth: 1024, depthHeight: 1024, paramIndex: 0, postProcessParam: {alignLeft: 0, alignTop: 0, alignRight: 0, alignBottom: 0, depthScale: 4}}
+[04/25 15:55:36.790817][debug][295715][FemtoBoltAlgParamManager.cpp:79]  - {alignType: 2, colorWidth: 1920, colorHeight: 1080, depthWidth: 1024, depthHeight: 1024, paramIndex: 0, postProcessParam: {alignLeft: 0, alignTop: 0, alignRight: 0, alignBottom: 0, depthScale: 3}}
+[04/25 15:55:36.790824][debug][295715][FemtoBoltAlgParamManager.cpp:79]  - {alignType: 2, colorWidth: 1280, colorHeight: 720, depthWidth: 1024, depthHeight: 1024, paramIndex: 0, postProcessParam: {alignLeft: 0, alignTop: 0, alignRight: 0, alignBottom: 0, depthScale: 2}}
+[04/25 15:55:36.790832][debug][295715][FemtoBoltAlgParamManager.cpp:79]  - {alignType: 2, colorWidth: 3840, colorHeight: 2160, depthWidth: 512, depthHeight: 512, paramIndex: 0, postProcessParam: {alignLeft: 0, alignTop: 0, alignRight: 0, alignBottom: 0, depthScale: 12}}
+[04/25 15:55:36.790840][debug][295715][FemtoBoltAlgParamManager.cpp:79]  - {alignType: 2, colorWidth: 2560, colorHeight: 1440, depthWidth: 512, depthHeight: 512, paramIndex: 0, postProcessParam: {alignLeft: 0, alignTop: 0, alignRight: 0, alignBottom: 0, depthScale: 8}}
+[04/25 15:55:36.790846][debug][295715][FemtoBoltAlgParamManager.cpp:79]  - {alignType: 2, colorWidth: 1920, colorHeight: 1080, depthWidth: 512, depthHeight: 512, paramIndex: 0, postProcessParam: {alignLeft: 0, alignTop: 0, alignRight: 0, alignBottom: 0, depthScale: 6}}
+[04/25 15:55:36.790853][debug][295715][FemtoBoltAlgParamManager.cpp:79]  - {alignType: 2, colorWidth: 1280, colorHeight: 720, depthWidth: 512, depthHeight: 512, paramIndex: 0, postProcessParam: {alignLeft: 0, alignTop: 0, alignRight: 0, alignBottom: 0, depthScale: 4}}
+[04/25 15:55:36.790860][debug][295715][FemtoBoltAlgParamManager.cpp:79]  - {alignType: 2, colorWidth: 3840, colorHeight: 2160, depthWidth: 640, depthHeight: 576, paramIndex: 2, postProcessParam: {alignLeft: 0, alignTop: 0, alignRight: 0, alignBottom: 0, depthScale: 6}}
+[04/25 15:55:36.790867][debug][295715][FemtoBoltAlgParamManager.cpp:79]  - {alignType: 2, colorWidth: 2560, colorHeight: 1440, depthWidth: 640, depthHeight: 576, paramIndex: 2, postProcessParam: {alignLeft: 0, alignTop: 0, alignRight: 0, alignBottom: 0, depthScale: 4}}
+[04/25 15:55:36.790873][debug][295715][FemtoBoltAlgParamManager.cpp:79]  - {alignType: 2, colorWidth: 1920, colorHeight: 1080, depthWidth: 640, depthHeight: 576, paramIndex: 2, postProcessParam: {alignLeft: 0, alignTop: 0, alignRight: 0, alignBottom: 0, depthScale: 3}}
+[04/25 15:55:36.790880][debug][295715][FemtoBoltAlgParamManager.cpp:79]  - {alignType: 2, colorWidth: 1280, colorHeight: 720, depthWidth: 640, depthHeight: 576, paramIndex: 2, postProcessParam: {alignLeft: 0, alignTop: 0, alignRight: 0, alignBottom: 0, depthScale: 2}}
+[04/25 15:55:36.790887][debug][295715][FemtoBoltAlgParamManager.cpp:79]  - {alignType: 2, colorWidth: 3840, colorHeight: 2160, depthWidth: 320, depthHeight: 288, paramIndex: 2, postProcessParam: {alignLeft: 0, alignTop: 0, alignRight: 0, alignBottom: 0, depthScale: 12}}
+[04/25 15:55:36.790904][debug][295715][FemtoBoltAlgParamManager.cpp:79]  - {alignType: 2, colorWidth: 2560, colorHeight: 1440, depthWidth: 320, depthHeight: 288, paramIndex: 2, postProcessParam: {alignLeft: 0, alignTop: 0, alignRight: 0, alignBottom: 0, depthScale: 8}}
+[04/25 15:55:36.790911][debug][295715][FemtoBoltAlgParamManager.cpp:79]  - {alignType: 2, colorWidth: 1920, colorHeight: 1080, depthWidth: 320, depthHeight: 288, paramIndex: 2, postProcessParam: {alignLeft: 0, alignTop: 0, alignRight: 0, alignBottom: 0, depthScale: 6}}
+[04/25 15:55:36.790918][debug][295715][FemtoBoltAlgParamManager.cpp:79]  - {alignType: 2, colorWidth: 1280, colorHeight: 720, depthWidth: 320, depthHeight: 288, paramIndex: 2, postProcessParam: {alignLeft: 0, alignTop: 0, alignRight: 0, alignBottom: 0, depthScale: 4}}
+[04/25 15:55:36.790924][debug][295715][FemtoBoltAlgParamManager.cpp:79]  - {alignType: 2, colorWidth: 1280, colorHeight: 960, depthWidth: 1024, depthHeight: 1024, paramIndex: 1, postProcessParam: {alignLeft: 0, alignTop: 0, alignRight: 0, alignBottom: 0, depthScale: 2}}
+[04/25 15:55:36.790931][debug][295715][FemtoBoltAlgParamManager.cpp:79]  - {alignType: 2, colorWidth: 1280, colorHeight: 960, depthWidth: 512, depthHeight: 512, paramIndex: 1, postProcessParam: {alignLeft: 0, alignTop: 0, alignRight: 0, alignBottom: 0, depthScale: 4}}
+[04/25 15:55:36.790938][debug][295715][FemtoBoltAlgParamManager.cpp:79]  - {alignType: 2, colorWidth: 1280, colorHeight: 960, depthWidth: 640, depthHeight: 576, paramIndex: 3, postProcessParam: {alignLeft: 0, alignTop: 0, alignRight: 0, alignBottom: 0, depthScale: 2}}
+[04/25 15:55:36.790944][debug][295715][FemtoBoltAlgParamManager.cpp:79]  - {alignType: 2, colorWidth: 1280, colorHeight: 960, depthWidth: 320, depthHeight: 288, paramIndex: 3, postProcessParam: {alignLeft: 0, alignTop: 0, alignRight: 0, alignBottom: 0, depthScale: 4}}
+[04/25 15:55:36.793649][debug][295715][FemtoBoltAlgParamManager.cpp:102] Get imu calibration params success!
+[04/25 15:55:36.793690][debug][295715][FemtoBoltUvcDevice.cpp:302] init default softFilterParam: maxSpeckleSize: 25, maxDiff: 300, filterType: 1
+[04/25 15:55:36.793696][info][295715][MSDEConverterDevice.cpp:777] got nvram data succeed.
+[04/25 15:55:36.793730][debug][295715][ObLibuvcDevicePort.cpp:148] ObLibuvcDevicePort::stopStream()...
+[04/25 15:55:36.801170][debug][295715][ObLibuvcDevicePort.cpp:172] ObLibuvcDevicePort::stopStream() done
+[04/25 15:55:36.801228][debug][295715][HostProtocol.cpp:433] Set property value, propertyId=38, value={intValue: 1, floatValue: 1.4013e-45}
+[04/25 15:55:37.146611][debug][295715][PropertyAccessor.cpp:17] set property value success! propertyId: 38, value: {intValue: 1, floatValue: 1.4013e-45}
+[04/25 15:55:37.146646][info][295715][FemtoBoltUvcDevice.cpp:313] setNvramDataStreamStopFunc succeed
+[04/25 15:55:37.146707][info][295715][FemtoBoltUvcDevice.cpp:352] Init depth process param done!
+[04/25 15:55:37.147264][debug][295866][PropertyAccessor.cpp:50] get firmware data success! propertyId: 1003, dataLen: 24
+[04/25 15:55:37.147287][debug][295715][HostProtocol.cpp:433] Set property value, propertyId=38, value={intValue: 1, floatValue: 1.4013e-45}
+[04/25 15:55:37.147611][debug][295715][PropertyAccessor.cpp:17] set property value success! propertyId: 38, value: {intValue: 1, floatValue: 1.4013e-45}
+[04/25 15:55:37.147621][debug][295715][HostProtocol.cpp:433] Set property value, propertyId=77, value={intValue: 1, floatValue: 1.4013e-45}
+[04/25 15:55:39.216137][debug][295715][PropertyAccessor.cpp:17] set property value success! propertyId: 77, value: {intValue: 1, floatValue: 1.4013e-45}
+[04/25 15:55:39.216175][info][295715][FemtoBoltUvcDevice.cpp:39] FemtoBoltUvcDevice init done!
+[04/25 15:55:39.216193][debug][295715][UsbDeviceEnumerator.cpp:359] Device created successfully! Name: Femto Bolt, PID: 0x066b, SN/ID: CL8R24100B5
+[04/25 15:55:39.216199][info][295715][DeviceManager.cpp:150] Device created successfully! Name: Femto Bolt, PID: 0x066b, SN/ID: CL8R24100B5
+[04/25 15:55:39.216226][debug][295715][Pipeline.cpp:29] Pipeline init ...
+[04/25 15:55:39.216241][debug][295715][Pipeline.cpp:168] loadFrameQueueSizeConfig() config queue size: 10
+[04/25 15:55:39.216246][info][295715][Pipeline.cpp:47] Pipeline created with device: {name: Femto Bolt, sn: CL8R24100B5}, @0x1AD7DEA0
+[04/25 15:55:39.216570][debug][295715][LinuxPal.cpp:292] Uvc backend have been set to LibUVC(1)
+[04/25 15:55:39.217181][debug][295715][ObLibuvcDevicePort.cpp:58] uvc_open success
+[04/25 15:55:39.217195][debug][295715][LinuxPal.cpp:127] UVC device have been create with LibUVC backend! dev: 4-2-4, inf: 4-2-4.0
+[04/25 15:55:39.217201][debug][295715][FrameProcessor.cpp:90] FrameProcessor init with 3 blocks! @124984890500944
+[04/25 15:55:39.217218][debug][295715][FrameProcessingBlock.cpp:26] Block created with frame queue size: 10
+[04/25 15:55:39.217221][debug][295715][FrameProcessor.cpp:98]  - block: FormatConverter, status: disable
+[04/25 15:55:39.217225][debug][295715][FrameProcessingBlock.cpp:26] Block created with frame queue size: 10
+[04/25 15:55:39.217228][debug][295715][FrameProcessor.cpp:98]  - block: FrameFlip, status: disable
+[04/25 15:55:39.217232][debug][295715][FrameProcessingBlock.cpp:26] Block created with frame queue size: 10
+[04/25 15:55:39.217234][debug][295715][FrameProcessor.cpp:98]  - block: FrameRotate, status: disable
+[04/25 15:55:39.217254][debug][295715][VideoSensor.cpp:252] VideoSensor construct!
+[04/25 15:55:39.217259][debug][295715][VideoSensor.cpp:278] VideoSensor created, @OB_SENSOR_COLOR
+[04/25 15:55:39.217262][info][295715][FemtoBoltUvcDevice.cpp:528] Color sensor has been created!
+[04/25 15:55:39.218346][debug][295715][PropertyAccessor.cpp:71] get raw data! propertyId: 4035, async: false
+[04/25 15:55:39.218375][debug][295715][FemtoBoltProfileFilter.cpp:36] uvcProfileList size: 24, output profile size: 24
+[04/25 15:55:39.218382][debug][295715][VideoSensor.cpp:372] Query stream profile! filter profile list success. size = 24, valid size = 24
+[04/25 15:55:39.218452][info][295715][VideoSensor.cpp:384] Query stream profile! size= 84, SensorType=OB_SENSOR_COLOR
+[04/25 15:55:39.218463][info][295715][VideoSensor.cpp:386]  - {type: OB_STREAM_COLOR, format: OB_FORMAT_MJPG, width: 1920, height: 1080, fps: 15}
+[04/25 15:55:39.218470][info][295715][VideoSensor.cpp:386]  - {type: OB_STREAM_COLOR, format: OB_FORMAT_YUYV, width: 1280, height: 720, fps: 30}
+[04/25 15:55:39.218475][info][295715][VideoSensor.cpp:386]  - {type: OB_STREAM_COLOR, format: OB_FORMAT_YUYV, width: 1280, height: 720, fps: 25}
+[04/25 15:55:39.218479][info][295715][VideoSensor.cpp:386]  - {type: OB_STREAM_COLOR, format: OB_FORMAT_YUYV, width: 1280, height: 720, fps: 15}
+[04/25 15:55:39.218484][info][295715][VideoSensor.cpp:386]  - {type: OB_STREAM_COLOR, format: OB_FORMAT_YUYV, width: 1280, height: 720, fps: 5}
+[04/25 15:55:39.218488][info][295715][VideoSensor.cpp:386]  - {type: OB_STREAM_COLOR, format: OB_FORMAT_MJPG, width: 1280, height: 720, fps: 30}
+[04/25 15:55:39.218493][info][295715][VideoSensor.cpp:386]  - {type: OB_STREAM_COLOR, format: OB_FORMAT_MJPG, width: 1280, height: 720, fps: 25}
+[04/25 15:55:39.218498][info][295715][VideoSensor.cpp:386]  - {type: OB_STREAM_COLOR, format: OB_FORMAT_MJPG, width: 1280, height: 720, fps: 15}
+[04/25 15:55:39.218502][info][295715][VideoSensor.cpp:386]  - {type: OB_STREAM_COLOR, format: OB_FORMAT_MJPG, width: 1280, height: 720, fps: 5}
+[04/25 15:55:39.218507][info][295715][VideoSensor.cpp:386]  - {type: OB_STREAM_COLOR, format: OB_FORMAT_MJPG, width: 1280, height: 960, fps: 30}
+[04/25 15:55:39.218513][info][295715][VideoSensor.cpp:386]  - {type: OB_STREAM_COLOR, format: OB_FORMAT_MJPG, width: 1280, height: 960, fps: 25}
+[04/25 15:55:39.218520][info][295715][VideoSensor.cpp:386]  - {type: OB_STREAM_COLOR, format: OB_FORMAT_MJPG, width: 1280, height: 960, fps: 15}
+[04/25 15:55:39.218527][info][295715][VideoSensor.cpp:386]  - {type: OB_STREAM_COLOR, format: OB_FORMAT_MJPG, width: 1280, height: 960, fps: 5}
+[04/25 15:55:39.218534][info][295715][VideoSensor.cpp:386]  - {type: OB_STREAM_COLOR, format: OB_FORMAT_MJPG, width: 1920, height: 1080, fps: 30}
+[04/25 15:55:39.218549][info][295715][VideoSensor.cpp:386]  - {type: OB_STREAM_COLOR, format: OB_FORMAT_MJPG, width: 1920, height: 1080, fps: 25}
+[04/25 15:55:39.218555][info][295715][VideoSensor.cpp:386]  - {type: OB_STREAM_COLOR, format: OB_FORMAT_MJPG, width: 1920, height: 1080, fps: 5}
+[04/25 15:55:39.218561][info][295715][VideoSensor.cpp:386]  - {type: OB_STREAM_COLOR, format: OB_FORMAT_MJPG, width: 2560, height: 1440, fps: 30}
+[04/25 15:55:39.218568][info][295715][VideoSensor.cpp:386]  - {type: OB_STREAM_COLOR, format: OB_FORMAT_MJPG, width: 2560, height: 1440, fps: 25}
+[04/25 15:55:39.218573][info][295715][VideoSensor.cpp:386]  - {type: OB_STREAM_COLOR, format: OB_FORMAT_MJPG, width: 2560, height: 1440, fps: 15}
+[04/25 15:55:39.218580][info][295715][VideoSensor.cpp:386]  - {type: OB_STREAM_COLOR, format: OB_FORMAT_MJPG, width: 2560, height: 1440, fps: 5}
+[04/25 15:55:39.218586][info][295715][VideoSensor.cpp:386]  - {type: OB_STREAM_COLOR, format: OB_FORMAT_MJPG, width: 3840, height: 2160, fps: 30}
+[04/25 15:55:39.218592][info][295715][VideoSensor.cpp:386]  - {type: OB_STREAM_COLOR, format: OB_FORMAT_MJPG, width: 3840, height: 2160, fps: 25}
+[04/25 15:55:39.218597][info][295715][VideoSensor.cpp:386]  - {type: OB_STREAM_COLOR, format: OB_FORMAT_MJPG, width: 3840, height: 2160, fps: 15}
+[04/25 15:55:39.218603][info][295715][VideoSensor.cpp:386]  - {type: OB_STREAM_COLOR, format: OB_FORMAT_MJPG, width: 3840, height: 2160, fps: 5}
+[04/25 15:55:39.218610][info][295715][VideoSensor.cpp:386]  - {type: OB_STREAM_COLOR, format: OB_FORMAT_RGB888, width: 1280, height: 720, fps: 30}
+[04/25 15:55:39.218617][info][295715][VideoSensor.cpp:386]  - {type: OB_STREAM_COLOR, format: OB_FORMAT_RGB888, width: 1280, height: 720, fps: 25}
+[04/25 15:55:39.218623][info][295715][VideoSensor.cpp:386]  - {type: OB_STREAM_COLOR, format: OB_FORMAT_RGB888, width: 1280, height: 720, fps: 15}
+[04/25 15:55:39.218630][info][295715][VideoSensor.cpp:386]  - {type: OB_STREAM_COLOR, format: OB_FORMAT_RGB888, width: 1280, height: 720, fps: 5}
+[04/25 15:55:39.218636][info][295715][VideoSensor.cpp:386]  - {type: OB_STREAM_COLOR, format: OB_FORMAT_RGB888, width: 1280, height: 960, fps: 30}
+[04/25 15:55:39.218642][info][295715][VideoSensor.cpp:386]  - {type: OB_STREAM_COLOR, format: OB_FORMAT_RGB888, width: 1280, height: 960, fps: 25}
+[04/25 15:55:39.218648][info][295715][VideoSensor.cpp:386]  - {type: OB_STREAM_COLOR, format: OB_FORMAT_RGB888, width: 1280, height: 960, fps: 15}
+[04/25 15:55:39.218653][info][295715][VideoSensor.cpp:386]  - {type: OB_STREAM_COLOR, format: OB_FORMAT_RGB888, width: 1280, height: 960, fps: 5}
+[04/25 15:55:39.218659][info][295715][VideoSensor.cpp:386]  - {type: OB_STREAM_COLOR, format: OB_FORMAT_RGB888, width: 1920, height: 1080, fps: 30}
+[04/25 15:55:39.218666][info][295715][VideoSensor.cpp:386]  - {type: OB_STREAM_COLOR, format: OB_FORMAT_RGB888, width: 1920, height: 1080, fps: 25}
+[04/25 15:55:39.218672][info][295715][VideoSensor.cpp:386]  - {type: OB_STREAM_COLOR, format: OB_FORMAT_RGB888, width: 1920, height: 1080, fps: 15}
+[04/25 15:55:39.218679][info][295715][VideoSensor.cpp:386]  - {type: OB_STREAM_COLOR, format: OB_FORMAT_RGB888, width: 1920, height: 1080, fps: 5}
+[04/25 15:55:39.218685][info][295715][VideoSensor.cpp:386]  - {type: OB_STREAM_COLOR, format: OB_FORMAT_RGB888, width: 2560, height: 1440, fps: 30}
+[04/25 15:55:39.218691][info][295715][VideoSensor.cpp:386]  - {type: OB_STREAM_COLOR, format: OB_FORMAT_RGB888, width: 2560, height: 1440, fps: 25}
+[04/25 15:55:39.218697][info][295715][VideoSensor.cpp:386]  - {type: OB_STREAM_COLOR, format: OB_FORMAT_RGB888, width: 2560, height: 1440, fps: 15}
+[04/25 15:55:39.218703][info][295715][VideoSensor.cpp:386]  - {type: OB_STREAM_COLOR, format: OB_FORMAT_RGB888, width: 2560, height: 1440, fps: 5}
+[04/25 15:55:39.218709][info][295715][VideoSensor.cpp:386]  - {type: OB_STREAM_COLOR, format: OB_FORMAT_RGB888, width: 3840, height: 2160, fps: 30}
+[04/25 15:55:39.218715][info][295715][VideoSensor.cpp:386]  - {type: OB_STREAM_COLOR, format: OB_FORMAT_RGB888, width: 3840, height: 2160, fps: 25}
+[04/25 15:55:39.218724][info][295715][VideoSensor.cpp:386]  - {type: OB_STREAM_COLOR, format: OB_FORMAT_RGB888, width: 3840, height: 2160, fps: 15}
+[04/25 15:55:39.218731][info][295715][VideoSensor.cpp:386]  - {type: OB_STREAM_COLOR, format: OB_FORMAT_RGB888, width: 3840, height: 2160, fps: 5}
+[04/25 15:55:39.218737][info][295715][VideoSensor.cpp:386]  - {type: OB_STREAM_COLOR, format: OB_FORMAT_BGRA, width: 1280, height: 720, fps: 30}
+[04/25 15:55:39.218743][info][295715][VideoSensor.cpp:386]  - {type: OB_STREAM_COLOR, format: OB_FORMAT_BGRA, width: 1280, height: 720, fps: 25}
+[04/25 15:55:39.218749][info][295715][VideoSensor.cpp:386]  - {type: OB_STREAM_COLOR, format: OB_FORMAT_BGRA, width: 1280, height: 720, fps: 15}
+[04/25 15:55:39.218755][info][295715][VideoSensor.cpp:386]  - {type: OB_STREAM_COLOR, format: OB_FORMAT_BGRA, width: 1280, height: 720, fps: 5}
+[04/25 15:55:39.218761][info][295715][VideoSensor.cpp:386]  - {type: OB_STREAM_COLOR, format: OB_FORMAT_BGRA, width: 1280, height: 960, fps: 30}
+[04/25 15:55:39.218767][info][295715][VideoSensor.cpp:386]  - {type: OB_STREAM_COLOR, format: OB_FORMAT_BGRA, width: 1280, height: 960, fps: 25}
+[04/25 15:55:39.218773][info][295715][VideoSensor.cpp:386]  - {type: OB_STREAM_COLOR, format: OB_FORMAT_BGRA, width: 1280, height: 960, fps: 15}
+[04/25 15:55:39.218779][info][295715][VideoSensor.cpp:386]  - {type: OB_STREAM_COLOR, format: OB_FORMAT_BGRA, width: 1280, height: 960, fps: 5}
+[04/25 15:55:39.218786][info][295715][VideoSensor.cpp:386]  - {type: OB_STREAM_COLOR, format: OB_FORMAT_BGRA, width: 1920, height: 1080, fps: 30}
+[04/25 15:55:39.218792][info][295715][VideoSensor.cpp:386]  - {type: OB_STREAM_COLOR, format: OB_FORMAT_BGRA, width: 1920, height: 1080, fps: 25}
+[04/25 15:55:39.218798][info][295715][VideoSensor.cpp:386]  - {type: OB_STREAM_COLOR, format: OB_FORMAT_BGRA, width: 1920, height: 1080, fps: 15}
+[04/25 15:55:39.218804][info][295715][VideoSensor.cpp:386]  - {type: OB_STREAM_COLOR, format: OB_FORMAT_BGRA, width: 1920, height: 1080, fps: 5}
+[04/25 15:55:39.218811][info][295715][VideoSensor.cpp:386]  - {type: OB_STREAM_COLOR, format: OB_FORMAT_BGRA, width: 2560, height: 1440, fps: 30}
+[04/25 15:55:39.218816][info][295715][VideoSensor.cpp:386]  - {type: OB_STREAM_COLOR, format: OB_FORMAT_BGRA, width: 2560, height: 1440, fps: 25}
+[04/25 15:55:39.218822][info][295715][VideoSensor.cpp:386]  - {type: OB_STREAM_COLOR, format: OB_FORMAT_BGRA, width: 2560, height: 1440, fps: 15}
+[04/25 15:55:39.218828][info][295715][VideoSensor.cpp:386]  - {type: OB_STREAM_COLOR, format: OB_FORMAT_BGRA, width: 2560, height: 1440, fps: 5}
+[04/25 15:55:39.218834][info][295715][VideoSensor.cpp:386]  - {type: OB_STREAM_COLOR, format: OB_FORMAT_BGRA, width: 3840, height: 2160, fps: 30}
+[04/25 15:55:39.218841][info][295715][VideoSensor.cpp:386]  - {type: OB_STREAM_COLOR, format: OB_FORMAT_BGRA, width: 3840, height: 2160, fps: 25}
+[04/25 15:55:39.218847][info][295715][VideoSensor.cpp:386]  - {type: OB_STREAM_COLOR, format: OB_FORMAT_BGRA, width: 3840, height: 2160, fps: 15}
+[04/25 15:55:39.218853][info][295715][VideoSensor.cpp:386]  - {type: OB_STREAM_COLOR, format: OB_FORMAT_BGRA, width: 3840, height: 2160, fps: 5}
+[04/25 15:55:39.218859][info][295715][VideoSensor.cpp:386]  - {type: OB_STREAM_COLOR, format: OB_FORMAT_NV12, width: 1280, height: 720, fps: 30}
+[04/25 15:55:39.218866][info][295715][VideoSensor.cpp:386]  - {type: OB_STREAM_COLOR, format: OB_FORMAT_NV12, width: 1280, height: 720, fps: 25}
+[04/25 15:55:39.218872][info][295715][VideoSensor.cpp:386]  - {type: OB_STREAM_COLOR, format: OB_FORMAT_NV12, width: 1280, height: 720, fps: 15}
+[04/25 15:55:39.218878][info][295715][VideoSensor.cpp:386]  - {type: OB_STREAM_COLOR, format: OB_FORMAT_NV12, width: 1280, height: 720, fps: 5}
+[04/25 15:55:39.218884][info][295715][VideoSensor.cpp:386]  - {type: OB_STREAM_COLOR, format: OB_FORMAT_NV12, width: 1280, height: 960, fps: 30}
+[04/25 15:55:39.218890][info][295715][VideoSensor.cpp:386]  - {type: OB_STREAM_COLOR, format: OB_FORMAT_NV12, width: 1280, height: 960, fps: 25}
+[04/25 15:55:39.218900][info][295715][VideoSensor.cpp:386]  - {type: OB_STREAM_COLOR, format: OB_FORMAT_NV12, width: 1280, height: 960, fps: 15}
+[04/25 15:55:39.218906][info][295715][VideoSensor.cpp:386]  - {type: OB_STREAM_COLOR, format: OB_FORMAT_NV12, width: 1280, height: 960, fps: 5}
+[04/25 15:55:39.218912][info][295715][VideoSensor.cpp:386]  - {type: OB_STREAM_COLOR, format: OB_FORMAT_NV12, width: 1920, height: 1080, fps: 30}
+[04/25 15:55:39.218918][info][295715][VideoSensor.cpp:386]  - {type: OB_STREAM_COLOR, format: OB_FORMAT_NV12, width: 1920, height: 1080, fps: 25}
+[04/25 15:55:39.218924][info][295715][VideoSensor.cpp:386]  - {type: OB_STREAM_COLOR, format: OB_FORMAT_NV12, width: 1920, height: 1080, fps: 15}
+[04/25 15:55:39.218931][info][295715][VideoSensor.cpp:386]  - {type: OB_STREAM_COLOR, format: OB_FORMAT_NV12, width: 1920, height: 1080, fps: 5}
+[04/25 15:55:39.218937][info][295715][VideoSensor.cpp:386]  - {type: OB_STREAM_COLOR, format: OB_FORMAT_NV12, width: 2560, height: 1440, fps: 30}
+[04/25 15:55:39.218943][info][295715][VideoSensor.cpp:386]  - {type: OB_STREAM_COLOR, format: OB_FORMAT_NV12, width: 2560, height: 1440, fps: 25}
+[04/25 15:55:39.218949][info][295715][VideoSensor.cpp:386]  - {type: OB_STREAM_COLOR, format: OB_FORMAT_NV12, width: 2560, height: 1440, fps: 15}
+[04/25 15:55:39.218955][info][295715][VideoSensor.cpp:386]  - {type: OB_STREAM_COLOR, format: OB_FORMAT_NV12, width: 2560, height: 1440, fps: 5}
+[04/25 15:55:39.218962][info][295715][VideoSensor.cpp:386]  - {type: OB_STREAM_COLOR, format: OB_FORMAT_NV12, width: 3840, height: 2160, fps: 30}
+[04/25 15:55:39.218969][info][295715][VideoSensor.cpp:386]  - {type: OB_STREAM_COLOR, format: OB_FORMAT_NV12, width: 3840, height: 2160, fps: 25}
+[04/25 15:55:39.218976][info][295715][VideoSensor.cpp:386]  - {type: OB_STREAM_COLOR, format: OB_FORMAT_NV12, width: 3840, height: 2160, fps: 15}
+[04/25 15:55:39.218983][info][295715][VideoSensor.cpp:386]  - {type: OB_STREAM_COLOR, format: OB_FORMAT_NV12, width: 3840, height: 2160, fps: 5}
+[04/25 15:55:39.219074][debug][295715][FrameProcessor.cpp:90] FrameProcessor init with 6 blocks! @454760752
+[04/25 15:55:39.219091][debug][295715][FrameProcessingBlock.cpp:26] Block created with frame queue size: 10
+[04/25 15:55:39.219094][debug][295715][FrameProcessor.cpp:98]  - block: FrameSoftFilter, status: disable
+[04/25 15:55:39.219098][debug][295715][FrameProcessingBlock.cpp:26] Block created with frame queue size: 10
+[04/25 15:55:39.219100][debug][295715][FrameProcessor.cpp:98]  - block: FrameMirror, status: disable
+[04/25 15:55:39.219111][debug][295715][FrameProcessingBlock.cpp:26] Block created with frame queue size: 10
+[04/25 15:55:39.219113][debug][295715][FrameProcessor.cpp:98]  - block: D2CFilter, status: disable
+[04/25 15:55:39.219117][debug][295715][FrameProcessingBlock.cpp:26] Block created with frame queue size: 10
+[04/25 15:55:39.219119][debug][295715][FrameProcessor.cpp:98]  - block: PostProcessFilter, status: disable
+[04/25 15:55:39.219123][debug][295715][FrameProcessingBlock.cpp:26] Block created with frame queue size: 10
+[04/25 15:55:39.219125][debug][295715][FrameProcessor.cpp:98]  - block: FrameFlip, status: disable
+[04/25 15:55:39.219128][debug][295715][FrameProcessingBlock.cpp:26] Block created with frame queue size: 10
+[04/25 15:55:39.219131][debug][295715][FrameProcessor.cpp:98]  - block: FrameRotate, status: disable
+[04/25 15:55:39.219142][debug][295715][VideoSensor.cpp:252] VideoSensor construct!
+[04/25 15:55:39.219146][debug][295715][VideoSensor.cpp:278] VideoSensor created, @OB_SENSOR_DEPTH
+[04/25 15:55:39.219150][info][295715][FemtoBoltUvcDevice.cpp:483] Depth sensor has been created!
+[04/25 15:55:39.219165][debug][295715][VideoSensor.cpp:119] device has original Y16 format, no need to add virtual format!
+[04/25 15:55:39.219177][info][295715][VideoSensor.cpp:384] Query stream profile! size= 14, SensorType=OB_SENSOR_DEPTH
+[04/25 15:55:39.219183][info][295715][VideoSensor.cpp:386]  - {type: OB_STREAM_DEPTH, format: OB_FORMAT_Y16, width: 640, height: 576, fps: 15}
+[04/25 15:55:39.219192][info][295715][VideoSensor.cpp:386]  - {type: OB_STREAM_DEPTH, format: OB_FORMAT_Y16, width: 1024, height: 1024, fps: 15}
+[04/25 15:55:39.219197][info][295715][VideoSensor.cpp:386]  - {type: OB_STREAM_DEPTH, format: OB_FORMAT_Y16, width: 1024, height: 1024, fps: 5}
+[04/25 15:55:39.219202][info][295715][VideoSensor.cpp:386]  - {type: OB_STREAM_DEPTH, format: OB_FORMAT_Y16, width: 640, height: 576, fps: 30}
+[04/25 15:55:39.219209][info][295715][VideoSensor.cpp:386]  - {type: OB_STREAM_DEPTH, format: OB_FORMAT_Y16, width: 320, height: 288, fps: 30}
+[04/25 15:55:39.219216][info][295715][VideoSensor.cpp:386]  - {type: OB_STREAM_DEPTH, format: OB_FORMAT_Y16, width: 640, height: 576, fps: 25}
+[04/25 15:55:39.219221][info][295715][VideoSensor.cpp:386]  - {type: OB_STREAM_DEPTH, format: OB_FORMAT_Y16, width: 320, height: 288, fps: 25}
+[04/25 15:55:39.219225][info][295715][VideoSensor.cpp:386]  - {type: OB_STREAM_DEPTH, format: OB_FORMAT_Y16, width: 320, height: 288, fps: 15}
+[04/25 15:55:39.219230][info][295715][VideoSensor.cpp:386]  - {type: OB_STREAM_DEPTH, format: OB_FORMAT_Y16, width: 640, height: 576, fps: 5}
+[04/25 15:55:39.219234][info][295715][VideoSensor.cpp:386]  - {type: OB_STREAM_DEPTH, format: OB_FORMAT_Y16, width: 320, height: 288, fps: 5}
+[04/25 15:55:39.219239][info][295715][VideoSensor.cpp:386]  - {type: OB_STREAM_DEPTH, format: OB_FORMAT_Y16, width: 512, height: 512, fps: 30}
+[04/25 15:55:39.219244][info][295715][VideoSensor.cpp:386]  - {type: OB_STREAM_DEPTH, format: OB_FORMAT_Y16, width: 512, height: 512, fps: 25}
+[04/25 15:55:39.219248][info][295715][VideoSensor.cpp:386]  - {type: OB_STREAM_DEPTH, format: OB_FORMAT_Y16, width: 512, height: 512, fps: 15}
+[04/25 15:55:39.219253][info][295715][VideoSensor.cpp:386]  - {type: OB_STREAM_DEPTH, format: OB_FORMAT_Y16, width: 512, height: 512, fps: 5}
+[04/25 15:55:39.219820][debug][295715][Pipeline.cpp:227] Pipeline start() start!
+[04/25 15:55:39.219827][info][295715][Pipeline.cpp:188] Check and set config start!
+[04/25 15:55:39.219844][info][295715][Pipeline.cpp:223] Check and set config done!
+[04/25 15:55:39.219877][debug][295715][PropertyAccessor.cpp:28] get property value success! propertyId: 14, value: {intValue: 0, floatValue: 0}
+[04/25 15:55:39.219882][debug][295715][PropertyAccessor.cpp:28] get property value success! propertyId: 15, value: {intValue: 0, floatValue: 0}
+[04/25 15:55:39.219887][debug][295715][PropertyAccessor.cpp:28] get property value success! propertyId: 118, value: {intValue: 0, floatValue: 0}
+[04/25 15:55:39.219894][debug][295715][HostProtocol.cpp:433] Set property value, propertyId=63, value={intValue: 2, floatValue: 2.8026e-45}
+[04/25 15:55:39.220250][debug][295715][PropertyAccessor.cpp:17] set property value success! propertyId: 63, value: {intValue: 2, floatValue: 2.8026e-45}
+[04/25 15:55:39.220272][debug][295715][PropertyAccessor.cpp:28] get property value success! propertyId: 14, value: {intValue: 0, floatValue: 0}
+[04/25 15:55:39.220278][debug][295715][PropertyAccessor.cpp:28] get property value success! propertyId: 15, value: {intValue: 0, floatValue: 0}
+[04/25 15:55:39.220284][debug][295715][PropertyAccessor.cpp:28] get property value success! propertyId: 118, value: {intValue: 0, floatValue: 0}
+[04/25 15:55:39.220291][debug][295715][HostProtocol.cpp:433] Set property value, propertyId=63, value={intValue: 2, floatValue: 2.8026e-45}
+[04/25 15:55:39.220621][debug][295715][PropertyAccessor.cpp:17] set property value success! propertyId: 63, value: {intValue: 2, floatValue: 2.8026e-45}
+[04/25 15:55:39.220635][debug][295715][PropertyAccessor.cpp:28] get property value success! propertyId: 14, value: {intValue: 0, floatValue: 0}
+[04/25 15:55:39.220641][debug][295715][PropertyAccessor.cpp:28] get property value success! propertyId: 15, value: {intValue: 0, floatValue: 0}
+[04/25 15:55:39.220646][debug][295715][PropertyAccessor.cpp:28] get property value success! propertyId: 118, value: {intValue: 0, floatValue: 0}
+[04/25 15:55:39.220655][debug][295715][PropertyAccessor.cpp:28] get property value success! propertyId: 14, value: {intValue: 0, floatValue: 0}
+[04/25 15:55:39.220670][debug][295715][PropertyAccessor.cpp:28] get property value success! propertyId: 15, value: {intValue: 0, floatValue: 0}
+[04/25 15:55:39.220676][debug][295715][PropertyAccessor.cpp:28] get property value success! propertyId: 118, value: {intValue: 0, floatValue: 0}
+[04/25 15:55:39.220682][debug][295715][PropertyAccessor.cpp:28] get property value success! propertyId: 118, value: {intValue: 0, floatValue: 0}
+[04/25 15:55:39.220691][debug][295715][FrameProcessingBlockManager.cpp:75]  FrameProcessingBlockManager started, 0 blocks contained!
+[04/25 15:55:39.220695][info][295715][Pipeline.cpp:288] Try to start streams!
+[04/25 15:55:39.220707][debug][295715][VideoSensor.cpp:566] VideoSensor::start, @OB_SENSOR_COLOR
+[04/25 15:55:39.220712][debug][295715][FrameMemoryPool.cpp:35] FrameMemoryPool created!
+[04/25 15:55:39.220720][debug][295715][FrameBufferManager.hpp:65] FrameBufferManager created! frame type:N11libobsensor10ColorFrameE, obj addr:0x1b384750, frame obj total size:1.978MB
+[04/25 15:55:39.220723][debug][295715][FrameMemoryPool.cpp:76] ColorFrame bufferManager created!
+[04/25 15:55:39.220738][debug][295715][FrameProcessor.cpp:144] Frame processor active blocks chain update: input -> output
+[04/25 15:55:39.220742][debug][295715][FrameProcessor.cpp:155] FrameProcessor started, 3 blocks contained!
+[04/25 15:55:39.220749][info][295715][VideoSensor.cpp:646] start OB_SENSOR_COLOR stream with profile: {type: OB_STREAM_COLOR, format: OB_FORMAT_MJPG, width: 1920, height: 1080, fps: 15}, Backend Format: OB_FORMAT_MJPG
+[04/25 15:55:39.220757][debug][295715][ObLibuvcDevicePort.cpp:75] ObLibuvcDevicePort::startStream()...
+[04/25 15:55:39.220764][debug][295715][ObLibuvcDevicePort.cpp:90] playProfile: infIndex=0, selected_format.width=1920, height=1080, format=OB_FORMAT_MJPG
+[04/25 15:55:39.222593][debug][295715][ObLibuvcDevicePort.cpp:143] ObLibuvcDevicePort::startStream() done
+[04/25 15:55:39.222639][debug][295715][VideoSensor.cpp:672] Stream state changed to STREAM_STATE_STARTING. @OB_SENSOR_COLOR
+[04/25 15:55:39.222643][debug][295715][VideoSensor.cpp:674] Stream starting! @OB_SENSOR_COLOR
+[04/25 15:55:39.222648][debug][295715][Pipeline.cpp:299] Sensor stream started, sensorType=OB_SENSOR_COLOR
+[04/25 15:55:39.222653][debug][295715][VideoSensor.cpp:566] VideoSensor::start, @OB_SENSOR_DEPTH
+[04/25 15:55:39.222662][debug][295715][FrameBufferManager.hpp:65] FrameBufferManager created! frame type:N11libobsensor10DepthFrameE, obj addr:0x1b385660, frame obj total size:0.704MB
+[04/25 15:55:39.222665][debug][295715][FrameMemoryPool.cpp:60] DepthFrame bufferManager created!
+[04/25 15:55:39.222673][debug][295715][FrameProcessor.cpp:144] Frame processor active blocks chain update: input ->D2CFilter -> PostProcessFilter -> output
+[04/25 15:55:39.222676][debug][295715][FrameProcessor.cpp:155] FrameProcessor started, 6 blocks contained!
+[04/25 15:55:39.222682][info][295715][VideoSensor.cpp:646] start OB_SENSOR_DEPTH stream with profile: {type: OB_STREAM_DEPTH, format: OB_FORMAT_Y16, width: 640, height: 576, fps: 15}, Backend Format: OB_FORMAT_Y16
+[04/25 15:55:39.222695][info][295715][MSDEConverterDevice.cpp:549] Start real profile,width:7680 height:434
+[04/25 15:55:39.222700][debug][295715][ObLibuvcDevicePort.cpp:75] ObLibuvcDevicePort::startStream()...
+[04/25 15:55:39.222705][debug][295715][ObLibuvcDevicePort.cpp:90] playProfile: infIndex=2, selected_format.width=7680, height=434, format=OB_FORMAT_Y16
+[04/25 15:55:39.239624][debug][295715][ObLibuvcDevicePort.cpp:143] ObLibuvcDevicePort::startStream() done
+[04/25 15:55:39.239788][info][295904][MSDEConverterDevice.cpp:67] Depth engine got nvram data size:493072
+[04/25 15:55:39.239833][info][295904][MSDEConverterDevice.cpp:94] use dynlib load depthengine lib......
+[04/25 15:55:39.360419][info][295904][MSDEConverterDevice.cpp:105] Depth engine init succeed!
+[04/25 15:55:39.360539][debug][295715][FrameBufferManager.hpp:65] FrameBufferManager created! frame type:N11libobsensor13RawPhaseFrameE, obj addr:0x1b3856d0, frame obj total size:6.358MB
+[04/25 15:55:39.360574][debug][295715][FrameMemoryPool.cpp:96] RawPhaseFrame bufferManager created!
+[04/25 15:55:39.360591][debug][295715][FemtoBoltUvcDevice.cpp:474] Depth sensor update FrameSoftFilter: maxdiff:300, maxSpeckleSize:25!
+[04/25 15:55:39.360602][debug][295715][FrameProcessor.cpp:144] Frame processor active blocks chain update: input ->FrameSoftFilter -> D2CFilter -> PostProcessFilter -> output
+[04/25 15:55:39.360614][debug][295715][VideoSensor.cpp:672] Stream state changed to STREAM_STATE_STARTING. @OB_SENSOR_DEPTH
+[04/25 15:55:39.360617][debug][295715][VideoSensor.cpp:674] Stream starting! @OB_SENSOR_DEPTH
+[04/25 15:55:39.360620][debug][295715][Pipeline.cpp:299] Sensor stream started, sensorType=OB_SENSOR_DEPTH
+[04/25 15:55:39.360623][info][295715][Pipeline.cpp:301] Start streams done!
+[04/25 15:55:39.360630][info][295715][Pipeline.cpp:277] Pipeline start done!
+[04/25 15:55:39.860890][warning][295715][Pipeline.cpp:377] Wait for frame timeout, you can try to increase the wait time! current timeout=500
+[04/25 15:55:40.119905][debug][295903][FrameBufferManager.cpp:35] New frame buffer allocated=6.358MB, total usage: allocated=6.358MB, max limit=2048.000MB
+[04/25 15:55:40.146694][debug][295904][FrameBufferManager.cpp:35] New frame buffer allocated=0.704MB, total usage: allocated=7.061MB, max limit=2048.000MB
+[04/25 15:55:40.146748][debug][295904][VideoSensor.cpp:460] Stream state changed to STREAM_STATE_STREAMING. @OB_SENSOR_DEPTH
+[04/25 15:55:40.147131][debug][295904][FrameProcessingBlock.cpp:59] FrameProcessingBlock@N11libobsensor15FrameSoftFilterE process thread started!
+[04/25 15:55:40.147886][debug][295866][PropertyAccessor.cpp:50] get firmware data success! propertyId: 1003, dataLen: 24
+[04/25 15:55:40.148426][debug][295913][FrameProcessingBlock.cpp:59] FrameProcessingBlock@N11libobsensor9D2CFilterE process thread started!
+[04/25 15:55:40.148485][debug][295914][FrameBufferManager.hpp:65] FrameBufferManager created! frame type:N11libobsensor10DepthFrameE, obj addr:0x71abc8000d30, frame obj total size:0.440MB
+[04/25 15:55:40.148497][debug][295914][FrameMemoryPool.cpp:60] DepthFrame bufferManager created!
+[04/25 15:55:40.186279][debug][295914][FrameBufferManager.cpp:35] New frame buffer allocated=0.440MB, total usage: allocated=7.501MB, max limit=2048.000MB
+[04/25 15:55:40.187144][debug][295904][FrameBufferManager.cpp:35] New frame buffer allocated=0.704MB, total usage: allocated=8.205MB, max limit=2048.000MB
+[04/25 15:55:40.189002][debug][295914][FrameProcessingBlock.cpp:59] FrameProcessingBlock@N11libobsensor17PostProcessFilterE process thread started!
+[04/25 15:55:40.189043][debug][295914][FrameBufferManager.cpp:35] New frame buffer allocated=0.440MB, total usage: allocated=8.645MB, max limit=2048.000MB
+[04/25 15:55:40.189075][debug][295915][FrameBufferManager.hpp:65] FrameBufferManager created! frame type:N11libobsensor10DepthFrameE, obj addr:0x71abc0000b70, frame obj total size:3.956MB
+[04/25 15:55:40.189088][debug][295915][FrameMemoryPool.cpp:60] DepthFrame bufferManager created!
+[04/25 15:55:40.189155][debug][295915][FrameBufferManager.cpp:35] New frame buffer allocated=3.956MB, total usage: allocated=12.600MB, max limit=2048.000MB
+[04/25 15:55:40.192397][debug][295915][FrameBufferManager.hpp:65] FrameBufferManager created! frame type:N11libobsensor8FrameSetE, obj addr:0x71abc03f59d0, frame obj total size:0.000MB
+[04/25 15:55:40.192431][debug][295915][FrameMemoryPool.cpp:92] Frameset bufferManager created!
+[04/25 15:55:40.192458][debug][295915][Pipeline.cpp:319] Frame received on pipeline! type=OB_FRAME_DEPTH
+[04/25 15:55:40.192482][debug][295915][FrameBufferManager.cpp:35] New frame buffer allocated=3.956MB, total usage: allocated=16.556MB, max limit=2048.000MB
+[04/25 15:55:40.256578][debug][295915][FrameBufferManager.cpp:35] New frame buffer allocated=3.956MB, total usage: allocated=20.511MB, max limit=2048.000MB
+[04/25 15:55:40.323067][debug][295915][FrameBufferManager.cpp:35] New frame buffer allocated=3.956MB, total usage: allocated=24.467MB, max limit=2048.000MB
+[04/25 15:55:40.383614][debug][295915][FrameBufferManager.cpp:35] New frame buffer allocated=3.956MB, total usage: allocated=28.422MB, max limit=2048.000MB
+[04/25 15:55:40.420097][debug][295901][FrameBufferManager.cpp:35] New frame buffer allocated=1.978MB, total usage: allocated=30.400MB, max limit=2048.000MB
+[04/25 15:55:40.420150][debug][295901][VideoSensor.cpp:460] Stream state changed to STREAM_STATE_STREAMING. @OB_SENSOR_COLOR
+[04/25 15:55:40.420216][debug][295901][FrameBufferManager.cpp:35] New frame buffer allocated=0.000MB, total usage: allocated=30.401MB, max limit=2048.000MB
+[04/25 15:55:40.420232][debug][295901][FrameBufferManager.cpp:35] New frame buffer allocated=0.000MB, total usage: allocated=30.401MB, max limit=2048.000MB
+[04/25 15:55:40.420242][debug][295901][FrameBufferManager.cpp:35] New frame buffer allocated=0.000MB, total usage: allocated=30.402MB, max limit=2048.000MB
+[04/25 15:55:40.420247][debug][295901][FrameBufferManager.cpp:35] New frame buffer allocated=0.000MB, total usage: allocated=30.402MB, max limit=2048.000MB
+[04/25 15:55:40.420252][debug][295901][FrameBufferManager.cpp:35] New frame buffer allocated=0.000MB, total usage: allocated=30.403MB, max limit=2048.000MB
+[04/25 15:55:40.420262][debug][295901][Pipeline.cpp:319] Frame received on pipeline! type=OB_FRAME_COLOR
+[04/25 15:55:40.694619][debug][295901][FrameBufferManager.cpp:35] New frame buffer allocated=1.978MB, total usage: allocated=32.381MB, max limit=2048.000MB
+[04/25 15:55:43.149058][debug][295866][PropertyAccessor.cpp:50] get firmware data success! propertyId: 1003, dataLen: 24
+[04/25 15:55:43.195703][debug][295916][Pipeline.cpp:319] Frame received on pipeline! type=OB_FRAME_DEPTH [**46 logs in 3003ms, last: 15:55:43.179768**]
+[04/25 15:55:43.361335][warning][295919][Pipeline.cpp:377] Wait for frame timeout, you can try to increase the wait time! current timeout=500 [**1 logs in 3500ms, last: 15:55:40.361042**]
+[04/25 15:55:43.477819][debug][295901][Pipeline.cpp:319] Frame received on pipeline! type=OB_FRAME_COLOR [**44 logs in 3057ms**]
+[04/25 15:55:44.787613][debug][295851][VendorCommand.cpp:436] get TimeStamp: tsp=23128768, rtt=0
+[04/25 15:55:44.787691][debug][295851][GlobalTimestampFitter.cpp:143] GlobalTimestampFitter update: coefficientA = 999.9668332590305, constantB = 1745566216786532.8
+[04/25 15:55:45.168391][debug][295904][VideoSensor.cpp:427] OB_SENSOR_DEPTH Streaming... frameRate=15.332538fps
+[04/25 15:55:45.471141][debug][295901][VideoSensor.cpp:427] OB_SENSOR_COLOR Streaming... frameRate=14.650564fps
+[04/25 15:55:45.471220][debug][295901][Pipeline.cpp:323] Pipeline streaming... frameset output rate=16.036428fps
+[04/25 15:55:46.150365][debug][295866][PropertyAccessor.cpp:50] get firmware data success! propertyId: 1003, dataLen: 24
+[04/25 15:55:49.151366][debug][295866][PropertyAccessor.cpp:50] get firmware data success! propertyId: 1003, dataLen: 24
+[04/25 15:55:49.228442][debug][295915][Pipeline.cpp:319] Frame received on pipeline! type=OB_FRAME_DEPTH [**91 logs in 6032ms**]
+[04/25 15:55:49.524895][debug][295901][Pipeline.cpp:319] Frame received on pipeline! type=OB_FRAME_COLOR [**90 logs in 6047ms**]
+[04/25 15:55:50.217489][debug][295904][VideoSensor.cpp:427] OB_SENSOR_DEPTH Streaming... frameRate=15.052486fps
+[04/25 15:55:50.520414][debug][295901][VideoSensor.cpp:427] OB_SENSOR_COLOR Streaming... frameRate=15.052486fps
+[04/25 15:55:50.520502][debug][295901][Pipeline.cpp:323] Pipeline streaming... frameset output rate=15.052486fps
+[04/25 15:55:52.152128][debug][295866][PropertyAccessor.cpp:50] get firmware data success! propertyId: 1003, dataLen: 24
+[04/25 15:55:52.788956][debug][295851][VendorCommand.cpp:436] get TimeStamp: tsp=23136769, rtt=0
+[04/25 15:55:52.789036][debug][295851][GlobalTimestampFitter.cpp:143] GlobalTimestampFitter update: coefficientA = 999.9792263682189, constantB = 1745566216499980.8
+[04/25 15:55:55.152790][debug][295866][PropertyAccessor.cpp:50] get firmware data success! propertyId: 1003, dataLen: 24
+[04/25 15:55:55.275046][debug][295904][VideoSensor.cpp:427] OB_SENSOR_DEPTH Streaming... frameRate=15.025702fps
+[04/25 15:55:55.569467][debug][295901][VideoSensor.cpp:427] OB_SENSOR_COLOR Streaming... frameRate=15.052486fps
+[04/25 15:55:55.569576][debug][295901][Pipeline.cpp:323] Pipeline streaming... frameset output rate=15.052486fps
+[04/25 15:55:58.153463][debug][295866][PropertyAccessor.cpp:50] get firmware data success! propertyId: 1003, dataLen: 24
+[04/25 15:56:00.321374][debug][295904][VideoSensor.cpp:427] OB_SENSOR_DEPTH Streaming... frameRate=15.061435fps
+[04/25 15:56:00.619391][debug][295901][VideoSensor.cpp:427] OB_SENSOR_COLOR Streaming... frameRate=15.049504fps
+[04/25 15:56:00.619490][debug][295901][Pipeline.cpp:323] Pipeline streaming... frameset output rate=15.049504fps
+[04/25 15:56:00.789469][debug][295851][VendorCommand.cpp:436] get TimeStamp: tsp=23144770, rtt=0
+[04/25 15:56:00.789543][debug][295851][GlobalTimestampFitter.cpp:143] GlobalTimestampFitter update: coefficientA = 999.9835288343592, constantB = 1745566216400493
+[04/25 15:56:01.154231][debug][295866][PropertyAccessor.cpp:50] get firmware data success! propertyId: 1003, dataLen: 24
+[04/25 15:56:01.254645][debug][295915][Pipeline.cpp:319] Frame received on pipeline! type=OB_FRAME_DEPTH [**181 logs in 12026ms**]
+[04/25 15:56:01.547267][debug][295901][Pipeline.cpp:319] Frame received on pipeline! type=OB_FRAME_COLOR [**181 logs in 12022ms**]
+[04/25 15:56:04.155810][debug][295866][PropertyAccessor.cpp:50] get firmware data success! propertyId: 1003, dataLen: 24
+[04/25 15:56:05.368109][debug][295904][VideoSensor.cpp:427] OB_SENSOR_DEPTH Streaming... frameRate=15.058451fps
+[04/25 15:56:05.668231][debug][295901][VideoSensor.cpp:427] OB_SENSOR_COLOR Streaming... frameRate=14.854427fps
+[04/25 15:56:05.668307][debug][295901][Pipeline.cpp:323] Pipeline streaming... frameset output rate=15.052486fps
+[04/25 15:56:07.156504][debug][295866][PropertyAccessor.cpp:50] get firmware data success! propertyId: 1003, dataLen: 24
+[04/25 15:56:08.790602][debug][295851][VendorCommand.cpp:436] get TimeStamp: tsp=23152772, rtt=0
+[04/25 15:56:08.790682][debug][295851][GlobalTimestampFitter.cpp:143] GlobalTimestampFitter update: coefficientA = 999.9653078185473, constantB = 1745566216821857.2
+[04/25 15:56:10.157237][debug][295866][PropertyAccessor.cpp:50] get firmware data success! propertyId: 1003, dataLen: 24
+[04/25 15:56:10.418166][debug][295904][VideoSensor.cpp:427] OB_SENSOR_DEPTH Streaming... frameRate=15.049504fps
+[04/25 15:56:10.716330][debug][295901][VideoSensor.cpp:427] OB_SENSOR_COLOR Streaming... frameRate=15.055468fps
+[04/25 15:56:10.716401][debug][295901][Pipeline.cpp:323] Pipeline streaming... frameset output rate=15.055468fps
+[04/25 15:56:13.157892][debug][295866][PropertyAccessor.cpp:50] get firmware data success! propertyId: 1003, dataLen: 24
+[04/25 15:56:15.469840][debug][295904][VideoSensor.cpp:427] OB_SENSOR_DEPTH Streaming... frameRate=15.046525fps
+[04/25 15:56:15.765278][debug][295901][VideoSensor.cpp:427] OB_SENSOR_COLOR Streaming... frameRate=15.052486fps
+[04/25 15:56:15.765353][debug][295901][Pipeline.cpp:323] Pipeline streaming... frameset output rate=15.052486fps
+[04/25 15:56:16.158640][debug][295866][PropertyAccessor.cpp:50] get firmware data success! propertyId: 1003, dataLen: 24
+[04/25 15:56:16.791291][debug][295851][VendorCommand.cpp:436] get TimeStamp: tsp=23160772, rtt=0
+[04/25 15:56:16.791368][debug][295851][GlobalTimestampFitter.cpp:143] GlobalTimestampFitter update: coefficientA = 999.9753362437903, constantB = 1745566216589928.8
+[04/25 15:56:19.161391][debug][295866][PropertyAccessor.cpp:50] get firmware data success! propertyId: 1003, dataLen: 24
+[04/25 15:56:20.517205][debug][295904][VideoSensor.cpp:427] OB_SENSOR_DEPTH Streaming... frameRate=15.055468fps
+[04/25 15:56:20.815163][debug][295901][VideoSensor.cpp:427] OB_SENSOR_COLOR Streaming... frameRate=14.851484fps
+[04/25 15:56:20.815247][debug][295901][Pipeline.cpp:323] Pipeline streaming... frameset output rate=15.049504fps
+[04/25 15:56:22.163174][debug][295866][PropertyAccessor.cpp:50] get firmware data success! propertyId: 1003, dataLen: 24
+[04/25 15:56:24.791760][debug][295851][VendorCommand.cpp:436] get TimeStamp: tsp=23168773, rtt=0
+[04/25 15:56:24.791818][debug][295851][GlobalTimestampFitter.cpp:143] GlobalTimestampFitter update: coefficientA = 999.9766582212857, constantB = 1745566216559352.2
+[04/25 15:56:25.163816][debug][295866][PropertyAccessor.cpp:50] get firmware data success! propertyId: 1003, dataLen: 24
+[04/25 15:56:25.310106][debug][295915][Pipeline.cpp:319] Frame received on pipeline! type=OB_FRAME_DEPTH [**362 logs in 24055ms**]
+[04/25 15:56:25.549500][debug][295901][Pipeline.cpp:319] Frame received on pipeline! type=OB_FRAME_COLOR [**359 logs in 24002ms**]
+[04/25 15:56:25.564883][debug][295904][VideoSensor.cpp:427] OB_SENSOR_DEPTH Streaming... frameRate=15.058451fps
+[04/25 15:56:25.863300][debug][295901][VideoSensor.cpp:427] OB_SENSOR_COLOR Streaming... frameRate=15.055468fps
+[04/25 15:56:25.863430][debug][295901][Pipeline.cpp:323] Pipeline streaming... frameset output rate=15.055468fps
+[04/25 15:56:28.164476][debug][295866][PropertyAccessor.cpp:50] get firmware data success! propertyId: 1003, dataLen: 24
+[04/25 15:56:30.620791][debug][295904][VideoSensor.cpp:427] OB_SENSOR_DEPTH Streaming... frameRate=15.031645fps
+[04/25 15:56:30.912469][debug][295901][VideoSensor.cpp:427] OB_SENSOR_COLOR Streaming... frameRate=15.052486fps
+[04/25 15:56:30.912549][debug][295901][Pipeline.cpp:323] Pipeline streaming... frameset output rate=15.052486fps
+[04/25 15:56:31.165204][debug][295866][PropertyAccessor.cpp:50] get firmware data success! propertyId: 1003, dataLen: 24
+[04/25 15:56:31.987949][info][295715][Pipeline.cpp:411] Try to stop pipeline!
+[04/25 15:56:31.988018][info][295715][Pipeline.cpp:383] Try to stop streams!
+[04/25 15:56:31.988056][debug][295715][VideoSensor.cpp:678] VideoSensor::stop, @OB_SENSOR_DEPTH
+[04/25 15:56:31.988069][debug][295715][VideoSensor.cpp:701] Stream state changed to STREAM_STATE_STOPPING. @OB_SENSOR_DEPTH
+[04/25 15:56:31.988081][info][295715][MSDEConverterDevice.cpp:620] Stop real profile,width:7680, height:434
+[04/25 15:56:31.988093][debug][295715][ObLibuvcDevicePort.cpp:148] ObLibuvcDevicePort::stopStream()...
+[04/25 15:56:32.000979][debug][295715][ObLibuvcDevicePort.cpp:172] ObLibuvcDevicePort::stopStream() done
+[04/25 15:56:32.001053][debug][295715][VideoSensor.cpp:727] stream stoped! @OB_SENSOR_DEPTH
+[04/25 15:56:32.001170][debug][295715][FrameProcessingBlock.cpp:74] Process thread stoped! N11libobsensor15FrameSoftFilterE@0x1ad96980 
+[04/25 15:56:32.001745][debug][295715][FrameProcessingBlock.cpp:74] Process thread stoped! N11libobsensor9D2CFilterE@0x1b2f3b70 
+[04/25 15:56:32.001927][debug][295715][FrameProcessingBlock.cpp:74] Process thread stoped! N11libobsensor17PostProcessFilterE@0x1a38f960 
+[04/25 15:56:32.001935][debug][295715][FrameProcessor.cpp:165] FrameProcessor stoped!
+[04/25 15:56:32.001964][debug][295715][HostProtocol.cpp:433] Set property value, propertyId=38, value={intValue: 1, floatValue: 1.4013e-45}
+[04/25 15:56:32.660531][debug][295715][VideoSensor.cpp:716] Stream state changed to STREAM_STATE_STOPED. @OB_SENSOR_DEPTH
+[04/25 15:56:32.660566][info][295715][VideoSensor.cpp:734] Video sensor stopped, @OB_SENSOR_DEPTH
+[04/25 15:56:32.660590][info][295715][Pipeline.cpp:396] Sensor stream stopped, sensorType=OB_SENSOR_DEPTH
+[04/25 15:56:32.660600][debug][295715][VideoSensor.cpp:678] VideoSensor::stop, @OB_SENSOR_COLOR
+[04/25 15:56:32.660605][debug][295715][VideoSensor.cpp:701] Stream state changed to STREAM_STATE_STOPPING. @OB_SENSOR_COLOR
+[04/25 15:56:32.660610][debug][295715][ObLibuvcDevicePort.cpp:148] ObLibuvcDevicePort::stopStream()...
+[04/25 15:56:32.667047][debug][295715][ObLibuvcDevicePort.cpp:172] ObLibuvcDevicePort::stopStream() done
+[04/25 15:56:32.667097][debug][295715][VideoSensor.cpp:727] stream stoped! @OB_SENSOR_COLOR
+[04/25 15:56:32.667106][debug][295715][FrameProcessor.cpp:165] FrameProcessor stoped!
+[04/25 15:56:32.667132][debug][295715][HostProtocol.cpp:433] Set property value, propertyId=77, value={intValue: 1, floatValue: 1.4013e-45}
+[04/25 15:56:34.544253][debug][295715][VideoSensor.cpp:716] Stream state changed to STREAM_STATE_STOPED. @OB_SENSOR_COLOR
+[04/25 15:56:34.544319][info][295715][VideoSensor.cpp:734] Video sensor stopped, @OB_SENSOR_COLOR
+[04/25 15:56:34.544358][info][295715][Pipeline.cpp:396] Sensor stream stopped, sensorType=OB_SENSOR_COLOR
+[04/25 15:56:34.544370][info][295715][Pipeline.cpp:402] Stop streams done!
+[04/25 15:56:34.544503][debug][295851][VendorCommand.cpp:436] get TimeStamp: tsp=23178526, rtt=0
+[04/25 15:56:34.544967][debug][295866][PropertyAccessor.cpp:50] get firmware data success! propertyId: 1003, dataLen: 24
+[04/25 15:56:34.544988][debug][295715][FrameProcessingBlockManager.cpp:84] FrameProcessingBlockManager stoped!
+[04/25 15:56:34.544996][debug][295715][FrameProcessingBlockManager.cpp:20] Processing block list cleared!
+[04/25 15:56:34.544999][info][295715][Pipeline.cpp:443] Stop pipeline done!
+[04/25 15:56:34.594852][debug][295851][VendorCommand.cpp:436] get TimeStamp: tsp=23178577, rtt=0
+[04/25 15:56:34.594890][debug][295851][GlobalTimestampFitter.cpp:143] GlobalTimestampFitter update: coefficientA = 999.9714934572087, constantB = 1745566216678822.5
+[04/25 15:56:35.051553][warning][295920][Pipeline.cpp:377] Wait for frame timeout, you can try to increase the wait time! current timeout=500
+[04/25 15:56:37.545642][debug][295866][PropertyAccessor.cpp:50] get firmware data success! propertyId: 1003, dataLen: 24
+[04/25 15:56:38.551989][warning][296555][Pipeline.cpp:377] Wait for frame timeout, you can try to increase the wait time! current timeout=500 [**6 logs in 3500ms, last: 15:56:38.052349**]
+[04/25 15:56:40.546338][debug][295866][PropertyAccessor.cpp:50] get firmware data success! propertyId: 1003, dataLen: 24
+[04/25 15:56:42.595354][debug][295851][VendorCommand.cpp:436] get TimeStamp: tsp=23186577, rtt=0
+[04/25 15:56:42.595415][debug][295851][GlobalTimestampFitter.cpp:143] GlobalTimestampFitter update: coefficientA = 999.973717473754, constantB = 1745566216627372.2
+[04/25 15:56:43.547039][debug][295866][PropertyAccessor.cpp:50] get firmware data success! propertyId: 1003, dataLen: 24
+[04/25 15:56:44.553108][warning][296604][Pipeline.cpp:377] Wait for frame timeout, you can try to increase the wait time! current timeout=500 [**12 logs in 6001ms, last: 15:56:44.054020**]
+[04/25 15:56:46.547736][debug][295866][PropertyAccessor.cpp:50] get firmware data success! propertyId: 1003, dataLen: 24
+[04/25 15:56:49.548414][debug][295866][PropertyAccessor.cpp:50] get firmware data success! propertyId: 1003, dataLen: 24

@@ -14,11 +14,12 @@ from pyorbbecsdk import (  # type: ignore
     OBSensorType,
     Pipeline,
 )
+from utils import load_config  # type: ignore
 
 
 class Orbbec(Camera):
-    def __init__(self, align_mode="SW", enable_sync=True, scale_percent=50):
-        self.scale_percent = scale_percent
+    def __init__(self, align_mode="SW", enable_sync=True):
+        self.scale_percent = load_config("config.yaml").get("scale_percent", 50)
         self.config = Config()
         self.pipeline = Pipeline()
 

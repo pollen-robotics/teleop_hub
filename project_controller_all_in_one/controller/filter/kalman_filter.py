@@ -1,7 +1,6 @@
 import cv2  # type: ignore
 import numpy as np
-
-from filter.median_filter import MedianFilter
+from controller.filter.median_filter import MedianFilter
 
 
 class KalmanFilter3D:

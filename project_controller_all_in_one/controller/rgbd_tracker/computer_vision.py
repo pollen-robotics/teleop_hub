@@ -4,10 +4,9 @@ import cv2  # type: ignore
 import matplotlib.pyplot as plt  # type: ignore
 import mediapipe as mp  # type: ignore
 import numpy as np
-from orbbec import Orbbec
+from controller.filter.kalman_filter import KalmanFilter3D  # type: ignore
+from controller.rgbd_tracker.orbbec import Orbbec  # type: ignore
 from scipy.spatial.transform import Rotation as R  # type: ignore
-
-from filter.kalman_filter import KalmanFilter3D
 from utils import normalize_vector
 
 SHOULDER_CST = [11, 12]
@@ -190,7 +189,7 @@ class ComputerVision:
 
         x, y = landmark[0], landmark[1]
         if (radius + 1 < x < self.image_shape[1] - radius - 1) and (radius + 1 < y < self.image_shape[0] - radius - 1):
-            z = np.median(depth_frame[int(y - radius) / int(y + radius), int(x - radius) / int(x + radius)])
+            z = np.median(depth_frame[int(y - radius) : int(y + radius), int(x - radius) : int(x + radius)])
         else:
             z = depth_frame[int(y), int(x)]
 

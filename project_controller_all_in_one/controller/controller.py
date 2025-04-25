@@ -3,6 +3,9 @@ from collections import deque
 
 import numpy as np  # type: ignore
 import numpy.typing as npt
+from controller.filter.kalman_filter import KalmanFilter3D  # type: ignore
+from controller.filter.median_filter import MedianFilter  # type: ignore
+from controller.filter.rotation_smoother import RotationSmoother  # type: ignore
 from google.protobuf.wrappers_pb2 import FloatValue, Int32Value
 from reachy2_sdk import ReachySDK  # type: ignore
 from reachy2_sdk.utils.utils import recompose_matrix  # type: ignore
@@ -14,10 +17,6 @@ from reachy2_sdk_api.arm_pb2 import (  # type: ignore
 from reachy2_sdk_api.kinematics_pb2 import Matrix4x4  # type: ignore
 from scipy.spatial.transform import Rotation as R  # type: ignore
 from scipy.spatial.transform import Slerp  # type: ignore
-
-from filter.kalman_filter import KalmanFilter3D  # type: ignore
-from filter.median_filter import MedianFilter  # type: ignore
-from filter.rotation_smoother import RotationSmoother  # type: ignore
 from utils import rotation_matrix_from_vector
 
 SHOULDER_CST = [11, 12]
@@ -28,7 +27,7 @@ FACELANDMARKS_CST = [1, 152, 33, 263]  # Nose tip, Chin, Left eye left corner, R
 HANDLANDMARKS_CST = [4, 8]  # thumb tip, index tip
 
 
-class RobotController:
+class Controller:
     def __init__(self, host):
         self.reachy = ReachySDK(host)
         self.reachy.turn_on()

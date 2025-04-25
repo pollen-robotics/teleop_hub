@@ -4,13 +4,13 @@ import time
 from collections import deque
 from typing import Optional
 
-import cv2  # type: ignore
-import matplotlib.pyplot as plt  # type: ignore
+import cv2  # type : ignore
+import matplotlib.pyplot as plt  # type : ignore
 import mediapipe as mp  # type: ignore
-import numpy as np  # type: ignore
+import numpy as np  # type : ignore
 import numpy.typing as npt
 from google.protobuf.wrappers_pb2 import FloatValue, Int32Value
-from pyorbbecsdk import (  # type: ignore
+from pyorbbecsdk import (  # type : ignore
     Config,
     Frame,
     OBAlignMode,
@@ -29,12 +29,19 @@ from reachy2_sdk_api.kinematics_pb2 import Matrix4x4  # type: ignore
 from scipy.spatial.transform import Rotation as R  # type: ignore
 from scipy.spatial.transform import Slerp  # type: ignore
 
+# original_landmarks constant :
+HANDLANDMARKS_CST = [0, 2, 4, 5, 8, 9, 17, 20]
+# wrist, thumb mcp, thumb tip, index mcp, index tip, middle mcp, pinky mcp, pinky tip
+
 SHOULDER_CST = [11, 12]
 ELBOWS_CST = [13, 14]
-WRISTS_CST = [19, 20]
+WRISTS_CST = [15, 16]
+INDEX_MCP_CST = [19, 20]
+THUMB_MCP_CST = [21, 22]
+PINKY_MCP_CST = [17, 18]
 
-FACELANDMARKS_CST = [1, 152, 33, 263]  # Nose tip, Chin, Left eye left corner, Right eye right corner
-HANDLANDMARKS_CST = [4, 8]  # thumb tip, index tip
+FACELANDMARKS_CST = [1, 152, 33, 263, 61, 291]
+# Nose tip, Chin, Left eye left corner, Right eye right corner, Left mouth corner, Right mouth corner
 
 
 def normalize_vector(v):
@@ -142,8 +149,6 @@ class Orbbec:
                 if color_frame and depth_frame:
                     self.color_shape[:] = [color_frame.get_height(), color_frame.get_width()]
                     self.depth_shape[:] = [depth_frame.get_height(), depth_frame.get_width()]
-                    print(f"Color shape: {self.color_shape}")
-                    print(f"Depth shape: {self.depth_shape}")
                     self.color_format = color_frame.get_format()
                     break
 
@@ -207,47 +212,14 @@ class Orbbec:
 
 
 class RotationSmoother:
-    # def __init__(self, window_size=8):
-    #     self.window_size = window_size
-    #     self.buffer = deque(maxlen=window_size)
+    def __init__(self, window_size=5):
+        self.window_size = window_size
+        self.buffer = deque(maxlen=window_size)
 
-    # def update(self, new_rotation_matrix):
-    #     if new_rotation_matrix is not None:
-    #         self.buffer.append(new_rotation_matrix)
-    #     return np.median(self.buffer, axis=0) if self.buffer else new_rotation_matrix
-
-    def __init__(self, alpha=0.3):
-        """
-        Initialise un filtre basé sur une moyenne exponentielle des matrices de rotation.
-
-        - alpha : Coefficient de lissage entre 0 (très lisse) et 1 (aucun filtrage).
-        """
-        self.alpha = alpha
-        self.last_rotation_matrix = None  # Stocke la dernière rotation lissée
-
-    def update(self, current_rotation_matrix):
-        """
-        Applique un lissage EMA sur la rotation.
-
-        - current_rotation_matrix : Matrice 3x3 représentant l'orientation actuelle.
-
-        Retourne :
-        - Matrice de rotation lissée 3x3.
-        """
-        if self.last_rotation_matrix is None:
-            self.last_rotation_matrix = current_rotation_matrix
-            return current_rotation_matrix  # Retourne directement la première valeur
-
-        # Moyenne exponentielle sur les composantes de la matrice de rotation
-        smoothed_rotation_matrix = (1 - self.alpha) * self.last_rotation_matrix + self.alpha * current_rotation_matrix
-
-        # Réorthogonalisation pour rester une vraie matrice de rotation
-        U, _, Vt = np.linalg.svd(smoothed_rotation_matrix)
-        smoothed_rotation_matrix = U @ Vt
-
-        # Mise à jour
-        self.last_rotation_matrix = smoothed_rotation_matrix
-        return smoothed_rotation_matrix
+    def update(self, new_rotation_matrix):
+        if new_rotation_matrix is not None:
+            self.buffer.append(new_rotation_matrix)
+        return np.mean(self.buffer, axis=0) if self.buffer else new_rotation_matrix
 
 
 class MedianFilter:
@@ -264,106 +236,47 @@ class MedianFilter:
 
 
 class KalmanFilter3D:
-    # def __init__(
-    #     self,
-    #     process_noise=0.001,
-    #     measurement_noise=0.1,
-    #     error_cov_post=1.0,
-    #     add_median_filter=True,
-    #     median_filter_size=5,
-    # ):
-    #     self.kf = cv2.KalmanFilter(6, 3)
-
-    #     self.kf.measurementMatrix = np.array(
-    #         [[1, 0, 0, 0, 0, 0], [0, 1, 0, 0, 0, 0], [0, 0, 1, 0, 0, 0]], np.float32  # x  # y  # z
-    #     )
-
-    #     self.kf.transitionMatrix = np.array(
-    #         [
-    #             [1, 0, 0, 1, 0, 0],  # x = x + vx
-    #             [0, 1, 0, 0, 1, 0],  # y = y + vy
-    #             [0, 0, 1, 0, 0, 1],  # z = z + vz
-    #             [0, 0, 0, 1, 0, 0],  # vx = vx
-    #             [0, 0, 0, 0, 1, 0],  # vy = vy
-    #             [0, 0, 0, 0, 0, 1],  # vz = vz
-    #         ],
-    #         np.float32,
-    #     )
-
-    #     self.kf.processNoiseCov = np.eye(6, dtype=np.float32) * process_noise
-
-    #     self.kf.measurementNoiseCov = np.eye(3, dtype=np.float32) * measurement_noise
-
-    #     self.kf.errorCovPost = np.eye(6, dtype=np.float32) * error_cov_post
-
-    #     self.initialized = False
-    #     self.kf.statePre = np.zeros((6, 1), dtype=np.float32)
-    #     self.kf.statePost = np.zeros((6, 1), dtype=np.float32)
-
-    #     self.add_median_filter = add_median_filter
-    #     if self.add_median_filter:
-    #         self.median_filter = MedianFilter(median_filter_size)
-
-    # def update(self, measurement):
-    #     if measurement is None:
-    #         return self.kf.statePost[:3].flatten() if self.initialized else None
-
-    #     measurement = np.array([[measurement[0]], [measurement[1]], [measurement[2]]], dtype=np.float32)
-
-    #     if not self.initialized:
-    #         self.kf.statePre[:3] = measurement
-    #         self.kf.statePost[:3] = measurement
-    #         self.initialized = True
-    #         return measurement.flatten()
-
-    #     self.kf.correct(measurement)
-    #     prediction = self.kf.predict()
-    #     filtered_position = np.array(prediction[:3]).flatten()
-
-    #     if self.add_median_filter:
-    #         filtered_position = self.median_filter.update(filtered_position)
-
-    #     return filtered_position
-
     def __init__(
         self,
-        process_noise=0.01,
+        process_noise=0.001,
         measurement_noise=0.1,
         error_cov_post=1.0,
         add_median_filter=True,
         median_filter_size=5,
-        dt=1 / 20,  # Temps entre deux mises à jour (~20 FPS)
     ):
-        self.kf = cv2.KalmanFilter(9, 3)  # 9 états : position (x,y,z) + vitesse (vx,vy,vz) + accélération (ax,ay,az)
+        self.kf = cv2.KalmanFilter(6, 3)
 
-        # Matrice de mesure : on mesure seulement la position
-        self.kf.measurementMatrix = np.zeros((3, 9), dtype=np.float32)
-        self.kf.measurementMatrix[:3, :3] = np.eye(3)
+        self.kf.measurementMatrix = np.array(
+            [[1, 0, 0, 0, 0, 0], [0, 1, 0, 0, 0, 0], [0, 0, 1, 0, 0, 0]], np.float32  # x  # y  # z
+        )
 
-        # Matrice de transition (modèle non linéaire avec vitesse et accélération)
-        self.kf.transitionMatrix = np.eye(9, dtype=np.float32)
-        for i in range(3):
-            self.kf.transitionMatrix[i, i + 3] = dt  # x dépend de v
-            self.kf.transitionMatrix[i + 3, i + 6] = dt  # v dépend de a
+        self.kf.transitionMatrix = np.array(
+            [
+                [1, 0, 0, 1, 0, 0],  # x = x + vx
+                [0, 1, 0, 0, 1, 0],  # y = y + vy
+                [0, 0, 1, 0, 0, 1],  # z = z + vz
+                [0, 0, 0, 1, 0, 0],  # vx = vx
+                [0, 0, 0, 0, 1, 0],  # vy = vy
+                [0, 0, 0, 0, 0, 1],  # vz = vz
+            ],
+            np.float32,
+        )
 
-        # Covariances des bruits
-        self.kf.processNoiseCov = np.eye(9, dtype=np.float32) * process_noise
+        self.kf.processNoiseCov = np.eye(6, dtype=np.float32) * process_noise
+
         self.kf.measurementNoiseCov = np.eye(3, dtype=np.float32) * measurement_noise
-        self.kf.errorCovPost = np.eye(9, dtype=np.float32) * error_cov_post
+
+        self.kf.errorCovPost = np.eye(6, dtype=np.float32) * error_cov_post
 
         self.initialized = False
-        self.kf.statePre = np.zeros((9, 1), dtype=np.float32)
-        self.kf.statePost = np.zeros((9, 1), dtype=np.float32)
+        self.kf.statePre = np.zeros((6, 1), dtype=np.float32)
+        self.kf.statePost = np.zeros((6, 1), dtype=np.float32)
 
         self.add_median_filter = add_median_filter
         if self.add_median_filter:
             self.median_filter = MedianFilter(median_filter_size)
 
     def update(self, measurement):
-        """
-        Met à jour la position avec une nouvelle mesure (x, y, z).
-        Retourne la position lissée.
-        """
         if measurement is None:
             return self.kf.statePost[:3].flatten() if self.initialized else None
 
@@ -393,10 +306,20 @@ class ComputerVision:
         self.up_mode = up_mode
 
         # mediapipe holistic
+
+        # BaseOptions = mp.tasks.BaseOptions
+        # VisionRunningMode = mp.tasks.vision.RunningMode
+
+        # options = vision.HolisticLandmarkerOptions(
+        #     base_options=BaseOptions(model_asset_path="holistic_landmarker.task", delegate=1),
+        #     running_mode=VisionRunningMode.VIDEO,
+        # )
+
+        # self.holistic = vision.HolisticLandmarker.create_from_options(options)
         self.holistic = mp.solutions.holistic.Holistic(
             min_detection_confidence=0.5,
             min_tracking_confidence=0.5,
-            model_complexity=0,
+            model_complexity=1,
             smooth_landmarks=True,
             refine_face_landmarks=False,
         )
@@ -405,19 +328,16 @@ class ComputerVision:
         self.shoulders = np.zeros((2, 3))
         self.elbows = np.zeros((2, 3))
         self.wrists = np.zeros((2, 3))
-
+        self.wrists_3D = np.zeros((2, 3))
+        self.pinky = np.zeros((2, 3))
+        self.index = np.zeros((2, 3))
+        self.thumb = np.zeros((2, 3))
         self.left_hand_points = np.zeros((len(HANDLANDMARKS_CST), 3))
         self.right_hand_points = np.zeros((len(HANDLANDMARKS_CST), 3))
         self.face_points = np.zeros((len(FACELANDMARKS_CST), 3))
 
-        # for visualization
-        self.shoulders_visu = np.zeros((2, 3))
-        self.user_center_visu = np.zeros(3)
-        self.elbows_visu = np.zeros((2, 3))
-        self.wrists_visu = np.zeros((2, 3))
-        self.face_points_visu = np.zeros((len(FACELANDMARKS_CST), 3))
-
         # for the orientation of the hands
+        self.rpy_camera = [np.zeros(3), np.zeros(3)]
         self.left_hand_points_3D = np.zeros((len(HANDLANDMARKS_CST), 3))
         self.right_hand_points_3D = np.zeros((len(HANDLANDMARKS_CST), 3))
         self.kf_left_hand = [KalmanFilter3D(add_median_filter=False) for _ in range(len(HANDLANDMARKS_CST))]
@@ -425,7 +345,7 @@ class ComputerVision:
 
         self.orientation_hands = [np.eye(3) for _ in range(2)]
 
-        self.dist_intershoulder = 300
+        self.dist_intershoulder = 0
         self.user_center = np.zeros(3)
 
         # parameters
@@ -467,7 +387,7 @@ class ComputerVision:
             if not results:
                 continue
 
-            body_landmarks, face_landmarks = self.get_2D_landmarks(results)
+            body_landmarks, face_landmarks, _, _ = self.get_2D_landmarks(results)
             if body_landmarks is not None and face_landmarks is not None:
                 [left_shoulder] = self.estimate_3D_landmark_with_depth(body_landmarks[SHOULDER_CST[0]], depth_frame)
                 [right_shoulder] = self.estimate_3D_landmark_with_depth(body_landmarks[SHOULDER_CST[1]], depth_frame)
@@ -492,7 +412,8 @@ class ComputerVision:
 
         print(f"Camera orientation angle: {np.degrees(angle):.2f} ")
 
-        self.T_world_camera = R.from_euler("x", angle, degrees=False).as_matrix()
+        # in Reachy frame, the orientation of the camera is around y-axis
+        self.T_world_camera = R.from_euler("y", angle, degrees=False).as_matrix()
 
     def resize_frames(self, frame, scale_percent=50):
         width = int(frame.shape[1] * scale_percent / 100)
@@ -504,11 +425,18 @@ class ComputerVision:
         return frame_resized
 
     def get_2D_landmarks(self, results):
-        landmarks_dict = {"pose": None, "face": None}
+        landmarks_dict = {
+            "pose": None,
+            "face": None,
+            "left_hand": None,
+            "right_hand": None,
+        }
 
         landmarks_sources = {
             "pose": results.pose_landmarks,
             "face": results.face_landmarks,
+            "left_hand": results.left_hand_landmarks,
+            "right_hand": results.right_hand_landmarks,
         }
 
         for key, original_landmarks in landmarks_sources.items():
@@ -526,30 +454,43 @@ class ComputerVision:
         return (
             landmarks_dict["pose"],
             landmarks_dict["face"],
+            landmarks_dict["left_hand"],
+            landmarks_dict["right_hand"],
         )
 
     def get_3D_landmarks(self, results):
-        hands = [
-            ("left", results.left_hand_landmarks),
-            ("right", results.right_hand_landmarks),
-        ]
+        landmarks = results.pose_landmarks
+        if landmarks is None:
+            return None
+        original_landmarks = np.array([(lm.x, lm.y, lm.z) for lm in landmarks.landmark])
+        x_init = (original_landmarks[:, 0] * self.image_shape[1]).astype(int)
+        y_init = (original_landmarks[:, 1] * self.image_shape[0]).astype(int)
+        z = (original_landmarks[:, 2] * self.image_shape[1]).astype(int)
 
-        landmarks_dict = {"left": None, "right": None}
+        x = np.clip(x_init, 0, self.image_shape[1] - 1)
+        y = np.clip(y_init, 0, self.image_shape[0] - 1)
+        return np.vstack((x, y, z)).T.astype(np.float32)
+        # hands = [
+        #     ("left", results.left_hand_landmarks),
+        #     ("right", results.right_hand_landmarks),
+        # ]
 
-        for hand, original_landmarks in hands:
-            if original_landmarks is None:
-                continue
+        # landmarks_dict = {"left": None, "right": None, "face": None}
 
-            original_landmarks = np.array([(lm.x, lm.y, lm.z) for lm in original_landmarks.landmark])
-            x_init = (original_landmarks[:, 0] * self.image_shape[1]).astype(int)
-            y_init = (original_landmarks[:, 1] * self.image_shape[0]).astype(int)
-            z = original_landmarks[:, 2]
+        # for hand, original_landmarks in hands:
+        #     if original_landmarks is None:
+        #         continue
 
-            x = np.clip(x_init, 0, self.image_shape[1] - 1)
-            y = np.clip(y_init, 0, self.image_shape[0] - 1)
-            landmarks_dict[hand] = np.vstack((x, y, z)).T.astype(np.float32)
+        #     original_landmarks = np.array([(lm.x, lm.y, lm.z) for lm in original_landmarks.landmark])
+        #     x_init = (original_landmarks[:, 0] * self.image_shape[1]).astype(int)
+        #     y_init = (original_landmarks[:, 1] * self.image_shape[0]).astype(int)
+        #     z = original_landmarks[:, 2]
 
-        return [landmarks_dict["left"], landmarks_dict["right"]]
+        #     x = np.clip(x_init, 0, self.image_shape[1] - 1)
+        #     y = np.clip(y_init, 0, self.image_shape[0] - 1)
+        #     landmarks_dict[hand] = np.vstack((x, y, z)).T.astype(np.float32)
+
+        # return [landmarks_dict["left"], landmarks_dict["right"]]
 
     def estimate_3D_landmark_with_depth(self, landmark, depth_frame, radius=2) -> Optional[np.ndarray]:
         if landmark is None:
@@ -563,108 +504,179 @@ class ComputerVision:
 
         return np.vstack((x, y, z)).T.astype(np.float32)
 
-    def get_landmarks_with_camera_transformation(self, landmarks, camera_upvalue=0):
-        # get landmarks with camera transformation
-        camera_upvalue_pixel = camera_upvalue * self.dist_intershoulder / 0.3
-        translation_inverse = np.array([0, -camera_upvalue_pixel, 0])
-        landmarks = np.reshape(landmarks, (3))
-        landmarks[2] = landmarks[2] * self.dist_intershoulder / 0.3
-        new_landmarks = np.dot(self.T_world_camera, (landmarks + translation_inverse))
-        return new_landmarks
+        # z = np.zeros(len(x))
+        # radius = 1
 
-    def get_hand_orientation(self, handlandmarks_both_side):
+        # for i in range(len(x)):
+        #     if (
+        #         radius + 1 < x[i] < self.image_shape[1] - radius - 1
+        #         and radius + 1 < y[i] < self.image_shape[0] - radius - 1
+        #     ):
+        #         z[i] = np.median(depth_frame[y[i] - radius : y[i] + radius, x[i] - radius : x[i] + radius])
+        #     else:
+        #         z[i] = depth_frame[y[i], x[i]]
+
+        # return np.vstack((x, y, z)).T.astype(np.float32)
+
+    def get_rpy_from_vector(self, side_int, index, wrist):
+        vector = index - wrist
+        vector_xy = np.array([vector[0], vector[1], 0])
+        norm_xy = np.linalg.norm(vector_xy)
+
+        vector_xz = np.array([vector[0], 0, vector[2]])
+        norm_xz = np.linalg.norm(vector_xz)
+
+        angle_xy = np.arccos(vector[0] / norm_xy) * 180 / np.pi if norm_xy != 0 else 0
+        angle_xz = np.arccos(vector[0] / norm_xz) * 180 / np.pi if norm_xz != 0 else 0
+
+        # angle_plans = self.angle_between_two_planes()
+
+        print("Yaw: {:.2f}°".format(angle_xy))
+        print("Pitch: {:.2f}°".format(angle_xz))
+
+        self.rpy_camera[side_int] = np.array([angle_xy, 0, angle_xz])
+
+    def angle_between_vector_and_plane(self, vector, plane_normal):
+        vector = vector / np.linalg.norm(vector)
+        plane_normal = plane_normal / np.linalg.norm(plane_normal)
+
+        cos_theta = np.dot(vector, plane_normal)
+        theta_rad = np.arccos(np.clip(cos_theta, -1.0, 1.0))  # Évite les erreurs numériques
+
+        angle_with_plane = np.degrees(90 - theta_rad)
+
+        return angle_with_plane
+
+    def angle_between_two_planes(self, vector1, vector2, plane_normal):
+        plane_normal = plane_normal / np.linalg.norm(plane_normal)
+
+        plane2_normal = np.cross(vector1, vector2)
+        plane2_normal = plane2_normal / np.linalg.norm(plane2_normal)
+
+        cos_theta = np.dot(plane2_normal, plane_normal)
+        theta_rad = np.arccos(np.clip(cos_theta, -1.0, 1.0))
+        angle_with_plane = np.degrees(theta_rad)
+        return angle_with_plane
+
+    def get_hand_orientation(self, pose_landmarks):
+        if pose_landmarks is None:
+            return
+        wrists = [pose_landmarks[WRISTS_CST[0]], pose_landmarks[WRISTS_CST[1]]]
+        index = [pose_landmarks[INDEX_MCP_CST[0]], pose_landmarks[INDEX_MCP_CST[1]]]
+        thumb = [pose_landmarks[THUMB_MCP_CST[0]], pose_landmarks[THUMB_MCP_CST[1]]]
+        pinky = [pose_landmarks[PINKY_MCP_CST[0]], pose_landmarks[PINKY_MCP_CST[1]]]
+
         for side_int in range(2):
-            kf_hand = self.kf_left_hand if side_int == 0 else self.kf_right_hand
-            handpoints = self.left_hand_points_3D if side_int == 0 else self.right_hand_points_3D
-            handlandmarks = handlandmarks_both_side[side_int]
-            if handlandmarks is not None:
-                for ite, lm_cst in enumerate(HANDLANDMARKS_CST):
-                    finger_coord = handlandmarks[lm_cst]
-                    if finger_coord is not None:
-                        coord_filtered = kf_hand[ite].update(finger_coord)
-                        handpoints[ite] = coord_filtered
-                if side_int == 0:
-                    self.left_hand_points_3D = handpoints
-                else:
-                    self.right_hand_points_3D = handpoints
+            self.get_rpy_from_vector(side_int, index[side_int], wrists[side_int])
+            self.index[side_int] = index[side_int]
+            self.thumb[side_int] = thumb[side_int]
+            self.wrists_3D[side_int] = wrists[side_int]
+            self.pinky[side_int] = pinky[side_int]
 
-            wrist = handpoints[0]
-            thumb_mcp = handpoints[1]
-            index_mcp = handpoints[3]
-            thumb_tip = handpoints[2]
-            index_tip = handpoints[4]
-            mid_index_thumb = (thumb_tip + index_tip) / 2
+    # def get_hand_orientation(self, handlandmarks_both_side):
+    # for side_int in range(2):
+    #     kf_hand = self.kf_left_hand if side_int == 0 else self.kf_right_hand
+    #     handpoints = self.left_hand_points_3D if side_int == 0 else self.right_hand_points_3D
+    #     handlandmarks = handlandmarks_both_side[side_int]
+    #     if handlandmarks is not None:
+    #         for ite, lm_cst in enumerate(HANDLANDMARKS_CST):
+    #             finger_coord = handlandmarks[lm_cst]
+    #             if finger_coord is not None:
+    #                 coord_filtered = kf_hand[ite].update(finger_coord)
+    #                 handpoints[ite] = coord_filtered
+    #         if side_int == 0:
+    #             self.left_hand_points_3D = handpoints
+    #         else:
+    #             self.right_hand_points_3D = handpoints
 
-            if side_int == 1:
-                x_axis = thumb_mcp - index_mcp
-            else:
-                x_axis = index_mcp - thumb_mcp
-                # x_axis = thumb_mcp - index_mcp
-            x_axis = normalize_vector(x_axis)
-            z_axis = wrist - mid_index_thumb
-            z_axis = normalize_vector(z_axis)
-            y_axis = np.cross(z_axis, x_axis)
-            y_axis = normalize_vector(y_axis)
+    #     wrist = handpoints[0]
+    #     thumb_mcp = handpoints[1]
+    #     index_mcp = handpoints[3]
+    #     thumb_tip = handpoints[2]
+    #     index_tip = handpoints[4]
 
-            # Vérifier l'orthogonalité et réajuster
-            x_axis = np.cross(y_axis, z_axis)
+    #     self.get_rpy_from_vector(side_int, index_mcp, wrist)
 
-            self.orientation_hands[side_int] = np.column_stack((x_axis, y_axis, z_axis))
+    # # définition des vecteurs
+    # vector_index = index_mcp - wrist
+    # vector_thumb = thumb_mcp - wrist
 
-    def get_landmarks_coordinates(self, image, depth_frame, fixed_user=False) -> bool:
+    # # calcul des angles
+    # yaw_camera = self.angle_between_vector_and_plane(
+    #     vector_index, np.array([1, 0, 0])
+    # )  # index / plan vertical
+    # roll_camera = self.angle_between_vector_and_plane(
+    #     vector_index, np.array([0, 1, 0])
+    # )  # index / plan horizontal
+    # pitch_camera = self.angle_between_two_planes(
+    #     vector_index, vector_thumb, np.array([0, 1, 0])
+    # )  # plan index/pouce / plan horizontal
+
+    # print(f"yaw: {yaw_camera:.2f}, roll: {roll_camera:.2f}, pitch: {pitch_camera:.2f}")
+    # self.rpy_camera[side_int] = np.array([roll_camera, pitch_camera, yaw_camera])
+
+    def get_landmarks_coordinates(self, image, depth_frame, fixed_user=False, closed_fists=False) -> bool:
         image = self.resize_frames(image, self.scale_percent)
         depth_frame = self.resize_frames(depth_frame, self.scale_percent)
+        # results = self.holistic.detect_for_video(cv2.cvtColor(image, cv2.COLOR_BGR2RGB))
         results = self.holistic.process(cv2.cvtColor(image, cv2.COLOR_BGR2RGB))
-
         if not results:
+            print("No results")
             return False
 
-        body_landmarks, face_landmarks = self.get_2D_landmarks(results)
-        left_hand_landmarks, right_hand_landmarks = self.get_3D_landmarks(results)
+        if closed_fists:
+            effector_cst = WRISTS_CST  # INDEX_MCP_CST
+        else:
+            effector_cst = WRISTS_CST
+
+        body_landmarks, face_landmarks, left_hand_landmarks, right_hand_landmarks = self.get_2D_landmarks(results)
+
+        pose_landmarks = self.get_3D_landmarks(results)
+        print("get3Dlandmarks")
+        self.get_hand_orientation(pose_landmarks)
+        print("gethandorientation")
+
+        # handpoints_3D = self.get_3D_landmarks(results)
+        # self.get_hand_orientation(handpoints_3D)
 
         if body_landmarks is not None:
             if not fixed_user:
-                # get shoulder landmarks
                 left_shoulder = self.estimate_3D_landmark_with_depth(body_landmarks[SHOULDER_CST[0]], depth_frame)
                 if left_shoulder is not None:
-                    self.shoulders_visu[0] = left_shoulder
-                    self.shoulders[0] = self.get_landmarks_with_camera_transformation(left_shoulder)
+                    self.shoulders[0] = left_shoulder
                 right_shoulder = self.estimate_3D_landmark_with_depth(body_landmarks[SHOULDER_CST[1]], depth_frame)
                 if right_shoulder is not None:
-                    self.shoulders_visu[1] = right_shoulder
-                    self.shoulders[1] = self.get_landmarks_with_camera_transformation(right_shoulder)
-                # get user center and distance intershoulder
+                    self.shoulders[1] = right_shoulder
                 if np.any(self.shoulders[0]) and np.any(self.shoulders[1]):
-                    self.user_center_visu = (self.shoulders_visu[0] + self.shoulders_visu[1]) / 2.0
                     self.user_center = (self.shoulders[0] + self.shoulders[1]) / 2.0
                     self.dist_intershoulder = np.linalg.norm(self.shoulders[0] - self.shoulders[1])
 
-            # get elbows and wrists landmarks
             for i in range(2):
                 elbow = self.estimate_3D_landmark_with_depth(body_landmarks[ELBOWS_CST[i]], depth_frame)
                 if elbow is not None:
-                    self.elbows_visu[i] = elbow
-                    self.elbows[i] = self.get_landmarks_with_camera_transformation(elbow)
-                wrist = self.estimate_3D_landmark_with_depth(body_landmarks[WRISTS_CST[i]], depth_frame, radius=10)
+                    self.elbows[i] = elbow
+                wrist = self.estimate_3D_landmark_with_depth(body_landmarks[effector_cst[i]], depth_frame, radius=10)
                 if wrist is not None:
-                    self.wrists_visu[i] = wrist
-                    self.wrists[i] = self.get_landmarks_with_camera_transformation(wrist)
+                    self.wrists[i] = wrist
 
+        ite = 0
         for hand_landmarks, points in zip(
             [left_hand_landmarks, right_hand_landmarks], [self.left_hand_points, self.right_hand_points]
         ):
             if hand_landmarks is not None:
                 for i, lm_cst in enumerate(HANDLANDMARKS_CST):
-                    finger_coord = hand_landmarks[lm_cst]
+                    finger_coord = self.estimate_3D_landmark_with_depth(hand_landmarks[lm_cst], depth_frame)
                     if finger_coord is not None:
-                        points[i] = self.get_landmarks_with_camera_transformation(finger_coord)
+                        points[i] = finger_coord
+                # if hand_landmarks[0][:2] is not None:
+                #     self.wrists[ite] = self.estimate_3D_landmark_with_depth(hand_landmarks[0][:2], depth_frame)
+            ite += 1
 
         if face_landmarks is not None:
             for i, lm_cst in enumerate(FACELANDMARKS_CST):
                 face_coord = self.estimate_3D_landmark_with_depth(face_landmarks[lm_cst], depth_frame)
                 if face_coord is not None:
-                    self.face_points_visu[i] = face_coord
-                    self.face_points[i] = self.get_landmarks_with_camera_transformation(face_coord)
+                    self.face_points[i] = face_coord
 
         return True
 
@@ -676,14 +688,13 @@ class ComputerVision:
         roll,
         pitch,
         yaw,
-        text_on=True,
         body_on=True,
         hands_on=True,
         face_on=True,
+        text_on=True,
     ):
-
         color_frame = self.resize_frames(color_frame, self.scale_percent)
-        cv2.circle(color_frame, (int(self.user_center_visu[0]), int(self.user_center_visu[1])), 5, (255, 255, 255), -1)
+        cv2.circle(color_frame, (int(self.user_center[0]), int(self.user_center[1])), 5, (255, 255, 255), -1)
         if text_on:
             cv2.putText(
                 color_frame,
@@ -707,11 +718,11 @@ class ComputerVision:
             )
         if body_on:
             for i in range(2):
-                cv2.circle(color_frame, (int(self.wrists_visu[i][0]), int(self.wrists_visu[i][1])), 5, (0, 255, 0), -1)
-                cv2.circle(color_frame, (int(self.elbows_visu[i][0]), int(self.elbows_visu[i][1])), 5, (255, 0, 0), -1)
-                cv2.circle(
-                    color_frame, (int(self.shoulders_visu[i][0]), int(self.shoulders_visu[i][1])), 5, (0, 0, 255), -1
-                )
+                cv2.circle(color_frame, (int(self.wrists[i][0]), int(self.wrists[i][1])), 5, (0, 255, 0), -1)
+                cv2.circle(color_frame, (int(self.elbows[i][0]), int(self.elbows[i][1])), 5, (255, 0, 0), -1)
+                cv2.circle(color_frame, (int(self.shoulders[i][0]), int(self.shoulders[i][1])), 5, (0, 0, 255), -1)
+                cv2.circle(color_frame, (int(self.index[i][0]), int(self.index[i][1])), 5, (255, 255, 0), -1)
+                cv2.circle(color_frame, (int(self.thumb[i][0]), int(self.thumb[i][1])), 5, (0, 255, 255), -1)
 
         if hands_on:
             for i in range(len(HANDLANDMARKS_CST)):
@@ -733,7 +744,7 @@ class ComputerVision:
             for i in range(len(FACELANDMARKS_CST)):
                 cv2.circle(
                     color_frame,
-                    (int(self.face_points_visu[i][0]), int(self.face_points_visu[i][1])),
+                    (int(self.face_points[i][0]), int(self.face_points[i][1])),
                     5,
                     (255, 0, 255),
                     -1,
@@ -767,7 +778,13 @@ class ComputerVision:
         return fig, ax, scatter
 
     def update_plot(self, ax, scatter):
-        handpoints_3D = self.left_hand_points_3D
+        handpoints_3D = []
+        handpoints_3D.append(self.wrists_3D[0])
+        handpoints_3D.append(self.elbows[0])
+        handpoints_3D.append(self.shoulders[0])
+        handpoints_3D.append(self.index[0])
+        handpoints_3D.append(self.thumb[0])
+        handpoints_3D = np.array(handpoints_3D)
 
         colors = np.linspace(0, 1, len(handpoints_3D))  # Valeurs normalisées pour la colormap
 
@@ -788,29 +805,35 @@ class RobotController:
         # user parameters
         self.real_shoulders = np.array([[0, 0.15, 0], [0, -0.15, 0]])
         self.real_dist_intershoulder = 0.3
+        # self.user_center = None
 
         # control parameters
+        self.control_frequency = 100
         self.grippers_ready = [
             self.reachy.l_arm.gripper.is_on(),
             self.reachy.r_arm.gripper.is_on(),
         ]
+
+        # gripper parameters
+        self.former_left_hand_points = [deque(maxlen=5) for _ in range(len(HANDLANDMARKS_CST))]
+        self.former_right_hand_points = [deque(maxlen=5) for _ in range(len(HANDLANDMARKS_CST))]
 
         # filters
         self.kf_user_center = KalmanFilter3D()
         self.kf_shoulders = [KalmanFilter3D() for _ in range(2)]
         self.kf_wrists = [KalmanFilter3D() for _ in range(2)]
         self.kf_elbows = [KalmanFilter3D() for _ in range(2)]
-        self.kf_left_hand = [KalmanFilter3D() for _ in range(len(HANDLANDMARKS_CST))]
+        self.kf_left_hand = [KalmanFilter3D(add_median_filter=False) for _ in range(len(HANDLANDMARKS_CST))]
         self.kf_right_hand = [KalmanFilter3D() for _ in range(len(HANDLANDMARKS_CST))]
         self.kf_face = [KalmanFilter3D(median_filter_size=3) for _ in range(len(FACELANDMARKS_CST))]
 
         self.mf_gripper = [MedianFilter(), MedianFilter()]
-        self.rotation_smoother = [RotationSmoother(), RotationSmoother()]
-        # self.rotation_smoother = [RotationSmoother(window_size=5), RotationSmoother(window_size=5)]
+        self.rotation_smoother = [RotationSmoother(window_size=5), RotationSmoother(window_size=5)]
 
-        self.head_rpy = deque(maxlen=10)
-
-        self.rpy = np.zeros((2, 3))
+        self.former_poses = [
+            self.reachy.l_arm.forward_kinematics(),
+            self.reachy.r_arm.forward_kinematics(),
+        ]
 
     # def set_user_center(self, user_center):
     #     self.user_center = user_center
@@ -820,57 +843,29 @@ class RobotController:
         normalization_factor = self.real_dist_intershoulder / dist_intershoulder
         x = position_user_frame[0] * normalization_factor
         y = position_user_frame[1] * normalization_factor
-        z = position_user_frame[2] * normalization_factor
-
-        # z = 5 / 3 * z + (0.10)
-        z -= 0.15
-
-        z = np.clip(z, -0.7, 0)
+        z = position_user_frame[2]
+        z = np.clip(z, -0.8, 0)
         position_robot_frame = np.array([-z, x, -y])
         return position_robot_frame
 
     def convert_rotation_to_reachy_frame(self, rotation_matrix):
         # conversion dans le repère de Reachy (x = -z, y = x, z = -y)
         T_cam_to_reachy = np.array([[0, 1, 0], [0, 0, -1], [-1, 0, 0]])
+
+        # Appliquer la correction après transformation
         rotation_matrix_reachy = T_cam_to_reachy @ rotation_matrix
 
         return rotation_matrix_reachy
+
+    def correct_position_with_camera_orientation(self, rotation_matrix, goal_position):
+        return np.dot(rotation_matrix, goal_position)
 
     def is_top_grasp_pose(self, elbow, user_center, dist_intershoulder):
         if elbow is None:
             return False
         return elbow[1] < user_center[1] + dist_intershoulder / 2
 
-    def rotation_matrix_from_vector(self, side_int, pointA, pointB):
-        """Find the rotation matrix that aligns vect1 to vect
-        :param vect1: A 3d "source" vector
-        :param vect: A 3d "destination" vector
-        :return mat: A transform matrix (3x3) which when applied to vect1, aligns it with vect.
-        """
-        vect1 = np.array([0, 0, -1])
-
-        vect2 = pointB - pointA
-        vect2 = (vect2 / np.linalg.norm(vect2)).reshape(3)
-
-        # handling cross product colinear
-        if np.all(np.isclose(vect1, vect2)):
-            return np.eye(3)
-
-        # handling cross product colinear
-        if np.all(np.isclose(vect1, -vect2)):
-            return np.array([[-1, 0, 0], [0, 1, 0], [0, 0, -1]])
-
-        v = np.cross(vect1, vect2)
-        c = np.dot(vect1, vect2)
-        s = np.linalg.norm(v)
-        kmat = np.array([[0, -v[2], v[1]], [v[2], 0, -v[0]], [-v[1], v[0], 0]])
-        rotation_matrix = np.array(np.eye(3) + kmat + kmat.dot(kmat) * ((1 - c) / (s**2)))
-
-        self.rpy[side_int] = R.from_matrix(rotation_matrix).as_euler("xyz", degrees=True)
-
-        return rotation_matrix
-
-    def get_effector_pose(self, side, vision, mode="shoulder", dist_filter=True, mirror_mode=False):
+    def get_effector_pose(self, side, vision, mode="shoulder", filter=True):
         side_int = 0 if side == "left" else 1
         wrist_position = vision.wrists[side_int]
         elbow_position = vision.elbows[side_int]
@@ -882,6 +877,7 @@ class RobotController:
         dist_intershoulder = np.linalg.norm(shoulders[0] - shoulders[1])
 
         goal_position = self.convert_to_robot_frame(wrist_position, user_center, dist_intershoulder)
+        # goal_position_corrected = self.correct_position_with_camera_orientation(vision.T_world_camera, goal_position)
         goal_position_filtered = self.kf_wrists[side_int].update(goal_position)
 
         if mode == "shoulder":
@@ -900,24 +896,23 @@ class RobotController:
         if mode == "elbow":
             elbow_robot_frame = self.convert_to_robot_frame(elbow_position, user_center, dist_intershoulder)
             elbow_position_filtered = self.kf_elbows[side_int].update(elbow_robot_frame)
-            rotation_matrix_wrist = self.rotation_matrix_from_vector(
-                side_int, elbow_position_filtered, goal_position_filtered
+            elbow_new_depth = self.estimate_elbow_depth(
+                self.real_shoulders[side_int], goal_position_filtered, elbow_position_filtered
             )
-            rotation_matrix = self.rotation_smoother[side_int].update(rotation_matrix_wrist)
+            vect = goal_position_filtered - elbow_new_depth
+            vect = vect / np.linalg.norm(vect)
+            rotation_matrix = rotation_matrix_from_vector(vect)
 
         if mode == "hand":
+
             rotation_matrix_hand = self.convert_rotation_to_reachy_frame(vision.orientation_hands[side_int])
             rotation_matrix = self.rotation_smoother[side_int].update(rotation_matrix_hand)
 
-        goal_pose = recompose_matrix(rotation_matrix, np.round(goal_position_filtered, 4))
+        goal_pose = recompose_matrix(rotation_matrix, np.round(goal_position_filtered, 3))
 
-        if self.is_command_unreachable(goal_pose):
-            print("Command is unreachable")
-            return self.former_poses[side_int]
-
-        if dist_filter and self.is_too_far(goal_pose, side_int):
-            print("Goal pose is too far")
-            return self.former_poses[side_int]
+        # if filter and self.is_too_far(goal_pose, side_int):
+        #     print("Goal pose is too far")
+        #     return self.former_poses[side_int]
 
         self.former_poses[side_int] = goal_pose
 
@@ -926,21 +921,35 @@ class RobotController:
     def is_too_far(self, goal_pose, side_int):
         goal_position = goal_pose[:3, 3]
         former_position = self.former_poses[side_int][:3, 3]
-        return np.linalg.norm(goal_position - former_position) > 0.20
+        return np.linalg.norm(goal_position - former_position) > 0.2
 
-    def is_command_unreachable(self, goal_pose):
-        goal_position = goal_pose[:3, 3]
-        if (
-            goal_position[0] < 0.1
-            or goal_position[0] > 0.8
-            or goal_position[1] < -0.6
-            or goal_position[1] > 0.6
-            or goal_position[2] < -0.6
-            or goal_position[2] > 0.4
-        ):
-            print(goal_position)
-            return True
-        return False
+    # def normalize_vector(self, v):
+    #     """Normalise un vecteur et gère le cas où la norme est zéro."""
+    #     norm = np.linalg.norm(v)
+    #     if norm == 0:
+    #         return np.array([0.0, 0.0, 0.0])  # Retourne un vecteur nul pour éviter NaN
+    #     return v / norm
+
+    def estimate_elbow_depth(self, shoulder_3D, wrist_3D, elbow):
+        x_e, y_e, z_e = shoulder_3D[0], shoulder_3D[1], shoulder_3D[2]
+        y_c, z_c = elbow[1], elbow[2]  # Coordonnées 2D détectées du coude
+
+        delta_z = z_c - z_e
+        delta_y = y_c - y_e
+        squared_term = (0.35) ** 2 - delta_z**2 - delta_y**2
+
+        if squared_term < 0:
+            print("Erreur : Les coordonnées 2D du coude sont incohérentes avec la longueur du bras")
+            return elbow
+
+        x_c1 = x_e + np.sqrt(squared_term)
+        x_c2 = x_e - np.sqrt(squared_term)
+
+        # Sélectionner la solution la plus proche du poignet
+        x_w = wrist_3D[2]
+        x_c = x_c1 if abs(x_c1 - x_w) < abs(x_c2 - x_w) else x_c2
+
+        return np.array([x_c, y_c, z_c])
 
     def go_to_pose(self, pose: npt.NDArray[np.float64], arm: str) -> None:
         if arm == "r_arm":
@@ -971,66 +980,83 @@ class RobotController:
             )
             self.reachy.l_arm._stub.SendArmCartesianGoal(request)
 
-    def make_line(self, end_pose: list[npt.NDArray[np.float64]], duration: float):
-        control_frequency = 100
-        start_pose = [
-            self.reachy.l_arm.forward_kinematics(),
-            self.reachy.r_arm.forward_kinematics(),
-        ]
-        start_position = [start_pose[0][:3, 3], start_pose[1][:3, 3]]
-        end_position = [end_pose[0][:3, 3], end_pose[1][:3, 3]]
-        start_rotation = [
-            R.from_matrix(start_pose[0][:3, :3]),
-            R.from_matrix(start_pose[1][:3, :3]),
-        ]
-        end_rotation = [
-            R.from_matrix(end_pose[0][:3, :3]),
-            R.from_matrix(end_pose[1][:3, :3]),
-        ]
+    # def make_line(self, end_pose: list[npt.NDArray[np.float64]], duration: float):
+    #     t0 = time.time()
+    #     start_pose = self.former_poses
+    #     t1 = time.time()
 
-        nbr_points = int(duration * control_frequency)
+    #     start_pose = [
+    #         self.reachy.l_arm.forward_kinematics(),
+    #         self.reachy.r_arm.forward_kinematics(),
+    #     ]
+    #     t1bis = time.time()
+    #     print(f"t before getting poses: {t1 - t0} and {t1bis - t1}")
+    #     start_position = [start_pose[0][:3, 3], start_pose[1][:3, 3]]
+    #     end_position = [end_pose[0][:3, 3], end_pose[1][:3, 3]]
+    #     start_rotation = [
+    #         R.from_matrix(start_pose[0][:3, :3]),
+    #         R.from_matrix(start_pose[1][:3, :3]),
+    #     ]
+    #     end_rotation = [
+    #         R.from_matrix(end_pose[0][:3, :3]),
+    #         R.from_matrix(end_pose[1][:3, :3]),
+    #     ]
+    #     t2 = time.time()
+    #     print(f"t after getting poses: {t2 - t1}")
 
-        left_slerp = Slerp(
-            [0, 1],
-            R.from_matrix([start_rotation[0].as_matrix(), end_rotation[0].as_matrix()]),
-        )
-        right_slerp = Slerp(
-            [0, 1],
-            R.from_matrix([start_rotation[1].as_matrix(), end_rotation[1].as_matrix()]),
-        )
+    #     nbr_points = int(duration * self.control_frequency)
 
-        for i in range(nbr_points):
-            t = time.time()
-            alpha = i / nbr_points
+    #     left_slerp = Slerp(
+    #         [0, 1],
+    #         R.from_matrix([start_rotation[0].as_matrix(), end_rotation[0].as_matrix()]),
+    #     )
+    #     right_slerp = Slerp(
+    #         [0, 1],
+    #         R.from_matrix([start_rotation[1].as_matrix(), end_rotation[1].as_matrix()]),
+    #     )
+    #     t3 = time.time()
+    #     print(f"t before sending commands: {t3 - t2}")
 
-            left_interp_rotation = left_slerp([alpha]).as_matrix()[0]
-            left_interp_position = start_position[0] + alpha * (end_position[0] - start_position[0])
+    #     for i in range(nbr_points):
+    #         t = time.time()
+    #         alpha = i / nbr_points
 
-            right_interp_rotation = right_slerp([alpha]).as_matrix()[0]
-            right_interp_position = start_position[1] + alpha * (end_position[1] - start_position[1])
+    #         left_interp_rotation = left_slerp([alpha]).as_matrix()[0]
+    #         left_interp_position = start_position[0] + alpha * (end_position[0] - start_position[0])
 
-            left_pose = recompose_matrix(left_interp_rotation, left_interp_position)
-            right_pose = recompose_matrix(right_interp_rotation, right_interp_position)
+    #         right_interp_rotation = right_slerp([alpha]).as_matrix()[0]
+    #         right_interp_position = start_position[1] + alpha * (end_position[1] - start_position[1])
 
-            self.go_to_pose(left_pose, "l_arm")
-            self.go_to_pose(right_pose, "r_arm")
-            time.sleep(max(1.0 / control_frequency - (time.time() - t), 0.0))
+    #         left_pose = recompose_matrix(left_interp_rotation, left_interp_position)
+    #         right_pose = recompose_matrix(right_interp_rotation, right_interp_position)
 
-    def get_head_rotation(self, vision, mirror_mode=False):
+    #         self.go_to_pose(left_pose, "l_arm")
+    #         self.go_to_pose(right_pose, "r_arm")
+    #         time.sleep(max(1.0 / self.control_frequency - (time.time() - t), 0.0))
+
+    #     self.former_poses = end_pose
+    #     t4 = time.time()
+    #     print(f"t after sending commands: {t4 - t3}")
+
+    def get_head_rotation(self, vision):
         face_points_filtered = np.zeros((len(FACELANDMARKS_CST), 3))
         for idx in range(len(FACELANDMARKS_CST)):
+            face_point_filtered = self.kf_face[idx].update(vision.face_points[idx])
             face_point_reachy_frame = self.convert_to_robot_frame(
-                vision.face_points[idx], vision.user_center, vision.dist_intershoulder
+                face_point_filtered, vision.user_center, vision.dist_intershoulder
             )
-            face_point_filtered = self.kf_face[idx].update(face_point_reachy_frame)
-            face_points_filtered[idx] = face_point_filtered
+            face_points_filtered[idx] = face_point_reachy_frame
+            if vision.up_mode:
+                face_points_filtered[idx] = self.correct_position_with_camera_orientation(
+                    vision.T_world_camera, face_point_reachy_frame
+                )
 
         left_eye = face_points_filtered[2]
         right_eye = face_points_filtered[3]
         nose = face_points_filtered[0]
         chin = face_points_filtered[1]
 
-        y_axis = right_eye - left_eye
+        y_axis = left_eye - right_eye
         y_axis = y_axis / np.linalg.norm(y_axis)
         z_axis = nose - chin
         z_axis = z_axis / np.linalg.norm(z_axis)
@@ -1040,40 +1066,24 @@ class RobotController:
         rot = np.array([x_axis, y_axis, z_axis]).T
         roll, pitch, yaw = R.from_matrix(rot).as_euler("XYZ", degrees=True)
 
-        for angle in [roll, pitch, yaw]:
-            if angle > 180:
-                angle = angle - 360
-            elif angle < -180:
-                angle = angle + 360
-
-        if mirror_mode:
-            return -roll, pitch, -yaw
-
-        return roll, pitch, yaw
+        return roll, pitch - 40, 180 - yaw
 
     def set_head_orientation(self, roll, pitch, yaw):
-        self.head_rpy.append([roll, pitch, yaw])
         self.reachy.head.neck.roll.goal_position = roll
         self.reachy.head.neck.pitch.goal_position = pitch
         self.reachy.head.neck.yaw.goal_position = yaw
         self.reachy.send_goal_positions(check_positions=False)
 
-    def get_gripper_command(self, side, vision, mirror_mode=False):
+    def get_gripper_command(self, side, vision, closed_fists=False):
         if side == "left":
             hand_points = vision.left_hand_points
             kf_hand = self.kf_left_hand
-            if not mirror_mode:
-                gripper = self.reachy.l_arm.gripper
-            else:
-                gripper = self.reachy.r_arm.gripper
+            gripper = self.reachy.l_arm.gripper
             side_int = 0
         else:
             hand_points = vision.right_hand_points
             kf_hand = self.kf_right_hand
-            if not mirror_mode:
-                gripper = self.reachy.r_arm.gripper
-            else:
-                gripper = self.reachy.l_arm.gripper
+            gripper = self.reachy.r_arm.gripper
             side_int = 1
 
         # get the filtered fingers position
@@ -1081,108 +1091,61 @@ class RobotController:
         for idx in range(len(HANDLANDMARKS_CST)):
             hand_points_filtered[idx] = kf_hand[idx].update(hand_points[idx])
 
-        index = hand_points_filtered[1]
-        thumb = hand_points_filtered[0]
+        index = hand_points_filtered[4]
+        thumb = hand_points_filtered[2]
+        pinky = hand_points_filtered[6]
 
-        dist_index_thumb_normalized = np.linalg.norm(index - thumb) / vision.dist_intershoulder
-        dist_filtered = self.mf_gripper[side_int].update(dist_index_thumb_normalized)
-        if not gripper.is_moving() and dist_filtered < 0.1:
-            gripper.close()
+        if not closed_fists:
+            dist_index_thumb_normalized = np.linalg.norm(index - thumb) / vision.dist_intershoulder
+            dist_filtered = self.mf_gripper[side_int].update(dist_index_thumb_normalized)
+            if not gripper.is_moving() and dist_filtered < 0.1:
+                gripper.close()
 
-        elif not gripper.is_moving() and dist_filtered > 0.3:
-            gripper.open()
+            elif not gripper.is_moving() and dist_filtered > 0.3:
+                gripper.open()
 
-    def get_mirror_pose(self, pose):
-        new_pose = np.copy(pose)
-        new_pose[1, 3] = -new_pose[1, 3]
-        rotation_matrix = new_pose[:3, :3]
-        rotation_quaternion = R.from_matrix(rotation_matrix).as_quat()
+        else:
+            dist_finger_normalized = (
+                np.max([np.linalg.norm(index - pinky), np.linalg.norm(thumb - pinky)]) / vision.dist_intershoulder
+            )
+            dist_filtered = self.mf_gripper[side_int].update(dist_finger_normalized)
+            print("side ", dist_filtered)
+            if not gripper.is_moving() and self.grippers_ready[side_int] and dist_filtered > 0.4:
+                if gripper.get_current_opening() < 50:
+                    gripper.open()
+                else:
+                    gripper.close()
+                self.grippers_ready[side_int] = False
 
-        mirrored_quaternion = np.array(
-            [-rotation_quaternion[0], rotation_quaternion[1], -rotation_quaternion[2], rotation_quaternion[3]]
-        )
-
-        mirrored_rotation_matrix = R.from_quat(mirrored_quaternion).as_matrix()
-        new_pose[:3, :3] = mirrored_rotation_matrix
-        return new_pose
+            elif not gripper.is_moving() and dist_filtered < 0.2:
+                self.grippers_ready[side_int] = True
 
 
 class TeleopControl:
-    def __init__(
-        self, camera: Orbbec, robot_controller: RobotController, scale_percent: int, timestep: float, mirror_mode=False
-    ):
+    def __init__(self, camera: Orbbec, robot_controller: RobotController, scale_percent: int, timestep: float):
         self.camera = camera
-        self.vision = ComputerVision(self.camera, scale_percent, up_mode=True)
+        self.vision = ComputerVision(self.camera, scale_percent)
         self.robot_controller = robot_controller
         self.timestep = timestep
         self.first_pose_done = False
-        self.mirror_mode = mirror_mode
-
-    def is_first_command_ok(self, command):
-        # check if the first command is in the cube : x 0,3/O,45 y 0,15/0.3 z -0,35/-0.2
-        if (
-            command[0] < 0.45
-            and command[0] > 0.3
-            and command[1] < 0.3
-            and command[1] > 0.15
-            and command[2] < -0.15
-            and command[2] > -0.35
-        ):
-            return True
-        return False
-
-    def raise_command_to_stop(self):
-        if len(self.robot_controller.head_rpy) == 10:
-            pitch_values = [rpy[1] for rpy in self.robot_controller.head_rpy]
-            roll_values = [rpy[0] for rpy in self.robot_controller.head_rpy]
-            yaw_values = [rpy[2] for rpy in self.robot_controller.head_rpy]
-            if (
-                np.all(np.abs(pitch_values) > 25)
-                and np.all(np.abs(roll_values) < 10)
-                and np.all(np.abs(yaw_values) < 10)
-            ):
-                print("Command to stop")
-                return True
-        return False
 
     def run(self):
-        self.robot_controller.reachy.goto_posture("elbow_90", wait=True)
-        self.robot_controller.former_poses = [
-            self.robot_controller.reachy.l_arm.forward_kinematics(),
-            self.robot_controller.reachy.r_arm.forward_kinematics(),
-        ]
-
-        # fig, ax, scatter = self.vision.init_plot()
+        fig, ax, scatter = self.vision.init_plot()
         #  first pose
         while not self.first_pose_done:
             try:
                 color_frame = self.camera.color_frame.pop()
                 depth_frame = self.camera.depth_frame.pop()
+
                 self.vision.get_landmarks_coordinates(color_frame, depth_frame, fixed_user=False)
                 if np.any(self.vision.user_center) and np.any(self.vision.wrists):
-                    left_goal_pose = self.robot_controller.get_effector_pose(
-                        "left", self.vision, "elbow", dist_filter=False, mirror_mode=self.mirror_mode
-                    )
-                    right_goal_pose = self.robot_controller.get_effector_pose(
-                        "right", self.vision, "elbow", dist_filter=False, mirror_mode=self.mirror_mode
-                    )
-
-                    if self.is_first_command_ok(left_goal_pose[:3, 3]) and not self.is_first_command_ok(
-                        right_goal_pose[:3, 3]
-                    ):
-
-                        if self.mirror_mode:
-                            left_goal_pose_mirror = self.robot_controller.get_mirror_pose(right_goal_pose)
-                            right_goal_pose_mirror = self.robot_controller.get_mirror_pose(left_goal_pose)
-                            left_goal_pose = left_goal_pose_mirror
-                            right_goal_pose = right_goal_pose_mirror
-
-                        self.robot_controller.make_line([left_goal_pose, right_goal_pose], duration=2)
-                        # self.robot_controller.reachy.l_arm.goto(left_goal_pose, duration=2)
-                        # self.robot_controller.reachy.r_arm.goto(right_goal_pose, duration=2)
-                        self.first_pose_done = True
-                        print("First pose done")
-
+                    left_goal_pose = self.robot_controller.get_effector_pose("left", self.vision, filter=False)
+                    right_goal_pose = self.robot_controller.get_effector_pose("right", self.vision, filter=False)
+                    self.robot_controller.go_to_pose(left_goal_pose, "l_arm")
+                    self.robot_controller.go_to_pose(right_goal_pose, "r_arm")
+                    # self.robot_controller.make_line([left_goal_pose, right_goal_pose], self.timestep)  # too long (0.036)
+                    self.first_pose_done = True
+                    print("First pose done")
             except IndexError:
                 time.sleep(0.005)
                 continue
@@ -1198,30 +1161,45 @@ class TeleopControl:
                 continue
 
             self.vision.get_landmarks_coordinates(color_frame, depth_frame, fixed_user=False)  # too long (0.025)
-            # self.vision.update_plot(ax, scatter)
+            self.vision.update_plot(ax, scatter)
 
             # make the robot follow the user's hands
-            left_goal_pose = self.robot_controller.get_effector_pose("left", self.vision, "elbow", dist_filter=True)
-            right_goal_pose = self.robot_controller.get_effector_pose("right", self.vision, "elbow", dist_filter=True)
-
-            if self.mirror_mode:
-                left_goal_pose_mirror = self.robot_controller.get_mirror_pose(right_goal_pose)
-                right_goal_pose_mirror = self.robot_controller.get_mirror_pose(left_goal_pose)
-                left_goal_pose = left_goal_pose_mirror
-                right_goal_pose = right_goal_pose_mirror
-
+            left_goal_pose = self.robot_controller.get_effector_pose("left", self.vision, "elbow")
+            right_goal_pose = self.robot_controller.get_effector_pose("right", self.vision, "elbow")
             self.robot_controller.go_to_pose(left_goal_pose, "l_arm")
             self.robot_controller.go_to_pose(right_goal_pose, "r_arm")
 
             roll, pitch, yaw = 0, 0, 0
             # make the robot follow the user's head
             if np.any(self.vision.face_points):
-                roll, pitch, yaw = self.robot_controller.get_head_rotation(self.vision, self.mirror_mode)
+                roll, pitch, yaw = self.robot_controller.get_head_rotation(self.vision)
                 self.robot_controller.set_head_orientation(roll, pitch, yaw)
 
             # make the robot grab the objects
-            self.robot_controller.get_gripper_command("left", self.vision, self.mirror_mode)
-            self.robot_controller.get_gripper_command("right", self.vision, self.mirror_mode)
+            self.robot_controller.get_gripper_command("left", self.vision)
+            self.robot_controller.get_gripper_command("right", self.vision)
+
+            cv2.putText(
+                color_frame,
+                f"LFT : {np.round(self.vision.rpy_camera[0],3)}",
+                (10, 60),
+                cv2.FONT_HERSHEY_SIMPLEX,
+                2,
+                (255, 255, 255),
+                2,
+                cv2.LINE_AA,
+            )
+
+            cv2.putText(
+                color_frame,
+                f"RGT : {np.round(self.vision.rpy_camera[1],3)}",
+                (10, 160),
+                cv2.FONT_HERSHEY_SIMPLEX,
+                2,
+                (255, 255, 255),
+                2,
+                cv2.LINE_AA,
+            )
 
             # to visualize original_landmarks
             self.vision.visualization_landmarks(
@@ -1231,20 +1209,18 @@ class TeleopControl:
                 roll,
                 pitch,
                 yaw,
-                text_on=True,
                 body_on=True,
                 hands_on=False,
-                face_on=True,
+                face_on=False,
+                text_on=False,
             )
-
-            if (time.time() - t) // 10 == 0:
-                print(f"Freq: {1/(time.time() - t):.3f}")
+            print(f"Freq: {1/(time.time() - t):.3f}")
 
             # si échap ou ctrl c
-            if self.raise_command_to_stop() or (cv2.waitKey(1) & 0xFF == 27):
+            if cv2.waitKey(1) & 0xFF == 27:
                 break
-        # plt.ioff()
-        # plt.show()
+        plt.ioff()
+        plt.show()
         cv2.destroyAllWindows()
         self.camera.stop()
         self.camera.frame_getter.join(5)
@@ -1255,6 +1231,5 @@ if __name__ == "__main__":
     scale_percent = 50
     timestep = 0.02
     robot = RobotController("localhost")
-    teleop = TeleopControl(camera, robot, scale_percent, timestep, mirror_mode=True)
-    print("Teleoperation started")
+    teleop = TeleopControl(camera, robot, scale_percent, timestep)
     teleop.run()

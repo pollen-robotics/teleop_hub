@@ -3,14 +3,14 @@ import time
 import cv2  # type: ignore
 import numpy as np
 
-from controller.computer_vision import ComputerVision
-from controller.orbbec import Orbbec
-from controller.robot_controller import RobotController
+from controller.controller import Controller
+from controller.rgbd_tracker.computer_vision import ComputerVision  # type: ignore
+from controller.rgbd_tracker.orbbec import Orbbec
 
 
 class TeleopControl:
     def __init__(
-        self, camera: Orbbec, robot_controller: RobotController, scale_percent: int, timestep: float, mirror_mode=False
+        self, camera: Orbbec, robot_controller: Controller, scale_percent: int, timestep: float, mirror_mode=False
     ):
         self.camera = camera
         self.vision = ComputerVision(self.camera, scale_percent, up_mode=True)
@@ -150,7 +150,7 @@ if __name__ == "__main__":
     camera = Orbbec()
     scale_percent = 50
     timestep = 0.02
-    robot = RobotController("localhost")
+    robot = Controller("localhost")
     teleop = TeleopControl(camera, robot, scale_percent, timestep, mirror_mode=True)
     print("Teleoperation started")
     teleop.run()

@@ -4,21 +4,15 @@ from typing import Optional
 import cv2  # type: ignore
 import cv2.aruco as aruco  # type: ignore
 import numpy as np
+from camera.rgb_camera import RGBCamera  # type: ignore
 from scipy.spatial.transform import Rotation as R  # type: ignore
-
-from tracker_teleoperation.controller.aruco_tracker.camera import Camera
-from tracker_teleoperation.controller.tracker import (  # type: ignore
-    Tracker,
-    TrackerType,
-)
+from trackers.tracker import Tracker, TrackerType  # type: ignore
 
 
 class ArucoCube(Tracker):
     """Class to detect and track an ArUco cube."""
 
-    def __init__(
-        self, arm: str, camera: Camera, marker_size: float = 0.05
-    ) -> None:
+    def __init__(self, arm: str, camera: RGBCamera, marker_size: float = 0.05) -> None:
         """Initialize the ArUco cube.
 
         Args:
@@ -182,9 +176,7 @@ class ArucoCube(Tracker):
         marker_corners, marker_ids, _ = self.detector.detectMarkers(self.frame)
         return marker_corners, marker_ids
 
-    def estimate_PoseSingleMarkers(
-        self, corners: np.ndarray
-    ) -> tuple[np.ndarray, np.ndarray]:
+    def estimate_PoseSingleMarkers(self, corners: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
         """Estimate the pose of single markers.
 
         Args:
@@ -247,7 +239,7 @@ class ArucoCube(Tracker):
 
 
 if __name__ == "__main__":
-    camera = Camera()
+    camera = RGBCamera()
     aruco_cube_left = ArucoCube(arm="l_arm", camera=camera, marker_size=0.06)
     aruco_cube_right = ArucoCube(arm="r_arm", camera=camera, marker_size=0.03)
 

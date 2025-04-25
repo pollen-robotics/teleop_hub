@@ -1,3 +1,4 @@
+from abc import ABC, abstractmethod
 from typing import Optional
 
 import numpy as np
@@ -15,13 +16,23 @@ from utils import (  # type: ignore
     make_homogenous_matrix_from_rotation_matrix,
 )
 
-IP = "localhost"
-# IP = "192.168.10.106"
 
-
-class Reachy2:
+class Robot(ABC):
     def __init__(self, mirror_mode: bool = False) -> None:
-        self.reachy = ReachySDK(IP)
+        self.mirror_mode = mirror_mode
+
+    @abstractmethod
+    def init_robot(self):
+        pass
+
+    @abstractmethod
+    def stop(self):
+        pass
+
+
+class Reachy2(Robot):
+    def __init__(self, robot_ip: str = "localhost", mirror_mode: bool = False):
+        self.reachy = ReachySDK(robot_ip)
         self.mirror_mode = mirror_mode
 
     def init_robot(self):

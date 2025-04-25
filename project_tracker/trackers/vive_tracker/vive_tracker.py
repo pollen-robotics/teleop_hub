@@ -1,9 +1,8 @@
 import sys
 
 import numpy as np
-
-import controller.vive_tracker.triad_openvr as triad_openvr  # type: ignore
-from tracker_teleoperation.controller.tracker import Tracker  # type: ignore
+import trackers.vive_tracker.triad_openvr as triad_openvr  # type: ignore
+from trackers.tracker import Tracker  # type: ignore
 
 trackers = {
     "l_arm": "LHR-0D914CCE",
@@ -88,4 +87,4 @@ class ViveTracker(Tracker):
         self.tracker_pose = self.convert_openvr_matrix(pose)
 
     def stop(self):
-        print('Tracking stopped.')
+        print("Tracking stopped.")

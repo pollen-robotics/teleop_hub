@@ -7,15 +7,16 @@ from typing import Deque, Optional
 
 import cv2  # type: ignore
 import numpy as np
+from camera.camera import Camera  # type: ignore
 from scipy.spatial.transform import Rotation as R  # type: ignore
 
 
-class Camera:
+class RGBCamera(Camera):
     def __init__(
         self,
         usb_mode: bool = True,
         camera_id: str = "0",
-        with_calibration: bool = True,
+        with_calibration: bool = False,
     ):
         """Initialize the camera stream.
 
@@ -61,12 +62,8 @@ class Camera:
             with open(json_path, "r") as f:
                 camera_params = json.load(f)
 
-                self.camera_matrix = np.array(
-                    camera_params["camera_matrix"], dtype=np.float32
-                )
-                self.dist_coeffs = np.array(
-                    camera_params["dist_coeffs"], dtype=np.float32
-                )
+                self.camera_matrix = np.array(camera_params["camera_matrix"], dtype=np.float32)
+                self.dist_coeffs = np.array(camera_params["dist_coeffs"], dtype=np.float32)
 
         else:
             while len(self.frame) == 0:
@@ -141,9 +138,7 @@ class Camera:
                 side = "right" if i == 1 else "left"
                 rvec = R.from_matrix(cube_pose[:3, :3]).as_rotvec()
                 tvec = cube_pose[:3, 3]
-                cv2.drawFrameAxes(
-                    frame, self.camera_matrix, self.dist_coeffs, rvec, tvec, 0.03
-                )
+                cv2.drawFrameAxes(frame, self.camera_matrix, self.dist_coeffs, rvec, tvec, 0.03)
 
                 cv2.putText(
                     frame,
@@ -155,9 +150,7 @@ class Camera:
                     2,
                 )
 
-                roll, pitch, yaw = R.from_matrix(cube_pose[:3, :3]).as_euler(
-                    "xyz", degrees=True
-                )
+                roll, pitch, yaw = R.from_matrix(cube_pose[:3, :3]).as_euler("xyz", degrees=True)
 
                 cv2.putText(
                     frame,

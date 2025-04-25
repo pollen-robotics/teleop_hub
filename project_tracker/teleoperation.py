@@ -1,14 +1,20 @@
 import time
 from abc import ABC, abstractmethod
+from typing import Optional
 
 import cv2  # type: ignore
 import numpy as np
 from camera.camera import Camera  # type: ignore
 from camera.orbbec import Orbbec  # type: ignore
-from controller.controller_base import ArmRGBDController, HeadRGBDController
-from controller.rgbd_tracker.computer_vision import ComputerVision  # type: ignore
-from controller.tracker import TrackerType  # type: ignore
+from camera.rgb_camera import RGBCamera  # type: ignore
+from controller.controller import (
+    ArmRGBDController,
+    HeadRGBDController,
+    JoystickController,
+)
 from robots.reachy import Reachy2
+from trackers.rgbd_tracker.computer_vision import ComputerVision  # type: ignore
+from trackers.tracker import TrackerType  # type: ignore
 
 DUAL_ARM = "dual_arm"
 LEFT_ARM = "l_arm"
@@ -17,9 +23,9 @@ MODE = DUAL_ARM
 
 
 class Teleoperation(ABC):
-    def __init__(self, mirror_mode=False):
+    def __init__(self, robot_ip="localhost", mirror_mode=False):
         self.mirror_mode = mirror_mode
-        self.robot: Reachy2 = Reachy2(mirror_mode)
+        self.robot = Reachy2(robot_ip, mirror_mode)
         self.controllers = {}
         self.controller_previous_pose = {LEFT_ARM: None, RIGHT_ARM: None}
         self.robot_previous_pose = {LEFT_ARM: None, RIGHT_ARM: None}
@@ -58,8 +64,8 @@ class Teleoperation(ABC):
 
 
 class TeleoperationRGBD(Teleoperation):
-    def __init__(self, mirror_mode=False):
-        super().__init__(mirror_mode=mirror_mode)
+    def __init__(self, robot_ip="localhost", mirror_mode=False):
+        super().__init__(robot_ip, mirror_mode)
         self.camera = Orbbec()
         self.computer_vision = ComputerVision(self.camera)
         self.controllers = {
@@ -136,20 +142,22 @@ class TeleoperationRGBD(Teleoperation):
 
 
 class TeleoperationWithButtons(Teleoperation):
-    def __init__(self, tracker_type: TrackerType, marker_size=[0.06, 0.03], mirror_mode=False):
-        super().__init__(mirror_mode=mirror_mode)
+    def __init__(self, robot_ip: str, tracker_type: TrackerType, marker_size=[0.06, 0.03], mirror_mode=False):
+        super().__init__(robot_ip, mirror_mode)
         self.tracker_type = tracker_type
-        self.stop = True
         self.mode = 0
+        self.camera: Optional[Camera]
 
         if tracker_type == TrackerType.ARUCO:
-            self.camera = Camera()
+            self.camera = RGBCamera()
+            self.stop = False
         elif tracker_type == TrackerType.VIVE:
             self.camera = None
+            self.stop = True
 
         self.controllers = {
             LEFT_ARM: JoystickController(tracker_type, LEFT_ARM, self.camera, marker_size[0], mirror_mode),
-            RIGHT_ARM: JosytickController(tracker_type, RIGHT_ARM, self.camera, marker_size[1], mirror_mode),
+            RIGHT_ARM: JoystickController(tracker_type, RIGHT_ARM, self.camera, marker_size[1], mirror_mode),
         }
 
         self.head_previous_pose = np.eye(3)
@@ -275,9 +283,13 @@ class TeleoperationWithButtons(Teleoperation):
         ]
 
     def step(self):
-        self.manage_mode()
+        # self.manage_mode()
         if not self.stop:
             self.update_robot_state()
+            if tracker_type == TrackerType.ARUCO:
+                frame = self.get_video_streaming()
+                cv2.imshow("Color Viewer", frame)
+                cv2.waitKey(1)
 
     def update_robot_state(self):
         if MODE == DUAL_ARM:
@@ -307,28 +319,28 @@ class TeleoperationWithButtons(Teleoperation):
                     self.robot_previous_pose[controller.arm] = robot_pose
                 self.controller_previous_pose[controller.arm] = pose
 
-            x, y, theta = 0, 0, 0
-            if self.joystick_mode[RIGHT_ARM] == 0:
-                _, r_y = self.joystick_to_mobile_base(
-                    self.controllers[RIGHT_ARM].joystick_x,
-                    self.controllers[RIGHT_ARM].joystick_y,
-                )
-                theta = r_y * 100
+            # x, y, theta = 0, 0, 0
+            # if self.joystick_mode[RIGHT_ARM] == 0:
+            #     _, r_y = self.joystick_to_mobile_base(
+            #         self.controllers[RIGHT_ARM].joystick_x,
+            #         self.controllers[RIGHT_ARM].joystick_y,
+            #     )
+            #     theta = r_y * 100
 
-            else:
-                antenna = self.joystick_to_antenna(self.controllers[RIGHT_ARM].joystick_x, RIGHT_ARM)
-                self.robot.move_antenna(antenna, RIGHT_ARM)
-                self.antenna_previous_position[RIGHT_ARM] = antenna
-            if self.joystick_mode[LEFT_ARM] == 0:
-                x, y = self.joystick_to_mobile_base(
-                    self.controllers[LEFT_ARM].joystick_x,
-                    self.controllers[LEFT_ARM].joystick_y,
-                )
-            else:
-                antenna = self.joystick_to_antenna(self.controllers[LEFT_ARM].joystick_x, LEFT_ARM)
-                self.robot.move_antenna(antenna, LEFT_ARM)
-                self.antenna_previous_position[LEFT_ARM] = antenna
-            self.robot.move_mobile_base(x, y, theta)
+            # else:
+            #     antenna = self.joystick_to_antenna(self.controllers[RIGHT_ARM].joystick_x, RIGHT_ARM)
+            #     self.robot.move_antenna(antenna, RIGHT_ARM)
+            #     self.antenna_previous_position[RIGHT_ARM] = antenna
+            # if self.joystick_mode[LEFT_ARM] == 0:
+            #     x, y = self.joystick_to_mobile_base(
+            #         self.controllers[LEFT_ARM].joystick_x,
+            #         self.controllers[LEFT_ARM].joystick_y,
+            #     )
+            # else:
+            #     antenna = self.joystick_to_antenna(self.controllers[LEFT_ARM].joystick_x, LEFT_ARM)
+            #     self.robot.move_antenna(antenna, LEFT_ARM)
+            #     self.antenna_previous_position[LEFT_ARM] = antenna
+            # self.robot.move_mobile_base(x, y, theta)
 
     def update_single_arm_state(self):
         controller = self.controllers[MODE]
@@ -354,9 +366,27 @@ class TeleoperationWithButtons(Teleoperation):
             self.antenna_previous_position[controller.arm] = antenna
         self.controller_previous_pose[controller.arm] = pose
 
+    def get_video_streaming(self):
+        l_pose = self.controllers[LEFT_ARM].tracker.tracker_pose
+        r_pose = self.controllers[RIGHT_ARM].tracker.tracker_pose
+        frame = self.camera.get_frame_with_cube_pose([l_pose, r_pose])
+        return frame
+
 
 if __name__ == "__main__":
-    teleoperation = TeleoperationRGBD(mirror_mode=False)
+    robot_ip = "localhost"
+    tracker_type = TrackerType.ARUCO
+    marker_size = [0.06, 0.03]
+    mirror_mode = False
+    teleoperation: Teleoperation
+
+    if tracker_type == TrackerType.ARUCO or tracker_type == TrackerType.VIVE:
+        teleoperation = TeleoperationWithButtons(robot_ip, tracker_type, marker_size, mirror_mode)
+    elif tracker_type == TrackerType.RGBD:
+        teleoperation = TeleoperationRGBD(robot_ip, mirror_mode)
+    else:
+        raise ValueError(f"Invalid tracker type: {tracker_type}")
+
     try:
         teleoperation.teleoperation()
 

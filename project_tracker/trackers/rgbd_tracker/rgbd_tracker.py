@@ -5,14 +5,14 @@ from typing import Optional
 import cv2  # type: ignore
 import numpy as np
 from camera.orbbec import Orbbec  # type: ignore
-from controller.filter.filters import (  # type: ignore
+from filter.filters import (  # type: ignore
     KalmanFilter3D,
     MedianFilter,
     RotationSmoother,
 )
-from controller.rgbd_tracker.computer_vision import ComputerVision  # type: ignore
-from controller.tracker import Tracker, TrackerType  # type: ignore
 from reachy2_sdk.utils.utils import recompose_matrix  # type: ignore
+from trackers.rgbd_tracker.computer_vision import ComputerVision  # type: ignore
+from trackers.tracker import Tracker, TrackerType  # type: ignore
 from utils import rotation_matrix_from_vector  # type: ignore
 
 
@@ -24,7 +24,7 @@ class RGBDTracker(Tracker, ABC):
         self.tracker_pose = None
 
     @abstractmethod
-    def get_points(self) -> np.ndarray:
+    def get_points(self):
         pass
 
 

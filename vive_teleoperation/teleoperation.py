@@ -2,11 +2,13 @@ import time
 from controller.controller import Controller
 from robots.reachy2 import Reachy2
 import numpy as np
+import numpy.typing as npt
+from scipy.spatial.transform import Rotation as R, Slerp
 
 DUAL_ARM = "dual_arm"
 LEFT_ARM = "l_arm"
 RIGHT_ARM = "r_arm"
-MODE = RIGHT_ARM
+MODE = DUAL_ARM
 
 
 class Teleoperation:
@@ -115,6 +117,47 @@ class Teleoperation:
         else:
             antenna_position = self.antenna_previous_position[arm]
         return antenna_position
+
+
+    def manage_discontinuity(self, pose: npt.NDArray[np.float64], previous_pose: npt.NDArray[np.float64]) -> npt.NDArray[np.float64]:
+        position = pose[:3, 3]
+        previous_position = previous_pose[:3, 3]
+
+        l_diff = np.linalg.norm(previous_position - position)
+        if l_diff > 0.2:
+            position = previous_position
+
+        elif l_diff > 0.008:
+            diff = position - previous_position
+            diff = diff / np.linalg.norm(diff)
+            diff = diff * 0.008
+            position = previous_position + diff
+        pose[:3, 3] = position
+
+        orientation_quat = R.from_matrix(pose[:3, :3]).as_quat()
+        previous_orientation_quat = R.from_matrix(previous_pose[:3, :3]).as_quat()
+
+        r_current = R.from_quat(orientation_quat)
+        r_prev = R.from_quat(previous_orientation_quat)
+
+        relative_rotation = r_prev.inv() * r_current
+        angle_diff = relative_rotation.magnitude()
+
+        if angle_diff > 1.5:
+            orientation_quat = previous_orientation_quat
+        elif angle_diff > 0.05:
+            key_times = [0, 1]
+            key_rots = R.from_quat([previous_orientation_quat, orientation_quat])
+            slerp = Slerp(key_times, key_rots)
+            interp_ratio = 0.05 / angle_diff 
+            interp_ratio = min(interp_ratio, 1.0)
+            interp_rot = slerp(interp_ratio)  
+            orientation_quat = interp_rot.as_quat()
+
+        pose[:3, :3] = R.from_quat(orientation_quat).as_matrix()
+
+        return pose
+    
 
     def manage_mode(self):
         if MODE == DUAL_ARM:
@@ -225,6 +268,7 @@ class Teleoperation:
                     if self.mode == 2:
                         for controller in self.controllers.values():
                             pose = controller.get_controller_pose()
+                            # pose = self.manage_discontinuity(pose, self.controller_previous_pose[controller.arm])
                             self.controller_previous_pose[controller.arm] = pose
                             self.robot.unfreeze(controller.arm)
                             self.robot_previous_pose[controller.arm] = self.robot.fk(
@@ -247,6 +291,10 @@ class Teleoperation:
                                 )
                                 self.robot.go_to_pose(robot_pose, controller.arm)
                                 self.robot_previous_pose[controller.arm] = robot_pose
+
+                                joint = controller.get_gripper_joint()
+                                gripper_joint = self.trigger_joint_to_gripper_joint(joint, controller.arm)
+                                self.robot.move_gripper(gripper_joint, controller.arm)
 
                             self.controller_previous_pose[controller.arm] = pose
 
@@ -279,6 +327,7 @@ class Teleoperation:
                 elif MODE == RIGHT_ARM or MODE == LEFT_ARM:
                     controller = self.controllers[MODE]
                     pose = controller.get_controller_pose()
+                    # pose = self.manage_discontinuity(pose, self.controller_previous_pose[controller.arm])
                     if self.mode == 0:
                         robot_pose = self.controller_pose_to_robot_pose(
                             pose, controller.arm

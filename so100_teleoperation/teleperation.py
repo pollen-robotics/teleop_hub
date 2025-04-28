@@ -482,7 +482,7 @@ class Teleoperation:
 
 if __name__ == "__main__":
     try:
-        teleop = Teleoperation("/dev/ttyACM4", "192.168.10.109")
+        teleop = Teleoperation("/dev/ttyACM0", "192.168.50.79")
         frequency = 100
 
         # teleop.so100.set_pwm(10)

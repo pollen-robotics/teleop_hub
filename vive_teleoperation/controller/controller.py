@@ -3,6 +3,7 @@ import threading
 
 from controller.arduino import ArduinoController  # type: ignore
 from controller.vive_tracker import ViveTracker  # type: ignore
+from controller.feetech import Feetech  # type: ignore
 
 import numpy as np
 from scipy.spatial.transform import Rotation as R  # type: ignore
@@ -40,8 +41,12 @@ class Controller:
         thread.daemon = True
         thread.start()
 
+        self.feetech = Feetech(feetech_ports[arm])
+        
+
         self.gripper_joints_limit = gripper_joints[arm]
-        # self.init_gripper(self.gripper_joints_limit[1])
+        self.init_gripper(self.gripper_joints_limit[1])
+
 
         self.tracker.update_tracker_pose()
         self.tracker_init_pose = self.tracker.tracker_pose
@@ -49,10 +54,11 @@ class Controller:
 
 
 
-    # def init_gripper(self, joint):
-    #     self.feetech.enable_torque()
-    #     self.feetech.goto_joints([joint], 1)
-    #     self.feetech.disable_torque()
+
+    def init_gripper(self, joint):
+        self.feetech.enable_torque()
+        self.feetech.goto_joints([joint], 1)
+        self.feetech.disable_torque()
 
     def init_controller(self):
         self.tracker.update_tracker_pose()
@@ -77,8 +83,8 @@ class Controller:
                 print("No data")
             time.sleep(0.1)
 
-    # def get_gripper_joint(self):
-    #     return self.feetech.get_joints()[0]
+    def get_gripper_joint(self):
+        return self.feetech.get_joints()[0]
     
     def get_controller_pose(self):
         self.tracker.update_tracker_pose()

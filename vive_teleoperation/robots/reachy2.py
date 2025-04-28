@@ -13,7 +13,7 @@ from reachy2_sdk_api.arm_pb2 import (  # type: ignore
 from reachy2_sdk_api.kinematics_pb2 import Matrix4x4  # type: ignore
 
 IP = "localhost"
-# IP = "192.168.10.106"
+# IP = "192.168.50.79"
 
 
 class Reachy2:

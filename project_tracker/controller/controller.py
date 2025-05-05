@@ -4,6 +4,11 @@ from trackers.tracker import Tracker  # type: ignore
 
 
 class Controller(ABC):
+    """Abstract base class for all controllers.
+
+    This class defines the interface for a controller that interacts with a tracker.
+    """
+
     def __init__(self) -> None:
         self.tracker: Tracker
 

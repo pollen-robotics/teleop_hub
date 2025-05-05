@@ -1,7 +1,7 @@
 import threading
 import time
 from collections import deque
-from typing import Optional
+from typing import Deque, Optional
 
 import cv2  # type: ignore
 import numpy as np
@@ -11,20 +11,20 @@ from utils import load_config  # type: ignore
 
 
 class RGBCamera(Camera):
-    def __init__(self):
-        """Initialize the camera stream.
+    """RGB camera class for color stream.
 
-        Args:
-            usb_mode (bool): If True, use USB camera. If False, use IP camera (such as smartphone).
-            camera_id (str): Camera ID.
-                If usb_mode, this is the camera index ('0' for the integrated one, '-1' for the last plugged one)
-                If not usb_mode, this is the IP address of the camera (for example : '10.0.0.201').
-            with_calibration (bool): If True, use the parameters given by the camera calibration script.
-              If False, use manual camera parameters.
-        """
+    This class is used to get the color stream from a camera.
+    The frames are captured by a thread and stored in a deque with a maximum length of 1.
+    It can be used with a USB camera or an IP camera, and he frames are resized.
+    All the parameters are obtained from the config.yaml file.
+    """
+
+    def __init__(self) -> None:
+        """Initialize the camera stream."""
         super().__init__()
         config = load_config("config.yaml")
 
+        # Get the camera parameters from the config file
         usb_mode = config.get("camera", {}).get("usb_mode", True)
         camera_id = config.get("camera", {}).get("camera_id", "0")
         with_calibration = config.get("camera", {}).get("with_calibration", False)
@@ -35,23 +35,28 @@ class RGBCamera(Camera):
         else:
             self.cap = cv2.VideoCapture(f"http://{camera_id}:8080/video")
 
-        self.frame = deque(maxlen=1)
+        self.frame: Deque = deque(maxlen=1)
+
+        # Start the thread to get the camera frame
         self.frame_getter = threading.Thread(target=self.get_frame, daemon=True)
         self.frame_getter.start()
 
-        self.calibrate_camera(camera_id, with_calibration, config)
+        # Camera calibration to get parameters
+        self.calibrate_camera(with_calibration, config)
 
-    def calibrate_camera(self, camera_id: str, with_calibration: bool, config) -> None:
+    def calibrate_camera(self, with_calibration: bool, config: dict) -> None:
         """Get the camera parameters.
 
         Args:
             with_calibration (bool): If True, use the parameters given by the camera calibration script.
                 If False, use manual camera parameters.
-            camera_id (str): Camera ID (either the camera index or the IP address).
+            config (dict): The configuration dictionary, got from the config.yaml file.
         """
         if with_calibration:
             camera_config = config.get("camera", {})
-            self.camera_matrix = np.array(camera_config["camera_matrix"], dtype=np.float32)
+            self.camera_matrix = np.array(
+                camera_config["camera_matrix"], dtype=np.float32
+            )
             self.dist_coeffs = np.array(camera_config["dist_coeffs"], dtype=np.float32)
 
             # current_dir = os.path.dirname(__file__)
@@ -85,7 +90,8 @@ class RGBCamera(Camera):
     def get_frame(self) -> None:
         """Get the camera frame with post-processing.
 
-        This function runs in a separate thread to avoid blocking the main thread.
+        This function runs in a separate thread to avoid blocking the main thread,
+        and replaces the previous frame with the new one in the deque.
         """
         while True:
             success, frame = self.cap.read()
@@ -99,6 +105,7 @@ class RGBCamera(Camera):
 
         This function is used to enhance the image for better cube detection.
         It applies a Gaussian blur and Canny edge detection to the image.
+
         Args:
             frame: The image frame to process.
         Returns:
@@ -143,7 +150,9 @@ class RGBCamera(Camera):
                 side = "right" if i == 1 else "left"
                 rvec = R.from_matrix(cube_pose[:3, :3]).as_rotvec()
                 tvec = cube_pose[:3, 3]
-                cv2.drawFrameAxes(frame, self.camera_matrix, self.dist_coeffs, rvec, tvec, 0.03)
+                cv2.drawFrameAxes(
+                    frame, self.camera_matrix, self.dist_coeffs, rvec, tvec, 0.03
+                )
 
                 cv2.putText(
                     frame,
@@ -155,7 +164,9 @@ class RGBCamera(Camera):
                     2,
                 )
 
-                roll, pitch, yaw = R.from_matrix(cube_pose[:3, :3]).as_euler("xyz", degrees=True)
+                roll, pitch, yaw = R.from_matrix(cube_pose[:3, :3]).as_euler(
+                    "xyz", degrees=True
+                )
 
                 cv2.putText(
                     frame,

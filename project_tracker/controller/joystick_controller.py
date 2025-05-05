@@ -31,12 +31,27 @@ from utils import (  # type: ignore
 
 
 class JoystickController(Controller):
+    """Joystick controller class.
+
+    This class is responsible for controlling a joystick-type controller, thanks to a tracker object (Vive or ArUco),
+    a Arduino object for the joystick and the buttons, and a Feetech object for the gripper.
+
+    It is a subclass of the Controller class.
+    """
+
     def __init__(
         self,
         tracker_type: TrackerType,
         arm: str,
         camera: Optional[Camera],
     ) -> None:
+        """Initialize the joystick controller.
+
+        Args:
+            tracker_type (TrackerType): The type of tracker to use (Vive or ArUco).
+            arm (str): The arm to control ("l_arm" or "r_arm").
+            camera (Camera, optional): The camera object for ArUco tracking. Defaults to None.
+        """
         super().__init__()
         self.tracker_type = tracker_type
         self.arm = arm
@@ -64,7 +79,9 @@ class JoystickController(Controller):
         # self.buttonB = None
 
         self.stop_flag = False
-        self.gripper_joints_limit = load_config("config.yaml")["gripper_joints_limit"][self.arm]
+        self.gripper_joints_limit = load_config("config.yaml")["gripper_joints_limit"][
+            self.arm
+        ]
 
         # thread = threading.Thread(target=self._update_arduino_data)
         # thread.daemon = True
@@ -78,13 +95,21 @@ class JoystickController(Controller):
     #     self.feetech.goto_joints([joint], 1)
     #     self.feetech.disable_torque()
 
-    def init_controller(self):
+    def init_controller(self) -> None:
+        """Initialize the controller.
+
+        This method initializes the tracker and the gripper.
+        """
         while self.tracker.tracker_pose is None:
             self.tracker.update_tracker_pose()
             time.sleep(0.1)
         self.tracker_init_pose = self.tracker.tracker_pose
 
-    def _update_arduino_data(self):
+    def _update_arduino_data(self) -> None:
+        """Update the Arduino data in a separate thread.
+
+        This method reads the joystick data from the Arduino and updates the joystick position and button states.
+        """
         while not self.stop_flag:
             x, y, button_cmd, buttonA, buttonB = self.arduino.read()
             if x is not None:
@@ -106,7 +131,15 @@ class JoystickController(Controller):
     # def get_gripper_joint(self):
     #     return self.gripper.get_joints()[0]
 
-    def get_controller_pose(self):
+    def get_controller_pose(self) -> Optional[np.ndarray]:
+        """Get the pose of the controller.
+
+        This method updates the tracker pose and converts it to the robot frame.
+        It also applies a filter to the pose if required.
+
+        Returns:
+            Optional[np.ndarray]: The pose of the controller in the robot frame.
+        """
         self.tracker.update_tracker_pose()
         pose = self.tracker.tracker_pose
 
@@ -116,7 +149,17 @@ class JoystickController(Controller):
         self.former_pose = pose
         return pose
 
-    def convert_pose(self, pose):
+    def convert_pose(self, pose: np.ndarray) -> np.ndarray:
+        """Convert the pose from the tracker to the robot frame.
+
+        This method applies a transformation to the pose based on the tracker type
+        and the arm being controlled.
+
+        Args:
+            pose (np.ndarray): The pose to be converted.
+        Returns:
+            np.ndarray: The converted pose.
+        """
         if self.tracker_init_pose is None:
             return pose
 
@@ -127,12 +170,23 @@ class JoystickController(Controller):
             relative_pose = self.convert_for_vive_tracker(relative_pose)
 
         elif self.tracker_type == TrackerType.ARUCO:
-            T_cam_to_reachy = np.array([[0, 0, -1, 0], [1, 0, 0, 0], [0, -1, 0, 0], [0, 0, 0, 1]])
+            T_cam_to_reachy = np.array(
+                [[0, 0, -1, 0], [1, 0, 0, 0], [0, -1, 0, 0], [0, 0, 0, 1]]
+            )
             relative_pose = T_cam_to_reachy @ relative_pose
 
         return relative_pose
 
-    def convert_for_vive_tracker(self, pose):
+    def convert_for_vive_tracker(self, pose: np.ndarray) -> np.ndarray:
+        """Convert the pose for the Vive tracker.
+
+        This method applies a transformation to the pose based on the arm being controlled.
+
+        Args:
+            pose (np.ndarray): The pose to be converted.
+        Returns:
+            np.ndarray: The converted pose.
+        """
         if self.arm == "r_arm":
             angle_rotation = -30
         else:
@@ -154,21 +208,11 @@ class JoystickController(Controller):
 
         return pose
 
-    # def get_gripper_command(self):
-    #     opening = self.gripper.update_gripper_opening()
-    #     if opening is None:
-    #         return None
+    def stop(self) -> None:
+        """Stop the controller.
 
-    #     if opening < 1:
-    #         command = 0
-    #     elif opening > 1.2:
-    #         command = 1
-    #     else:
-    #         command = None
-
-    #     return command
-
-    def stop(self):
+        This method stops the tracker and closes the Arduino connection.
+        """
         self.stop_flag = True
         # self.arduino.close()
         self.tracker.stop()

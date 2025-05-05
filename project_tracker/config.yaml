@@ -1,5 +1,5 @@
 robot_ip: "localhost"
-control_mode: "dual_arm"  # options: dual_arm, left_arm, right_arm
+control_mode: "l_arm"  # options: dual_arm, l_arm, r_arm
 tracker_type: "aruco"  # options: aruco, vive, rgbd
 mirror_mode: false
 
@@ -37,7 +37,7 @@ marker_ids:
 camera:
   usb_mode: true
   camera_id: "0"
-  with_calibration: true
+  with_calibration: false
 
   camera_matrix:
     -   - 720.5567465155845

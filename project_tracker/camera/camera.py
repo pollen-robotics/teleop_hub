@@ -13,6 +13,6 @@ class Camera(ABC):
     @abstractmethod
     def get_frame(self):
         """
-        Update the tracker pose.
+        Get the current frame from the camera.
         """
         pass

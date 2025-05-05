@@ -14,15 +14,15 @@ class ArucoCube(Tracker):
     """Class to detect and track an ArUco cube."""
 
     def __init__(self, arm: str, camera: RGBCamera) -> None:
-        """Initialize the ArUco cube.
+        """Initialize the ArUco cube Tracker.
 
         Args:
-            camera (Camera): Camera object to get the frame.
-            marker_size (float): Size of the markers in meters.
             arm (str): Corresponding arm for teleoperation. Either "l_arm" or "r_arm".
+            camera (Camera): Camera object to get the frame.
         """
-        super().__init__(arm)
+        super().__init__()
         self.tracker_type = TrackerType.ARUCO
+        self.arm = arm
 
         config = load_config("config.yaml")
 
@@ -36,17 +36,19 @@ class ArucoCube(Tracker):
         aruco_param = aruco.DetectorParameters()
         self.detector = aruco.ArucoDetector(self.aruco_dict, aruco_param)
 
-        self.cube = None
         self.define_cube(self.marker_ids)
-
-        self.markers_dict: dict = {}
-
-        print(f"Cube initialized with arm: {self.arm}, marker size: {self.marker_size}, marker ids: {self.marker_ids}")
 
     def define_cube(self, marker_ids) -> None:
         """Define the cube with specific markers, depending on the arm."""
         c_pt = self.marker_size / 2
-        back_marker, up_marker, left_marker, down_marker, right_marker, front_marker = marker_ids
+        (
+            back_marker,
+            up_marker,
+            left_marker,
+            down_marker,
+            right_marker,
+            front_marker,
+        ) = marker_ids
         self.cube_ids = np.array(
             [
                 back_marker,
@@ -112,7 +114,7 @@ class ArucoCube(Tracker):
                 ],
                 dtype=np.float32,
             ),  # front face
-        ]  # 0,1,2,3,4,5
+        ]
 
         self.cube = aruco.Board(self.cube_corners, self.aruco_dict, self.cube_ids)
 
@@ -165,7 +167,9 @@ class ArucoCube(Tracker):
         marker_corners, marker_ids, _ = self.detector.detectMarkers(self.frame)
         return marker_corners, marker_ids
 
-    def estimate_PoseSingleMarkers(self, corners: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+    def estimate_PoseSingleMarkers(
+        self, corners: np.ndarray
+    ) -> tuple[np.ndarray, np.ndarray]:
         """Estimate the pose of single markers.
 
         Args:

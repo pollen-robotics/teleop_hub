@@ -59,7 +59,9 @@ def make_homogenous_matrix_from_rotation_matrix(rotation_matrix, position):
     return matrix
 
 
-def limit_orbita3d_joints(joints: list[float], orbita3D_max_angle: float) -> list[float]:
+def limit_orbita3d_joints(
+    joints: list[float], orbita3D_max_angle: float
+) -> list[float]:
     """Casts the 3 orientations to ensure the orientation is reachable by an Orbita3D,
     i.e. casting into Orbita's cone.
     """

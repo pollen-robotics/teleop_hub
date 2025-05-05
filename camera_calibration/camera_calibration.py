@@ -14,9 +14,13 @@ SQUARES_X = 11  # Number of squares horizontally
 SQUARES_Y = 8  # Number of squares vertically
 SQUARE_LENGTH = 20.75  # Square side length (in mm)
 MARKER_LENGTH = 15.58  # ArUco marker side length (in mm)
-LEGACY_PATTERN = True  # True if the board starts with a black box in the upper left corner
+LEGACY_PATTERN = (
+    True  # True if the board starts with a black box in the upper left corner
+)
 
-CONFIG_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "project_tracker", "config.yaml"))
+CONFIG_PATH = os.path.abspath(
+    os.path.join(os.path.dirname(__file__), "..", "project_tracker", "config.yaml")
+)
 
 
 def get_camera_capture(usb_cam: bool = True, cam_id: str = "0") -> cv2.VideoCapture:
@@ -25,7 +29,7 @@ def get_camera_capture(usb_cam: bool = True, cam_id: str = "0") -> cv2.VideoCapt
 
     Args:
         - usb_cam: True if using a USB camera, False if using an IP camera
-        - cam_id: Camera ID or IP address
+        - cam_id: Camera ID (order index, integrated webcam is '0') or IP address
 
     Returns:
         - cap: The camera capture object
@@ -36,14 +40,18 @@ def get_camera_capture(usb_cam: bool = True, cam_id: str = "0") -> cv2.VideoCapt
             print("Using USB camera with ID:", cam_index)
             cap = cv2.VideoCapture(cam_index)
         except Exception:
-            print("Error: Unable to open USB camera. Camera ID needs to be the device index.")
+            print(
+                "Error: Unable to open USB camera. Camera ID needs to be the device index."
+            )
             return None
     else:
         try:
             cam_ip = f"http://{cam_id}:8080/video"
             cap = cv2.VideoCapture(cam_ip)
         except Exception:
-            print("Error: Unable to open IP camera. Please check the IP address of your camera.")
+            print(
+                "Error: Unable to open IP camera. Please check the IP address of your camera."
+            )
             return None
     return cap
 
@@ -72,7 +80,9 @@ def define_aruco_tools(
         - detector: The ArUco detector
     """
     aruco_dict = cv2.aruco.getPredefinedDictionary(aruco_dict)
-    board = cv2.aruco.CharucoBoard((squares_x, squares_y), square_length, marker_length, aruco_dict)
+    board = cv2.aruco.CharucoBoard(
+        (squares_x, squares_y), square_length, marker_length, aruco_dict
+    )
     board.setLegacyPattern(legacy_pattern)
     params = cv2.aruco.DetectorParameters()
     detector = cv2.aruco.ArucoDetector(aruco_dict, params)
@@ -100,7 +110,9 @@ def extract_marker_info(
             image, board, marker_corners, marker_ids, rejected_corners
         )
 
-        marker_centers = np.mean([np.mean(corner, axis=1) for corner in marker_corners], axis=0)
+        marker_centers = np.mean(
+            [np.mean(corner, axis=1) for corner in marker_corners], axis=0
+        )
 
     return marker_corners, marker_ids, marker_centers
 
@@ -147,7 +159,9 @@ def is_far_enough(
     """
     if last_marker_center is None:
         return True
-    return bool(np.linalg.norm(marker_centers - last_marker_center) > movement_threshold)
+    return bool(
+        np.linalg.norm(marker_centers - last_marker_center) > movement_threshold
+    )
 
 
 def get_calibration_parameters(
@@ -187,9 +201,13 @@ def get_calibration_parameters(
             continue
 
         gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-        marker_corners, marker_ids, marker_centers = extract_marker_info(gray, detector, board)
+        marker_corners, marker_ids, marker_centers = extract_marker_info(
+            gray, detector, board
+        )
 
-        if marker_centers is not None and is_far_enough(marker_centers, last_marker_center, movement_threshold):
+        if marker_centers is not None and is_far_enough(
+            marker_centers, last_marker_center, movement_threshold
+        ):
             ret, charucoCorners, charucoIds = cv2.aruco.interpolateCornersCharuco(
                 marker_corners, marker_ids, gray, board
             )
@@ -205,7 +223,9 @@ def get_calibration_parameters(
         cv2.imshow("image", image)
         cv2.waitKey(1)
 
-    all_charuco_corners = [np.array(corner, dtype=np.float32) for corner in all_charuco_corners]
+    all_charuco_corners = [
+        np.array(corner, dtype=np.float32) for corner in all_charuco_corners
+    ]
     all_charuco_ids = [np.array(ids, dtype=np.int32) for ids in all_charuco_ids]
 
     # Calibrate camera with extracted information
@@ -286,8 +306,9 @@ def main(
     time.sleep(3)
     print("Camera capture initialized.")
 
-    camera_matrix, dist_coeffs = get_calibration_parameters(cap, images_nb, board, detector)
-    # save_calibration_parameters(camera_matrix, dist_coeffs, cam_id)
+    camera_matrix, dist_coeffs = get_calibration_parameters(
+        cap, images_nb, board, detector
+    )
     update_config(
         CONFIG_PATH,
         {
@@ -303,15 +324,21 @@ def main(
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Camera Calibration using Charuco board")
+    parser = argparse.ArgumentParser(
+        description="Camera Calibration using Charuco board"
+    )
     parser.add_argument(
         "--usb_cam",
         type=bool,
         default=True,
         help="USB camera (True) or IP camera (False) mode",
     )
-    parser.add_argument("--cam_id", type=str, default="0", help="Camera index or IP address")
-    parser.add_argument("--images_nb", type=int, default=20, help="Number of images for calibration")
+    parser.add_argument(
+        "--cam_id", type=str, default="0", help="Camera index or IP address"
+    )
+    parser.add_argument(
+        "--images_nb", type=int, default=20, help="Number of images for calibration"
+    )
     parser.add_argument(
         "--aruco_dict",
         type=int,

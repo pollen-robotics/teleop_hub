@@ -1,6 +1,7 @@
 robot_ip: "localhost"
-control_mode: "l_arm"  # options: dual_arm, l_arm, r_arm
+fake_only: true  # Security to avoid sending command to a real robot if not wanted
 tracker_type: "aruco"  # options: aruco, vive, rgbd
+control_mode: "l_arm"  # options: dual_arm, l_arm, r_arm
 mirror_mode: false
 
 ## For RGBD
@@ -31,8 +32,8 @@ marker_size:
   r_arm: 0.03
 
 marker_ids:
-  r_arm: [0, 1, 2, 3, 4, 5]
-  l_arm: [6, 7, 8, 11, 9, 10] # back, up, left, down, right, front
+  l_arm: [6, 7, 8, 11, 9, 10] 
+  r_arm: [0, 1, 2, 3, 4, 5] # back, up, left, down, right, front
 
 camera:
   usb_mode: true

@@ -67,6 +67,7 @@ class TeleoperationRGBD(Teleoperation):
         Loads the configuration from a YAML file and initializes the robot and controllers.
         """
         super().__init__()
+
         self.camera = Orbbec()
         self.computer_vision = ComputerVision(self.camera)
         self.controllers = {
@@ -82,6 +83,8 @@ class TeleoperationRGBD(Teleoperation):
         Initializes the robot and controllers, and waits for the first command to be valid.
         """
         self.robot.init_robot()
+
+        # check that the command is in a specific area before starting the teleoperation
         while not self.first_command_ok:
             self.computer_vision.update_landmarks_coordinates(True)
             l_pose = self.controllers[LEFT_ARM].get_controller_pose()

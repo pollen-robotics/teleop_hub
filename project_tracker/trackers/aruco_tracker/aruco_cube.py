@@ -23,40 +23,41 @@ class ArucoCube(Tracker):
         super().__init__()
         self.tracker_type = TrackerType.ARUCO
         self.arm = arm
-
-        config = load_config("config.yaml")
-
         self.camera = camera
         self.frame: Optional[np.ndarray] = None
 
+        # get the marker parameters from the config file
+        config = load_config("config.yaml")
         self.marker_size = config.get("marker_size", {}).get(self.arm, 0.05)
         self.marker_ids = config.get("marker_ids", {}).get(self.arm, [0, 1, 2, 3, 4, 5])
 
+        # instanciate the aruco detector
         self.aruco_dict = aruco.getPredefinedDictionary(aruco.DICT_6X6_1000)
         aruco_param = aruco.DetectorParameters()
         self.detector = aruco.ArucoDetector(self.aruco_dict, aruco_param)
 
-        self.define_cube(self.marker_ids)
+        self._define_cube(self.marker_ids)
 
-    def define_cube(self, marker_ids) -> None:
+    def _define_cube(self, marker_ids) -> None:
         """Define the cube with specific markers, depending on the arm."""
         c_pt = self.marker_size / 2
         (
             back_marker,
             up_marker,
-            left_marker,
-            down_marker,
-            right_marker,
             front_marker,
+            left_marker,
+            right_marker,
+            down_marker,
         ) = marker_ids
+
         self.cube_ids = np.array(
             [
                 back_marker,
                 up_marker,
-                left_marker,
-                down_marker,
-                right_marker,
                 front_marker,
+                left_marker,
+                right_marker,
+                down_marker,
             ]
         )
         self.cube_corners = [
@@ -68,7 +69,7 @@ class ArucoCube(Tracker):
                     [-c_pt, -c_pt, c_pt],
                 ],
                 dtype=np.float32,
-            ),  # back face (left corner at the right bottom)
+            ),  # back face
             np.array(
                 [
                     [-c_pt, -c_pt, c_pt],
@@ -80,6 +81,15 @@ class ArucoCube(Tracker):
             ),  # up face
             np.array(
                 [
+                    [-c_pt, -c_pt, -c_pt],
+                    [c_pt, -c_pt, -c_pt],
+                    [c_pt, c_pt, -c_pt],
+                    [-c_pt, c_pt, -c_pt],
+                ],
+                dtype=np.float32,
+            ),  # front face
+            np.array(
+                [
                     [-c_pt, c_pt, -c_pt],
                     [-c_pt, c_pt, c_pt],
                     [-c_pt, -c_pt, c_pt],
@@ -87,15 +97,6 @@ class ArucoCube(Tracker):
                 ],
                 dtype=np.float32,
             ),  # left face
-            np.array(
-                [
-                    [-c_pt, c_pt, -c_pt],
-                    [c_pt, c_pt, -c_pt],
-                    [c_pt, c_pt, c_pt],
-                    [-c_pt, c_pt, c_pt],
-                ],
-                dtype=np.float32,
-            ),  # down face
             np.array(
                 [
                     [c_pt, c_pt, c_pt],
@@ -107,13 +108,13 @@ class ArucoCube(Tracker):
             ),  # right face
             np.array(
                 [
-                    [-c_pt, -c_pt, -c_pt],
-                    [c_pt, -c_pt, -c_pt],
-                    [c_pt, c_pt, -c_pt],
                     [-c_pt, c_pt, -c_pt],
+                    [c_pt, c_pt, -c_pt],
+                    [c_pt, c_pt, c_pt],
+                    [-c_pt, c_pt, c_pt],
                 ],
                 dtype=np.float32,
-            ),  # front face
+            ),  # down face
         ]
 
         self.cube = aruco.Board(self.cube_corners, self.aruco_dict, self.cube_ids)
@@ -127,13 +128,13 @@ class ArucoCube(Tracker):
             tracker_pose (np.ndarray): The pose of the cube in the camera frame.
         """
         try:
-            self.frame = self.camera.frame[0]
+            self.frame = self.camera.color_frame[0]
         except IndexError:
             time.sleep(0.01)
             print("No frame")
             return None
 
-        markers_corners, markers_ids = self.detect_markers()
+        markers_corners, markers_ids = self._detect_markers()
 
         if markers_ids is not None and len(markers_ids) > 0:
             markers_ids = np.array(markers_ids, dtype=np.int32)
@@ -157,7 +158,7 @@ class ArucoCube(Tracker):
 
         return self.tracker_pose
 
-    def detect_markers(self) -> tuple[np.ndarray, np.ndarray]:
+    def _detect_markers(self) -> tuple[np.ndarray, np.ndarray]:
         """Detect markers in the current frame.
 
         Returns:
@@ -167,9 +168,7 @@ class ArucoCube(Tracker):
         marker_corners, marker_ids, _ = self.detector.detectMarkers(self.frame)
         return marker_corners, marker_ids
 
-    def estimate_PoseSingleMarkers(
-        self, corners: np.ndarray
-    ) -> tuple[np.ndarray, np.ndarray]:
+    def _estimate_PoseSingleMarkers(self, corners: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
         """Estimate the pose of single markers.
 
         Args:
@@ -213,7 +212,7 @@ class ArucoCube(Tracker):
         markers_dict = {}
 
         if marker_ids is not None:
-            rvecs, tvecs = self.estimate_PoseSingleMarkers(marker_corners)
+            rvecs, tvecs = self._estimate_PoseSingleMarkers(marker_corners)
 
             for i, marker_id in enumerate(marker_ids):
                 markers_dict[marker_id[0]] = {

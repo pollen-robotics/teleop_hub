@@ -1,7 +1,5 @@
 import argparse
 import json
-
-# import json
 import os
 import time
 from typing import Optional
@@ -10,23 +8,33 @@ import cv2  # type: ignore
 import numpy as np
 from config_utils import update_config
 
+# Parameters for the ChArUco board
+# ---------------------------------
 ARUCO_DICT = cv2.aruco.DICT_4X4_1000  # Dictionary ID
 SQUARES_X = 11  # Number of squares horizontally
 SQUARES_Y = 8  # Number of squares vertically
 SQUARE_LENGTH = 20.75  # Square side length (in mm)
 MARKER_LENGTH = 15.58  # ArUco marker side length (in mm)
 LEGACY_PATTERN = True  # True if the board starts with a black box in the upper left corner
+# ---------------------------------
 
+# Parameters for the calibration
+# ---------------------------------
+IMAGES_NB = 20  # Number of images to capture for calibration
+MOVEMENT_THRESHOLD = 100  # Threshold for significant movement
+# ---------------------------------
+
+
+# Path to the teleoperation configuration file
 CONFIG_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "project_tracker", "config.yaml"))
 
 
-def get_camera_capture(usb_cam: bool = True, cam_id: str = "0") -> cv2.VideoCapture:
-    """
-    Get the camera capture based on the camera type (USB or IP).
+def get_camera_capture(usb_cam: bool, cam_id: str) -> cv2.VideoCapture:
+    """Get the camera capture based on the camera type (USB or IP), and its id.
 
     Args:
         - usb_cam: True if using a USB camera, False if using an IP camera
-        - cam_id: Camera ID (order index, integrated webcam is '0') or IP address
+        - cam_id: Camera index (order index, integrated webcam is '0') or IP address
 
     Returns:
         - cap: The camera capture object
@@ -50,15 +58,14 @@ def get_camera_capture(usb_cam: bool = True, cam_id: str = "0") -> cv2.VideoCapt
 
 
 def define_aruco_tools(
-    aruco_dict: cv2.aruco.Dictionary = ARUCO_DICT,
-    squares_x: int = SQUARES_X,
-    squares_y: int = SQUARES_Y,
-    square_length: float = SQUARE_LENGTH,
-    marker_length: float = MARKER_LENGTH,
-    legacy_pattern: bool = LEGACY_PATTERN,
+    aruco_dict: cv2.aruco.Dictionary,
+    squares_x: int,
+    squares_y: int,
+    square_length: float,
+    marker_length: float,
+    legacy_pattern: bool,
 ) -> tuple[cv2.aruco.CharucoBoard, cv2.aruco.ArucoDetector]:
-    """
-    Define the ArUco board and detector with the given parameters.
+    """Define the ArUco board and detector with the given parameters.
 
     Args:
         - aruco_dict: ArUco Dictionary ID
@@ -83,12 +90,12 @@ def define_aruco_tools(
 def extract_marker_info(
     image: np.ndarray, detector: cv2.aruco.ArucoDetector, board: cv2.aruco.CharucoBoard
 ) -> tuple[Optional[np.ndarray], Optional[np.ndarray], Optional[np.ndarray]]:
-    """
-    Extract marker information from the image using the ArUco detector.
+    """Extract marker information from the image using the ArUco detector.
 
     Args:
         - image: The input image in grayscale
         - detector: The ArUco detector
+        - board: The defined chArUco board
 
     Returns:
         - marker_corners: The detected marker corners
@@ -112,8 +119,7 @@ def extract_charuco_info(
     marker_corners: np.ndarray,
     marker_ids: np.ndarray,
 ) -> tuple[Optional[int], Optional[np.ndarray], Optional[np.ndarray]]:
-    """
-    Extract Charuco corners from the image using the ArUco detector.
+    """Extract Charuco corners from the image using the ArUco detector.
 
     Args:
         - image: The input image
@@ -126,7 +132,6 @@ def extract_charuco_info(
         - charucoCorners: The detected Charuco corners
         - charucoIds: The detected Charuco IDs
     """
-    print("extract_charuco_info")
     return cv2.aruco.interpolateCornersCharuco(marker_corners, marker_ids, image, board)
 
 
@@ -135,8 +140,7 @@ def is_far_enough(
     last_marker_center: Optional[np.ndarray],
     movement_threshold: int,
 ) -> bool:
-    """
-    Check if the detected marker centers are far enough from the last detected center.
+    """Check if the detected marker centers are far enough from the last detected centers.
 
     Args:
         - marker_centers: The detected marker centers
@@ -153,22 +157,21 @@ def is_far_enough(
 
 def get_calibration_parameters(
     cap,
-    images_nb: int = 20,
-    board: cv2.aruco.CharucoBoard = None,
-    detector: cv2.aruco.ArucoDetector = None,
+    images_nb: int,
+    board: cv2.aruco.CharucoBoard,
+    detector: cv2.aruco.ArucoDetector,
 ) -> tuple[np.ndarray, np.ndarray]:
-    """
-    Get camera matrix and distorsion coefficients using a Charuco board.
+    """Get camera matrix and distorsion coefficients using a Charuco board.
+
     Uses several images with the board in different positions to calibrate the camera.
     The board needs to be in different positions, angles and distances to the camera.
 
     Args:
         - usb_cam : True if using a USB camera, False if using an IP camera (such as a smartphone)
-            Defaults to True.
         - cam_id:
             - device index for USB camera ('0' for the integrated one, '-1' for the last plugged one)
             - IP address of the camera for IP camera
-        - images_nb: Number of images to capture for calibration. Defaults to 20.
+        - images_nb: Number of images to capture for calibration.
 
     Returns:
         - camera_matrix: Camera intrinsic matrix (3x3)
@@ -179,7 +182,7 @@ def get_calibration_parameters(
 
     # Define a threshold to capture images only if the board moves significantly
     last_marker_center = None
-    movement_threshold = 100
+    movement_threshold = MOVEMENT_THRESHOLD
 
     # Loop over images and extraction of corners
     while image_id < images_nb:
@@ -218,9 +221,10 @@ def get_calibration_parameters(
 
 
 def save_calibration_parameters(camera_matrix: np.ndarray, dist_coeffs: np.ndarray, filename: str) -> None:
-    """
-    Save camera matrix and distortion coefficients in a JSON file. It will be saved in the
-    camera_parameters folder with the name of the camera.
+    """Save camera matrix and distortion coefficients in a JSON file and in the teleoperation config file.
+
+    It will be saved in the camera_parameters folder with the name of the camera
+    and replaces the camera parameters in the teleoperation config.yaml file.
 
     Args:
         - camera_matrix: Camera intrinsic matrix (3x3)
@@ -235,12 +239,11 @@ def save_calibration_parameters(camera_matrix: np.ndarray, dist_coeffs: np.ndarr
         "camera_matrix": camera_matrix.tolist(),
         "dist_coeffs": dist_coeffs.tolist(),
     }
-    # if the file already exists, replace the old values
 
     if not os.path.exists(camera_parameters_dir):
         os.makedirs(camera_parameters_dir)
-    # if the file already exists, replace the old values
-    # if the file does not exist, create it
+
+    # if the file already exists, replace the old values, else, create it
     mode = "w" if os.path.exists(filepath) else "w+"
     with open(filepath, mode) as f:
         json.dump(camera_params, f)
@@ -250,7 +253,7 @@ def save_calibration_parameters(camera_matrix: np.ndarray, dist_coeffs: np.ndarr
 def main(
     usb_cam: bool = True,
     cam_id: str = "0",
-    images_nb: int = 20,
+    images_nb: int = IMAGES_NB,
     aruco_dict: cv2.aruco.Dictionary = ARUCO_DICT,
     squares_x: int = SQUARES_X,
     squares_y: int = SQUARES_Y,
@@ -261,14 +264,14 @@ def main(
     """
     Main function to calibrate the camera using a Charuco board and get the camera matrix and
     distortion coefficients. It will save the parameters in a JSON file in the camera_parameters
-    folder with the name of the camera.
+    folder with the name of the camera and replace the camera parameters in the teleoperation config.yaml file.
 
     Args:
         - usb_cam: True if using a USB camera, False if using an IP camera (such as a smartphone)
         - cam_id:
             - device index for USB camera ('0' for the integrated one, '-1' for the last plugged one)
             - IP address of the camera for IP camera
-        - images_nb: Number of images to capture for calibration. Defaults to 20.
+        - images_nb: Number of images to capture for calibration.
         - aruco_dict: ArUco Dictionary ID
         - squares_x: Number of squares horizontally on the board
         - squares_y: Number of squares vertically on the board
@@ -312,55 +315,12 @@ if __name__ == "__main__":
         help="USB camera (True) or IP camera (False) mode",
     )
     parser.add_argument("--cam_id", type=str, default="0", help="Camera index or IP address")
-    parser.add_argument("--images_nb", type=int, default=20, help="Number of images for calibration")
-    parser.add_argument(
-        "--aruco_dict",
-        type=int,
-        default=ARUCO_DICT,
-        help="ArUco Dictionary ID",
-    )
-    parser.add_argument(
-        "--squares_x",
-        type=int,
-        default=SQUARES_X,
-        help="Number of squares horizontally",
-    )
-    parser.add_argument(
-        "--squares_y",
-        type=int,
-        default=SQUARES_Y,
-        help="Number of squares vertically",
-    )
-    parser.add_argument(
-        "--square_length",
-        type=float,
-        default=SQUARE_LENGTH,
-        help="Square side length (in mm)",
-    )
-    parser.add_argument(
-        "--marker_length",
-        type=float,
-        default=MARKER_LENGTH,
-        help="ArUco marker side length (in mm)",
-    )
-    parser.add_argument(
-        "--legacy_pattern",
-        type=bool,
-        default=LEGACY_PATTERN,
-        help="Legacy pattern for board",
-    )
+
     args = parser.parse_args()
 
     main(
         usb_cam=args.usb_cam,
         cam_id=args.cam_id,
-        images_nb=args.images_nb,
-        aruco_dict=args.aruco_dict,
-        squares_x=args.squares_x,
-        squares_y=args.squares_y,
-        square_length=args.square_length,
-        marker_length=args.marker_length,
-        legacy_pattern=args.legacy_pattern,
     )
 
     cv2.destroyAllWindows()

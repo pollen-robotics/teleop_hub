@@ -14,8 +14,10 @@ class Controller(ABC):
 
     @abstractmethod
     def get_controller_pose(self):
+        """Get the pose of the controller in the robot frame."""
         pass
 
     @abstractmethod
     def convert_pose(self, pose):
+        """Convert the pose of the tracker in the robot frame."""
         pass

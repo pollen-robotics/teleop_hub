@@ -3,10 +3,8 @@ import os
 from ruamel.yaml import YAML  # type: ignore
 
 
-def update_config(path: str, updates: dict):
-    """
-    Update a YAML config file (preserving comments and order) with new values.
-    """
+def update_config(path: str, updates: dict) -> None:
+    """Update a YAML config file (preserving comments and order) with new values."""
     if not os.path.exists(path):
         raise FileNotFoundError(f"Config file not found at {path}")
 

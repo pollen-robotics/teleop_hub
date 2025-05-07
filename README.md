@@ -19,6 +19,11 @@ They all have their pros and cons, which you can read about in the article, or f
 
 ## How to install this repository ?
 
+1. Clone this repository 
+
+<code> git clone blablabla </code>
+
+2. Install the dependencies 
 
 ```bash
 sudo cp 11-noVR.setup.rules /etc/udev/rules.d/
@@ -43,7 +48,7 @@ The first 5 lines are essential to set-up the project :
 
 - **robot_ip & fake_only**: 
 	
-    You can change *localhost* for the ip address of your robot  - *if you don't know how to find your Reachy2's IP adgress, go [there](https://pollen-robotics.github.io/reachy2-docs/developing-with-reachy-2/getting-started-sdk/connect-reachy2/)*. 
+    You can change *localhost* for the ip address of your robot  - *if you don't know how to find your Reachy2's IP address, go [there](https://pollen-robotics.github.io/reachy2-docs/developing-with-reachy-2/getting-started-sdk/connect-reachy2/)*. 
 
 	The fake_only parameter is a security that ensures that you only connect to a robot in simulation mode. 
     > If you enter an IP address that corresponds to a robot in real mode (i.e. it is the physical robot that is supposed to be moving), the connection will not be made. 

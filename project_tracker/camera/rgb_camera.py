@@ -1,7 +1,6 @@
 import threading
 import time
-from collections import deque
-from typing import Deque, Optional
+from typing import Optional
 
 import cv2  # type: ignore
 import numpy as np
@@ -15,27 +14,27 @@ class RGBCamera(Camera):
 
     This class is used to get the color stream from a camera.
     The frames are captured by a thread and stored in a deque with a maximum length of 1.
-    It can be used with a USB camera or an IP camera, and he frames are resized.
+    It can be used with a USB camera or an IP camera, and the frames are resized.
     All the parameters are obtained from the config.yaml file.
     """
 
     def __init__(self) -> None:
         """Initialize the camera stream."""
         super().__init__()
-        config = load_config("config.yaml")
 
         # Get the camera parameters from the config file
+        config = load_config("config.yaml")
+
         usb_mode = config.get("camera", {}).get("usb_mode", True)
         camera_id = config.get("camera", {}).get("camera_id", "0")
         with_calibration = config.get("camera", {}).get("with_calibration", False)
 
+        # get the capture device
         if usb_mode:
             camera_index = int(camera_id) if camera_id else 0
             self.cap = cv2.VideoCapture(camera_index)
         else:
             self.cap = cv2.VideoCapture(f"http://{camera_id}:8080/video")
-
-        self.frame: Deque = deque(maxlen=1)
 
         # Start the thread to get the camera frame
         self.frame_getter = threading.Thread(target=self.get_frame, daemon=True)
@@ -54,33 +53,15 @@ class RGBCamera(Camera):
         """
         if with_calibration:
             camera_config = config.get("camera", {})
-            self.camera_matrix = np.array(
-                camera_config["camera_matrix"], dtype=np.float32
-            )
+            self.camera_matrix = np.array(camera_config["camera_matrix"], dtype=np.float32)
             self.dist_coeffs = np.array(camera_config["dist_coeffs"], dtype=np.float32)
 
-            # current_dir = os.path.dirname(__file__)
-            # json_path = os.path.join(
-            #     current_dir,
-            #     "..",
-            #     "camera_calibration",
-            #     "camera_parameters",
-            #     f"camera_{camera_id}.json",
-            # )
-            # json_path = os.path.abspath(json_path)
-
-            # with open(json_path, "r") as f:
-            #     camera_params = json.load(f)
-
-            #     self.camera_matrix = np.array(camera_params["camera_matrix"], dtype=np.float32)
-            #     self.dist_coeffs = np.array(camera_params["dist_coeffs"], dtype=np.float32)
-
         else:
-            while len(self.frame) == 0:
+            while len(self.color_frame) == 0:
                 time.sleep(0.05)
-            frame = self.frame[0]
-            focal_length = frame.shape[1]
-            center = (frame.shape[1] / 2, frame.shape[0] / 2)
+            frame_shape = self.color_frame[0].shape
+            focal_length = frame_shape[1]
+            center = (frame_shape[1] / 2, frame_shape[0] / 2)
             self.camera_matrix = np.array(
                 [[focal_length, 0, center[0]], [0, focal_length, center[1]], [0, 0, 1]],
                 dtype="double",
@@ -96,11 +77,11 @@ class RGBCamera(Camera):
         while True:
             success, frame = self.cap.read()
             if success:
-                frame_processed = self.post_process_image(frame)
-                self.frame.append(frame_processed)
+                frame_processed = self._post_process_image(frame)
+                self.color_frame.append(frame_processed)
             time.sleep(0.005)
 
-    def post_process_image(self, frame: np.ndarray) -> np.ndarray:
+    def _post_process_image(self, frame: np.ndarray) -> np.ndarray:
         """Post-process the image.
 
         This function is used to enhance the image for better cube detection.
@@ -141,18 +122,16 @@ class RGBCamera(Camera):
         Returns:
             The frame with the cube infos.
         """
-        if len(self.frame) == 0:
+        if len(self.color_frame) == 0:
             return None
 
-        frame = self.frame[0]
+        frame = self.color_frame[0]
         for i, cube_pose in enumerate(cube_pose_list):
             if cube_pose is not None:
                 side = "right" if i == 1 else "left"
                 rvec = R.from_matrix(cube_pose[:3, :3]).as_rotvec()
                 tvec = cube_pose[:3, 3]
-                cv2.drawFrameAxes(
-                    frame, self.camera_matrix, self.dist_coeffs, rvec, tvec, 0.03
-                )
+                cv2.drawFrameAxes(frame, self.camera_matrix, self.dist_coeffs, rvec, tvec, 0.03)
 
                 cv2.putText(
                     frame,
@@ -164,9 +143,7 @@ class RGBCamera(Camera):
                     2,
                 )
 
-                roll, pitch, yaw = R.from_matrix(cube_pose[:3, :3]).as_euler(
-                    "xyz", degrees=True
-                )
+                roll, pitch, yaw = R.from_matrix(cube_pose[:3, :3]).as_euler("xyz", degrees=True)
 
                 cv2.putText(
                     frame,
@@ -193,7 +170,7 @@ class RGBCamera(Camera):
         Returns:
             The frame with the markers infos.
         """
-        frame = self.frame[0]
+        frame = self.color_frame[0]
         for marker_id, data in markers_dict.items():
             rvec = data["rvec"]
             tvec = data["tvec"]

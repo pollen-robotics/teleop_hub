@@ -6,7 +6,11 @@ from scipy.spatial.transform import Rotation as R  # type: ignore
 
 
 def normalize_angle(angle: float) -> float:
-    """Normalize an angle to the range [-180, 180]."""
+    """Normalize an angle to the range [-180, 180].
+    Args:
+        angle (float): The angle to normalize.
+    Returns:
+        float: The normalized angle."""
     while angle > 180:
         angle -= 360
     while angle < -180:
@@ -15,13 +19,25 @@ def normalize_angle(angle: float) -> float:
 
 
 def normalize_vector(v):
-    """Normalize a vector and handle the case where the norm is zero."""
+    """Normalize a vector and handle the case where the norm is zero.
+
+    Args:
+        v (np.ndarray): The vector to normalize.
+    Returns:
+        np.ndarray: The normalized vector or the original vector if the norm is zero.
+    """
     norm = np.linalg.norm(v)
     return v / norm if norm > 1e-6 else v
 
 
 def rotation_matrix_from_vector(vect: np.ndarray) -> np.ndarray:
-    """Compute the rotation matrix aligning [0, 1, 0] to the given vect."""
+    """Compute the rotation matrix aligning [0, 1, 0] to the given vect.
+
+    Args:
+        vect (np.ndarray): The vector to align with.
+    Returns:
+        np.ndarray: The rotation matrix.
+    """
     vect1 = np.array([0, 1, 0])
     eps = 1e-6  # tolerance for numerical stability
 
@@ -51,19 +67,30 @@ def rotation_matrix_from_vector(vect: np.ndarray) -> np.ndarray:
     return rotation_matrix
 
 
-def make_homogenous_matrix_from_rotation_matrix(rotation_matrix, position):
-    """Convert a 3x3 rotation matrix to a 4x4 homogenous matrix."""
+def make_homogenous_matrix_from_rotation_matrix(rotation_matrix: np.ndarray, position: np.ndarray) -> np.ndarray:
+    """Convert a 3x3 rotation matrix to a 4x4 homogenous matrix.
+
+    Args:
+        rotation_matrix (np.ndarray): The 3x3 rotation matrix.
+        position (np.ndarray): The 3D position vector.
+    Returns:
+        np.ndarray: The 4x4 homogenous matrix.
+    """
     matrix = np.eye(4)
     matrix[:3, :3] = rotation_matrix
     matrix[:3, 3] = position
     return matrix
 
 
-def limit_orbita3d_joints(
-    joints: list[float], orbita3D_max_angle: float
-) -> list[float]:
+def limit_orbita3d_joints(joints: list[float], orbita3D_max_angle: float) -> list[float]:
     """Casts the 3 orientations to ensure the orientation is reachable by an Orbita3D,
     i.e. casting into Orbita's cone.
+
+    Args:
+        joints (list[float]): The list of joint angles.
+        orbita3D_max_angle (float): The maximum angle for the Orbita3D.
+    Returns:
+        list[float]: The limited joint angles.
     """
     joints = copy.deepcopy(joints)
     rotation = R.from_euler("XYZ", [joints[0], joints[1], joints[2]], degrees=False)
@@ -75,7 +102,13 @@ def limit_orbita3d_joints(
     return joints
 
 
-def load_config(path="config.yaml"):
+def load_config(path: str = "config.yaml") -> dict:
+    """Load a YAML configuration file.
+    Args:
+        path (str): The path to the configuration file.
+    Returns:
+        dict: The loaded configuration as a dictionary.
+    """
     with open(path, "r") as file:
         config = yaml.safe_load(file)
     return config

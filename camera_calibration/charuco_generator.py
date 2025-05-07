@@ -1,16 +1,19 @@
 import cv2  # type: ignore
 
 # Parameters for the ChArUco board
+# -----------------------------------
 ARUCO_DICT = cv2.aruco.DICT_4X4_1000
-SQUARES_X = 11
-SQUARES_Y = 8
-SQUARE_LENGTH = 20.75
-MARKER_LENGTH = 15.58
+SQUARES_X = 11  # number of columns
+SQUARES_Y = 8  # number of rows
+SQUARE_LENGTH = 20.75  # size of the squares in mm
+MARKER_LENGTH = 15.58  # size of the markers in mm
 LENGTH_PX = 1200  # total length of the page in pixels
 MARGIN_PX = 20  # size of the margin in pixels
+# -----------------------------------
 
 
-def generate_charuco_board():
+def generate_charuco_board() -> None:
+    """Generate a ChArUco board image, display it and save it as 'charuco_board.png'."""
     dictionary = cv2.aruco.getPredefinedDictionary(ARUCO_DICT)
     board = cv2.aruco.CharucoBoard(
         (SQUARES_X, SQUARES_Y),

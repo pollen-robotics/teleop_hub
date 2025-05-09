@@ -19,7 +19,10 @@ arduino_ports = {
     "r_arm": "/dev/noVR_right_arduino",
 }
 
-gripper_joints = {"l_arm": [65, 30], "r_arm": [-65, -30]}
+# gripper_joints = {"l_arm": [65, 30], "r_arm": [-65, -30]}
+
+gripper_joints = {"l_arm": [360, 550], "r_arm": [360, 550]}
+
 
 
 class Controller:
@@ -35,6 +38,7 @@ class Controller:
         self.joystick_button = None
         self.buttonA = None
         self.buttonB = None
+        self.gripper = None
 
         thread = threading.Thread(target=self._update_arduino_data)
         thread.daemon = True
@@ -60,9 +64,10 @@ class Controller:
 
     def _update_arduino_data(self):
         while not self.stop_flag:
-            x, y, button_cmd, buttonA, buttonB = self.arduino.read()
+            x, y, button_cmd, buttonA, buttonB, potentiometer = self.arduino.read()
             if x is not None:
                 self.joystick_button = button_cmd
+                self.gripper = potentiometer
                 if self.arm == "r_arm":
                     self.buttonA = buttonA
                     self.buttonB = buttonB
@@ -79,7 +84,8 @@ class Controller:
 
     # def get_gripper_joint(self):
     #     return self.feetech.get_joints()[0]
-    
+
+
     def get_controller_pose(self):
         self.tracker.update_tracker_pose()
         pose = self.tracker.tracker_pose

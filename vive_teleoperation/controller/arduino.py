@@ -16,10 +16,11 @@ class ArduinoController:
             button_cmd = int(values[2])
             buttonA = int(values[3])
             buttonB = int(values[4])
+            potentiometer = int(values[5])
 
-            return x_input, y_input, button_cmd, buttonA, buttonB
+            return x_input, y_input, button_cmd, buttonA, buttonB, potentiometer
 
-        return None, None, None, None, None
+        return None, None, None, None, None, None
 
     def close(self):
         self.ser.close()
@@ -28,10 +29,10 @@ class ArduinoController:
 if __name__ == "__main__":
     arduino = ArduinoController("/dev/noVR_right_arduino")
     while True:
-        x, y, button_cmd, buttonA, buttonB = arduino.read()
+        x, y, button_cmd, buttonA, buttonB, potentiometer = arduino.read()
         if x is not None:
             print(
-                f"x: {x}, y: {y}, button_cmd: {button_cmd}, buttonA: {buttonA}, buttonB: {buttonB}"
+                f"x: {x}, y: {y}, button_cmd: {button_cmd}, buttonA: {buttonA}, buttonB: {buttonB}, potentiometer: {potentiometer}"
             )
         else:
             print("No data")

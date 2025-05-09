@@ -88,9 +88,9 @@ class Teleoperation:
 
     def trigger_joint_to_gripper_joint(self, joint, arm):
         if arm == "r_arm":
-            min_joint, max_joint = -60, -15
+            min_joint, max_joint = 360, 550
         else:
-            min_joint, max_joint = 60, 15
+            min_joint, max_joint = 360, 550
         min_gripper, max_gripper = 0, 130
         gripper_opening = ((joint - min_joint) / (max_joint - min_joint)) * (
             max_gripper - min_gripper
@@ -250,6 +250,7 @@ class Teleoperation:
 
                             self.controller_previous_pose[controller.arm] = pose
 
+
                         x, y, theta = 0, 0, 0
                         if self.joystick_mode[RIGHT_ARM] == 0:
                             _, r_y = self.joystick_to_mobile_base(
@@ -295,6 +296,11 @@ class Teleoperation:
                             x = joystick_x
                             theta = joystick_y * 100
                         self.robot.move_mobile_base(x, y, theta)
+                        gripper_joint = self.trigger_joint_to_gripper_joint(
+                            controller.gripper, controller.arm
+                        )
+                        self.robot.move_gripper(gripper_joint, controller.arm)
+
                     elif self.mode == 1:
                         head_orientation = self.controller_to_head_orientation(
                             pose, controller.arm

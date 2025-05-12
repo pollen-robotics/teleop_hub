@@ -10,10 +10,12 @@ from filter.filters import (  # type: ignore
     MedianFilter,
     RotationSmoother,
 )
-from reachy2_sdk.utils.utils import recompose_matrix  # type: ignore
 from trackers.rgbd_tracker.computer_vision import ComputerVision  # type: ignore
 from trackers.tracker import Tracker, TrackerType  # type: ignore
-from utils import rotation_matrix_from_vector  # type: ignore
+from utils import (  # type: ignore
+    make_homogenous_matrix_from_rotation_matrix,
+    rotation_matrix_from_vector,
+)
 
 
 class RGBDTracker(Tracker, ABC):
@@ -88,12 +90,10 @@ class ArmRGBDTracker(RGBDTracker):
         wrist_position_filtered = self.kalman_filters[1].update(wrist_position)
 
         # get the rotation matrix from the vector elbow-wrist
-        wrist_rotation = rotation_matrix_from_vector(
-            wrist_position_filtered - elbow_position_filtered
-        )
+        wrist_rotation = rotation_matrix_from_vector(wrist_position_filtered - elbow_position_filtered)
         wrist_rotation_filtered = self.rotation_smoother.update(wrist_rotation)
 
-        self.tracker_pose = recompose_matrix(
+        self.tracker_pose = make_homogenous_matrix_from_rotation_matrix(
             wrist_rotation_filtered, wrist_position_filtered
         )
 
@@ -151,10 +151,7 @@ class GripperRGBDTracker(RGBDTracker):
         index_mcp = hand_points[2]
         index_tip = hand_points[3]
 
-        opening = float(
-            np.linalg.norm(index_tip - thumb_tip)
-            / np.linalg.norm(index_mcp - thumb_mcp)
-        )
+        opening = float(np.linalg.norm(index_tip - thumb_tip) / np.linalg.norm(index_mcp - thumb_mcp))
         opening_filtered = self.mf_gripper.update(opening)
         return opening_filtered
 

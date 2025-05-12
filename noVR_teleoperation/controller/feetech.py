@@ -3,8 +3,6 @@ import time
 
 from pypot.feetech import FeetechSTS3215IO  # type: ignore
 
-# from lerobot.common.utils.kinematics import RobotKinematics
-
 
 class Feetech:
     """Feetech class for controlling the Feetech servo motors, used for the gripper commands.
@@ -117,9 +115,7 @@ class Feetech:
         steps = int(duration * freq)
         current_position = self.get_position(id)
         for i in range(steps):
-            self.set_position(
-                id, current_position + (position - current_position) * i / steps
-            )
+            self.set_position(id, current_position + (position - current_position) * i / steps)
             time.sleep(1 / freq)
         self.set_position(id, position)
 
@@ -137,8 +133,7 @@ class Feetech:
             for j in range(1, len(self.ids) + 1):
                 self.set_position(
                     j,
-                    current_positions[j - 1]
-                    + (joints[j - 1] - current_positions[j - 1]) * i / steps,
+                    current_positions[j - 1] + (joints[j - 1] - current_positions[j - 1]) * i / steps,
                 )
             time.sleep(1 / freq)
         for j in range(1, len(self.ids) + 1):

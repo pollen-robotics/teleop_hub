@@ -1,163 +1,12 @@
-import time
-from abc import ABC, abstractmethod
 from typing import Optional
 
-import cv2  # type: ignore
 import numpy as np
 from camera.camera import Camera  # type: ignore
-from camera.orbbec import Orbbec  # type: ignore
 from camera.rgb_camera import RGBCamera  # type: ignore
 from controller.joystick_controller import JoystickController  # type: ignore
-from controller.rgbd_controller import ArmRGBDController, HeadRGBDController
-from robots.reachy import Reachy2
-from trackers.rgbd_tracker.computer_vision import ComputerVision  # type: ignore
+from teleoperation_mode.teleoperation import Teleoperation  # type: ignore
+from teleoperation_mode.teleoperation import DUAL_ARM, LEFT_ARM, RIGHT_ARM
 from trackers.tracker import TrackerType  # type: ignore
-from utils import load_config
-
-DUAL_ARM = "dual_arm"
-LEFT_ARM = "l_arm"
-RIGHT_ARM = "r_arm"
-
-
-class Teleoperation(ABC):
-    """Base class for teleoperation with Reachy2 robot."""
-
-    def __init__(self) -> None:
-        """Initialize the teleoperation class.
-
-        Loads the configuration from a YAML file and initializes the robot and controllers.
-        """
-        config = load_config("config.yaml")
-        robot_ip = config.get("robot_ip", "localhost")
-        mirror_mode = config.get("mirror_mode", False)
-        self.control_mode = config.get("control_mode", "dual_arm")
-
-        self.robot = Reachy2(robot_ip, mirror_mode)
-        self.controllers: dict = {}
-        self.controller_previous_pose = {LEFT_ARM: np.eye(4), RIGHT_ARM: np.eye(4)}
-        self.robot_previous_pose = {LEFT_ARM: np.eye(4), RIGHT_ARM: np.eye(4)}
-
-    @abstractmethod
-    def init_teleoperation(self) -> None:
-        pass
-
-    def teleoperation(self) -> None:
-        """Main loop for teleoperation.
-
-        Initializes the teleoperation and enters a loop that calls the `step()` method at a fixed frequency.
-        """
-        self.init_teleoperation()
-        frequency = 100
-        while True:
-            t = time.time()
-            self.step()
-            time.sleep(max(0, 1 / frequency - (time.time() - t)))
-
-    @abstractmethod
-    def step(self):
-        pass
-
-
-class TeleoperationRGBD(Teleoperation):
-    """Teleoperation class with RGBD-type tracker."""
-
-    def __init__(self) -> None:
-        """Initialize the teleoperation class.
-
-        Loads the configuration from a YAML file and initializes the robot and controllers.
-        """
-        super().__init__()
-
-        self.camera = Orbbec()
-        self.computer_vision = ComputerVision(self.camera)
-        self.controllers = {
-            LEFT_ARM: ArmRGBDController(self.computer_vision, LEFT_ARM),
-            RIGHT_ARM: ArmRGBDController(self.computer_vision, RIGHT_ARM),
-        }
-        self.head_controller = HeadRGBDController(self.computer_vision)
-        self.first_command_ok = False
-
-    def init_teleoperation(self) -> None:
-        """Initialize the teleoperation.
-
-        Initializes the robot and controllers, and waits for the first command to be valid.
-        """
-        self.robot.init_robot()
-
-        # check that the command is in a specific area before starting the teleoperation
-        while not self.first_command_ok:
-            self.computer_vision.update_landmarks_coordinates(True)
-            l_pose = self.controllers[LEFT_ARM].get_controller_pose()
-            r_pose = self.controllers[RIGHT_ARM].get_controller_pose()
-            if self.is_first_command_ok(l_pose, False) and self.is_first_command_ok(r_pose, True):
-                self.first_command_ok = True
-            else:
-                print(f"l_pose: {l_pose[:3,3]}, r_pose: {r_pose[:3,3]}")
-                time.sleep(0.05)
-
-    def is_first_command_ok(self, pose: np.ndarray, is_for_r_arm: bool) -> bool:
-        """Check if the first command is in a specific area.
-
-        Args:
-            pose (np.ndarray): The pose of the controller.
-            is_for_r_arm (bool): True if the pose is for the right arm, False if for the left arm.
-        Returns:
-            bool: True if the first command is valid, False otherwise.
-        """
-        if pose is None:
-            return False
-        # check if the first command is in the cube : x 0,2/O,35 y 0,15/0.3 z -0,35/-0.2
-        command = pose[:3, 3]
-        if is_for_r_arm:
-            command[1] = -command[1]
-        if (
-            command[0] < 0.35
-            and command[0] > 0.2
-            and command[1] < 0.3
-            and command[1] > 0.15
-            and command[2] < -0.15
-            and command[2] > -0.35
-        ):
-            return True
-        return False
-
-    def step(self) -> None:
-        """Step called at each iteration of the teleoperation loop.
-
-        Update the robot's state (arms, grippers, head), check for stop flag, and visualize the landmarks.
-        """
-        if self.head_controller.stop_flag:
-            for controller in self.controllers.values():
-                controller.stop()
-            self.robot.stop()
-            return
-
-        self.computer_vision.update_landmarks_coordinates(True)
-
-        for controller in self.controllers.values():
-            pose = controller.get_controller_pose()
-            self.robot.go_to_pose(pose, controller.arm)
-            self.controller_previous_pose[controller.arm] = pose
-            gripper_command = controller.get_gripper_command()
-            if gripper_command is not None:
-                self.robot.move_gripper(controller.arm, False, gripper_command)
-        head_pose = self.head_controller.get_controller_pose()
-        self.robot.move_head(head_pose)
-
-        rpy = self.head_controller.former_rpy[-1]
-
-        color_frame = self.computer_vision.camera.color_frame[0]
-        frame = self.computer_vision.visualization_landmarks(
-            color_frame,
-            self.controller_previous_pose[LEFT_ARM],
-            self.controller_previous_pose[RIGHT_ARM],
-            rpy[0],
-            rpy[1],
-            rpy[2],
-            text_on=True,
-        )
-        cv2.imshow("Color Viewer", frame)
-        cv2.waitKey(1)
 
 
 class JoystickTeleoperation(Teleoperation):
@@ -175,8 +24,12 @@ class JoystickTeleoperation(Teleoperation):
         self.camera: Optional[Camera]
 
         if tracker_type == TrackerType.ARUCO:
+            import cv2  # type: ignore
+
+            self.cv2 = cv2
             self.camera = RGBCamera()
             self.stop = False
+
         elif tracker_type == TrackerType.VIVE:
             self.camera = None
             self.stop = True
@@ -402,10 +255,10 @@ class JoystickTeleoperation(Teleoperation):
         # self.manage_mode()
         if not self.stop:
             self.update_robot_state()
-            if tracker_type == TrackerType.ARUCO and isinstance(self.camera, RGBCamera):
+            if self.tracker_type == TrackerType.ARUCO and isinstance(self.camera, RGBCamera):
                 frame = self.get_video_streaming()
-                cv2.imshow("Color Viewer", frame)
-                cv2.waitKey(1)
+                self.cv2.imshow("Color Viewer", frame)
+                self.cv2.waitKey(1)
 
     def update_robot_state(self) -> None:
         """Update the robot state based on the current control mode.
@@ -492,7 +345,7 @@ class JoystickTeleoperation(Teleoperation):
         self.controller_previous_pose[controller.arm] = pose
 
     def get_video_streaming(self) -> Optional[np.ndarray]:
-        """Get the video streaming from the Orbbec camera with the poses of the left and right ArUco cubes.
+        """Get the video streaming from the camera with the poses of the left and right ArUco cubes.
 
         Returns:
             np.ndarray: The camera frame with the poses of the left and right cubes.
@@ -511,26 +364,3 @@ class JoystickTeleoperation(Teleoperation):
             return frame
         else:
             raise AttributeError("Camera is not initialized or does not support 'get_frame_with_cube_pose'")
-
-
-if __name__ == "__main__":
-    config = load_config("config.yaml")
-    tracker_type_str = config.get("tracker_type", TrackerType.ARUCO).upper()
-    tracker_type = getattr(TrackerType, tracker_type_str, None)
-
-    teleoperation: Teleoperation
-
-    if tracker_type == TrackerType.ARUCO or tracker_type == TrackerType.VIVE:
-        teleoperation = JoystickTeleoperation(tracker_type)
-    elif tracker_type == TrackerType.RGBD:
-        teleoperation = TeleoperationRGBD()
-    else:
-        raise ValueError(f"Invalid tracker type: {tracker_type}")
-
-    try:
-        teleoperation.teleoperation()
-
-    except KeyboardInterrupt:
-        for controller in teleoperation.controllers.values():
-            controller.stop()
-        teleoperation.robot.stop()

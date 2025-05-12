@@ -5,7 +5,6 @@ from typing import Deque, Optional
 
 import numpy as np
 from controller.controller import Controller  # type: ignore
-from reachy2_sdk.utils.utils import recompose_matrix  # type: ignore
 from scipy.spatial.transform import Rotation as R  # type: ignore
 from trackers.rgbd_tracker.computer_vision import ComputerVision  # type: ignore
 from trackers.rgbd_tracker.rgbd_tracker import (  # type: ignore
@@ -13,6 +12,7 @@ from trackers.rgbd_tracker.rgbd_tracker import (  # type: ignore
     GripperRGBDTracker,
     HeadRGBDTracker,
 )
+from utils import make_homogenous_matrix_from_rotation_matrix  # type: ignore
 
 
 class RGBDController(Controller, ABC):
@@ -37,9 +37,7 @@ class RGBDController(Controller, ABC):
             time.sleep(0.2)
         self.user_center = self.computer_vision.user_center
         real_dist_intershoulder = 0.3
-        self.normalization_factor = (
-            real_dist_intershoulder / self.computer_vision.dist_intershoulder
-        )
+        self.normalization_factor = real_dist_intershoulder / self.computer_vision.dist_intershoulder
 
     def get_controller_pose(self) -> np.ndarray:
         """Get the pose of the RGBD tracker.
@@ -149,9 +147,7 @@ class ArmRGBDController(RGBDController):
             np.ndarray: The converted pose.
         """
         corrected_rotation = self.computer_vision.T_world_camera @ pose[:3, :3]
-        corrected_position = self.computer_vision.T_world_camera @ (
-            pose[:3, 3] - self.user_center
-        )
+        corrected_position = self.computer_vision.T_world_camera @ (pose[:3, 3] - self.user_center)
 
         normalized_position = corrected_position * self.normalization_factor
 
@@ -164,7 +160,7 @@ class ArmRGBDController(RGBDController):
         T_cam_to_reachy = np.array([[0, 0, -1], [1, 0, 0], [0, -1, 0]])
         new_rotation = T_cam_to_reachy @ corrected_rotation @ T_cam_to_reachy.T
 
-        new_pose = recompose_matrix(new_rotation, new_position)
+        new_pose = make_homogenous_matrix_from_rotation_matrix(new_rotation, new_position)
 
         return new_pose
 

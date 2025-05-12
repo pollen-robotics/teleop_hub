@@ -79,16 +79,16 @@ class Orbbec(Camera):
 
         if align_mode == "HW":
             if device_pid == 0x066B:
-                self.config._set_align_mode(OBAlignMode.SW_MODE)
+                self.config.set_align_mode(OBAlignMode.SW_MODE)
                 print("Alignment mode : Software (auto for Femto Mega)")
             else:
-                self.config._set_align_mode(OBAlignMode.HW_MODE)
+                self.config.set_align_mode(OBAlignMode.HW_MODE)
                 print("Alignment mode : Hardware")
         elif align_mode == "SW":
-            self.config._set_align_mode(OBAlignMode.SW_MODE)
+            self.config.set_align_mode(OBAlignMode.SW_MODE)
             print("Alignment mode : Software")
         else:
-            self.config._set_align_mode(OBAlignMode.DISABLE)
+            self.config.set_align_mode(OBAlignMode.DISABLE)
             print("Alignment deactivated")
 
         if enable_sync:

@@ -3,6 +3,8 @@ from typing import Optional
 
 import serial  # type: ignore
 
+FEETECH_GRIPPER = "feetech"
+POTENTIOMETER_GRIPPER = "potentiometer"
 
 class ArduinoController:
     """
@@ -10,7 +12,7 @@ class ArduinoController:
     It reads the joystick input and button states from the Arduino.
     """
 
-    def __init__(self, port: str):
+    def __init__(self, port: str, gripper_type: str) -> None:
         """Initializes the ArduinoController with the specified serial port.
 
         Args :
@@ -18,6 +20,7 @@ class ArduinoController:
         """
         self.ser = serial.Serial(port, 9600)
         self.ser.flushInput()
+        self.gripper_type = gripper_type
 
     def read(
         self,
@@ -38,10 +41,14 @@ class ArduinoController:
             button_cmd = int(values[2])
             buttonA = int(values[3])
             buttonB = int(values[4])
-            potentiometer = int(values[5])
+            if self.gripper_type == FEETECH_GRIPPER:
+                return x_input, y_input, button_cmd, buttonA, buttonB, 
+            else:
+                potentiometer = int(values[5])
+                return x_input, y_input, button_cmd, buttonA, buttonB, potentiometer
 
-            return x_input, y_input, button_cmd, buttonA, buttonB, potentiometer
-
+        if self.gripper_type == FEETECH_GRIPPER:
+            return None, None, None, None, None
         return None, None, None, None, None, None
 
     def close(self) -> None:

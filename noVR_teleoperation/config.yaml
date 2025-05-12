@@ -1,6 +1,7 @@
 robot_ip: "localhost"
 fake_only: true  # Security to avoid sending command to a real robot if not wanted
 tracker_type: "vive"  # options: aruco, vive, rgbd
+gripper_type: "potentiometer" # options: feetech, potentiometer 
 control_mode: "r_arm"  # options: dual_arm, l_arm, r_arm
 mirror_mode: false
 
@@ -12,9 +13,13 @@ feetech_ports:
   l_arm: "/dev/noVR_left_motor"
   r_arm: "/dev/noVR_right_motor"
 
-gripper_joints_limit:
+feetech_gripper_joints_limit:
   l_arm: [65, 20]
   r_arm: [-65, -20]
+
+potentiometer_gripper_joints_limit:
+  l_arm: [600, 790]
+  r_arm: [600, 790]
 
 ## For Arduino commands
 arduino_ports:

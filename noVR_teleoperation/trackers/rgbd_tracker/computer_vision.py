@@ -8,16 +8,16 @@ from camera.camera import Camera  # type: ignore
 from camera.orbbec import Orbbec  # type: ignore
 from scipy.spatial.transform import Rotation as R  # type: ignore
 
+# Constants for the landmark indices, based on the MediaPipe Holistic model
+# Face : Nose tip, Chin, Left eye left corner, Right eye right corner
+# Hand : Thumb mcp, thumb tip, index mcp, index tip
+# ---------------------------------------------------------------------------
 SHOULDER_CST = [11, 12]
 ELBOWS_CST = [13, 14]
 WRISTS_CST = [19, 20]
-FACELANDMARKS_CST = [
-    1,
-    152,
-    33,
-    263,
-]  # Nose tip, Chin, Left eye left corner, Right eye right corner
-HANDLANDMARKS_CST = [2, 4, 5, 8]  # thumb mcp, thumb tip, index mcp, index tip
+FACELANDMARKS_CST = [1, 152, 33, 263]
+HANDLANDMARKS_CST = [2, 4, 5, 8]
+# ---------------------------------------------------------------------------
 
 
 class ComputerVision:
@@ -32,7 +32,7 @@ class ComputerVision:
                 This is used to align the camera with the user.
         """
         self.camera = camera
-        self.image_shape = camera.image_shape
+        self.image_shape = self.camera.image_shape
         self.up_mode = up_mode
 
         # Initialize MediaPipe Holistic
@@ -43,11 +43,12 @@ class ComputerVision:
             smooth_landmarks=True,
             refine_face_landmarks=False,
         )
+
         self._initialize_landmarks()
         self.user_center = np.zeros(3)
         self.T_world_camera = np.eye(3)
 
-        self.get_user_parameters()
+        self._get_user_parameters()
 
         if self.up_mode:
             self.calibrate()
@@ -62,6 +63,73 @@ class ComputerVision:
         self.face_points = np.zeros((len(FACELANDMARKS_CST), 3))
         self.left_hand_points = np.zeros((len(HANDLANDMARKS_CST), 3))
         self.right_hand_points = np.zeros((len(HANDLANDMARKS_CST), 3))
+
+    def get_frames(self) -> Tuple[np.ndarray, np.ndarray]:
+        """Get the color and depth frames from the camera.
+
+        Returns:
+            Tuple[np.ndarray, np.ndarray]: The color and depth frames.
+        """
+        color_frame = self.camera.color_frame[0]
+        depth_frame = self.camera.depth_frame[0]
+        return color_frame, depth_frame
+
+    def process_frame(self, color_frame: np.ndarray) -> Optional[mp.solutions.holistic.Holistic]:
+        """Process the color frame with MediaPipe Holistic.
+
+        Returns:
+            Optional[mp.solutions.holistic.Holistic]: The results of the MediaPipe Holistic processing.
+        """
+        return self.holistic.process(cv2.cvtColor(color_frame, cv2.COLOR_BGR2RGB))
+
+    def _get_user_parameters(self) -> None:
+        """Get the user parameters (shoulder distance and user center)."""
+        dist_intershoulder_list: list = []
+        user_center_list: list = []
+        nb_frames = 10
+
+        # Get the distance between the shoulders as the median of the last 10 frames
+        while len(dist_intershoulder_list) < nb_frames:
+            try:
+                color_frame, depth_frame = self.get_frames()
+            except Exception as e:
+                print(f"Error getting frames: {e}")
+                continue
+
+            results = self.process_frame(color_frame)
+            if not results:
+                continue
+
+            body_landmarks = self._get_2D_landmarks(results.pose_landmarks)
+            if body_landmarks is not None:
+                dist_intershoulder_list.append(
+                    np.linalg.norm(body_landmarks[SHOULDER_CST[0]] - body_landmarks[SHOULDER_CST[1]])
+                )
+
+        self.dist_intershoulder = np.median(dist_intershoulder_list)
+        self.normalization_factor = self.dist_intershoulder / 0.3
+
+        # then, get the user center as the median of the last 10 frames
+        while len(user_center_list) < nb_frames:
+            try:
+                color_frame, depth_frame = self.get_frames()
+            except Exception:
+                continue
+
+            results = self.process_frame(color_frame)
+            if not results:
+                continue
+
+            body_landmarks = self._get_2D_landmarks(results.pose_landmarks)
+            if body_landmarks is not None:
+                left_shoulder, right_shoulder = self._get_3D_landmarks_with_depth(
+                    body_landmarks, depth_frame, SHOULDER_CST
+                )
+                if left_shoulder is not None and right_shoulder is not None:
+                    user_center = (left_shoulder + right_shoulder) / 2.0
+                    user_center_list.append(user_center)
+
+        self.user_center = np.median(user_center_list, axis=0).reshape(3)
 
     def calibrate(self, nb_frames: int = 30) -> None:
         """Calibrate the camera to get the angle between the shoulders and the forehead.
@@ -91,15 +159,9 @@ class ComputerVision:
                 left_shoulder, right_shoulder = self._get_3D_landmarks_with_depth(
                     body_landmarks, depth_frame, SHOULDER_CST
                 )
-                forehead = self._get_3D_landmarks_with_depth(
-                    face_landmarks, depth_frame, [10]
-                )[0]
+                forehead = self._get_3D_landmarks_with_depth(face_landmarks, depth_frame, [10])[0]
 
-                if (
-                    left_shoulder is not None
-                    and right_shoulder is not None
-                    and forehead is not None
-                ):
+                if left_shoulder is not None and right_shoulder is not None and forehead is not None:
                     shoulders_tab[ite] = np.vstack((left_shoulder, right_shoulder))
                     forehead_tab[ite] = forehead
                     ite += 1
@@ -114,79 +176,6 @@ class ComputerVision:
 
         print(f"Camera orientation angle: {np.degrees(angle):.2f}")
         self.T_world_camera = R.from_euler("x", -angle, degrees=False).as_matrix()
-
-    def get_frames(self) -> Tuple[np.ndarray, np.ndarray]:
-        """Get the color and depth frames from the camera.
-
-        Returns:
-            Tuple[np.ndarray, np.ndarray]: The color and depth frames.
-        """
-        color_frame = self.camera.color_frame[0]
-        depth_frame = self.camera.depth_frame[0]
-        return color_frame, depth_frame
-
-    def process_frame(
-        self, color_frame: np.ndarray
-    ) -> Optional[mp.solutions.holistic.Holistic]:
-        """Process the color frame with MediaPipe Holistic.
-
-        Returns:
-            Optional[mp.solutions.holistic.Holistic]: The results of the MediaPipe Holistic processing.
-        """
-        return self.holistic.process(cv2.cvtColor(color_frame, cv2.COLOR_BGR2RGB))
-
-    def get_user_parameters(self) -> None:
-        """Get the user parameters (shoulder distance and user center)."""
-        print("Get user parameters")
-        dist_intershoulder_list: list = []
-        user_center_list: list = []
-        nb_frames = 10
-
-        # Get the distance between the shoulders as the median of the last 10 frames
-        while len(dist_intershoulder_list) < nb_frames:
-            try:
-                color_frame, depth_frame = self.get_frames()
-            except Exception as e:
-                print(f"Error getting frames: {e}")
-                continue
-
-            results = self.process_frame(color_frame)
-            if not results:
-                continue
-
-            body_landmarks = self._get_2D_landmarks(results.pose_landmarks)
-            if body_landmarks is not None:
-                dist_intershoulder_list.append(
-                    np.linalg.norm(
-                        body_landmarks[SHOULDER_CST[0]]
-                        - body_landmarks[SHOULDER_CST[1]]
-                    )
-                )
-
-        self.dist_intershoulder = np.median(dist_intershoulder_list)
-        self.normalization_factor = self.dist_intershoulder / 0.3
-
-        # then, get the user center as the median of the last 10 frames
-        while len(user_center_list) < nb_frames:
-            try:
-                color_frame, depth_frame = self.get_frames()
-            except Exception:
-                continue
-
-            results = self.process_frame(color_frame)
-            if not results:
-                continue
-
-            body_landmarks = self._get_2D_landmarks(results.pose_landmarks)
-            if body_landmarks is not None:
-                left_shoulder, right_shoulder = self._get_3D_landmarks_with_depth(
-                    body_landmarks, depth_frame, SHOULDER_CST
-                )
-                if left_shoulder is not None and right_shoulder is not None:
-                    user_center = (left_shoulder + right_shoulder) / 2.0
-                    user_center_list.append(user_center)
-
-        self.user_center = np.median(user_center_list, axis=0).reshape(3)
 
     def update_landmarks_coordinates(self, fixed_user: bool = True) -> bool:
         """Update the coordinates of the landmarks.
@@ -231,9 +220,7 @@ class ComputerVision:
         """
         if original_landmarks is None:
             return None
-        original_landmarks = np.array(
-            [(lm.x, lm.y) for lm in original_landmarks.landmark]
-        )
+        original_landmarks = np.array([(lm.x, lm.y) for lm in original_landmarks.landmark])
         x_init = (original_landmarks[:, 0] * self.image_shape[1]).astype(int)
         y_init = (original_landmarks[:, 1] * self.image_shape[0]).astype(int)
         x = np.clip(x_init, 0, self.image_shape[1] - 1)
@@ -251,9 +238,7 @@ class ComputerVision:
         if original_landmarks is None:
             return None
 
-        original_landmarks = np.array(
-            [(lm.x, lm.y, lm.z) for lm in original_landmarks.landmark]
-        )
+        original_landmarks = np.array([(lm.x, lm.y, lm.z) for lm in original_landmarks.landmark])
         x_init = (original_landmarks[:, 0] * self.image_shape[1]).astype(int)
         y_init = (original_landmarks[:, 1] * self.image_shape[0]).astype(int)
         z = (original_landmarks[:, 2] * self.image_shape[1]).astype(int)
@@ -278,9 +263,7 @@ class ComputerVision:
         for index in indices:
             landmark = landmarks[index]
             if landmark is not None:
-                landmark_3D = self._estimate_3D_landmark_with_depth(
-                    landmark, depth_frame
-                )
+                landmark_3D = self._estimate_3D_landmark_with_depth(landmark, depth_frame)
                 landmarks_3D.append(landmark_3D)
             else:
                 landmarks_3D.append(None)
@@ -305,20 +288,14 @@ class ComputerVision:
         if (radius + 1 < x < self.camera.image_shape[1] - radius - 1) and (
             radius + 1 < y < self.camera.image_shape[0] - radius - 1
         ):
-            z = np.median(
-                depth_frame[
-                    int(y - radius) : int(y + radius), int(x - radius) : int(x + radius)
-                ]
-            )
+            z = np.median(depth_frame[int(y - radius) : int(y + radius), int(x - radius) : int(x + radius)])
         else:
             z = depth_frame[int(y), int(x)]
 
         z *= self.normalization_factor
         return np.vstack((x, y, z)).T.astype(np.float32)
 
-    def _update_shoulders(
-        self, body_landmarks: np.ndarray, depth_frame: np.ndarray
-    ) -> None:
+    def _update_shoulders(self, body_landmarks: np.ndarray, depth_frame: np.ndarray) -> None:
         """Update the coordinates of the shoulders and the user_center.
 
         (Only used if not fixed_user mode, not available yet).
@@ -327,9 +304,7 @@ class ComputerVision:
             body_landmarks (np.ndarray): The 2D landmarks in the image coordinates.
             depth_frame (np.ndarray): The depth frame from the camera.
         """
-        left_shoulder, right_shoulder = self._get_3D_landmarks_with_depth(
-            body_landmarks, depth_frame, SHOULDER_CST
-        )
+        left_shoulder, right_shoulder = self._get_3D_landmarks_with_depth(body_landmarks, depth_frame, SHOULDER_CST)
         if left_shoulder is not None:
             self.shoulders[0] = left_shoulder
         if right_shoulder is not None:
@@ -337,13 +312,9 @@ class ComputerVision:
 
         if np.any(self.shoulders[0]) and np.any(self.shoulders[1]):
             self.user_center = (self.shoulders[0] + self.shoulders[1]) / 2.0
-            self.dist_intershoulder = float(
-                np.linalg.norm(self.shoulders[0] - self.shoulders[1])
-            )
+            self.dist_intershoulder = float(np.linalg.norm(self.shoulders[0] - self.shoulders[1]))
 
-    def _update_elbows_and_wrists(
-        self, body_landmarks: np.ndarray, depth_frame: np.ndarray
-    ) -> None:
+    def _update_elbows_and_wrists(self, body_landmarks: np.ndarray, depth_frame: np.ndarray) -> None:
         """Update the coordinates of the elbows and wrists.
 
         Args:
@@ -351,20 +322,14 @@ class ComputerVision:
             depth_frame (np.ndarray): The depth frame from the camera.
         """
         for i in range(2):
-            elbow = self._estimate_3D_landmark_with_depth(
-                body_landmarks[ELBOWS_CST[i]], depth_frame
-            )
+            elbow = self._estimate_3D_landmark_with_depth(body_landmarks[ELBOWS_CST[i]], depth_frame)
             if elbow is not None:
                 self.elbows[i] = elbow
-            wrist = self._estimate_3D_landmark_with_depth(
-                body_landmarks[WRISTS_CST[i]], depth_frame, radius=10
-            )
+            wrist = self._estimate_3D_landmark_with_depth(body_landmarks[WRISTS_CST[i]], depth_frame, radius=10)
             if wrist is not None:
                 self.wrists[i] = wrist
 
-    def _update_hand_landmarks(
-        self, left_hand_landmarks: np.ndarray, right_hand_landmarks: np.ndarray
-    ) -> None:
+    def _update_hand_landmarks(self, left_hand_landmarks: np.ndarray, right_hand_landmarks: np.ndarray) -> None:
         """Update the coordinates of the hand landmarks.
 
         Args:
@@ -510,8 +475,6 @@ if __name__ == "__main__":
             print("No landmarks available.")
         else:
             color_frame = computer_vision.camera.color_frame[0]
-            frame = computer_vision.visualization_landmarks(
-                color_frame, np.eye(4), np.eye(4), 0, 0, 0, text_on=False
-            )
+            frame = computer_vision.visualization_landmarks(color_frame, np.eye(4), np.eye(4), 0, 0, 0, text_on=False)
             cv2.imshow("Color Viewer", frame)
             cv2.waitKey(1)

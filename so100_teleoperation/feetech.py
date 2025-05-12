@@ -1,13 +1,13 @@
 from pypot.feetech import FeetechSTS3215IO  # type: ignore
 import time
 import math
+
 # from lerobot.common.utils.kinematics import RobotKinematics
 
 
 # Create Class feetech
 class Feetech:
     def __init__(self, port, nb_dof=5):
-
         self.io = FeetechSTS3215IO(
             port,
             baudrate=1000000,
@@ -99,8 +99,10 @@ class Feetech:
         steps = int(duration * freq)
         current_position = self.get_position(id)
         for i in range(steps):
-            self.set_position(id, current_position + (position - current_position) * i / steps)
-            time.sleep(1/freq)
+            self.set_position(
+                id, current_position + (position - current_position) * i / steps
+            )
+            time.sleep(1 / freq)
         self.set_position(id, position)
 
     def goto_joints(self, joints, duration):
@@ -111,10 +113,14 @@ class Feetech:
         print(current_positions)
         for i in range(steps):
             for j in range(len(joints)):
-                self.set_position(j + 1, current_positions[j] + (joints[j] - current_positions[j]) * i / steps)
-            time.sleep(1/freq)
+                self.set_position(
+                    j + 1,
+                    current_positions[j]
+                    + (joints[j] - current_positions[j]) * i / steps,
+                )
+            time.sleep(1 / freq)
         for j in range(len(joints)):
-            self.set_position(j+1, joints[j])
+            self.set_position(j + 1, joints[j])
 
     def get_joints(self):
         return [self.get_position(id) for id in self.ids]

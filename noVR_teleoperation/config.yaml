@@ -1,7 +1,7 @@
 robot_ip: "localhost"
 fake_only: true  # Security to avoid sending command to a real robot if not wanted
-tracker_type: "aruco"  # options: aruco, vive, rgbd
-control_mode: "dual_arm"  # options: dual_arm, l_arm, r_arm
+tracker_type: "vive"  # options: aruco, vive, rgbd
+control_mode: "r_arm"  # options: dual_arm, l_arm, r_arm
 mirror_mode: false
 
 ## For RGBD
@@ -13,8 +13,8 @@ feetech_ports:
   r_arm: "/dev/noVR_right_motor"
 
 gripper_joints_limit:
-  l_arm: [65, 30]
-  r_arm: [-65, -30]
+  l_arm: [65, 20]
+  r_arm: [-65, -20]
 
 ## For Arduino commands
 arduino_ports:

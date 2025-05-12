@@ -1,8 +1,12 @@
-import time
-import sys
-import openvr  # type: ignore
+# This file is part of the PyViveTracker project of shirokunet,
+# available at https://github.com/shirokunet/PyViveTracker/blob/master/triad_openvr.py
+
 import math
+import sys
+import time
+
 import numpy
+import openvr  # type: ignore
 
 
 # Function to print out text but instead of starting a new line it will overwrite the existing line

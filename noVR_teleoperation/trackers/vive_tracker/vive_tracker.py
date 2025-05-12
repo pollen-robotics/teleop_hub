@@ -1,17 +1,30 @@
 import sys
+
 import numpy as np
-import controller.triad_openvr as triad_openvr
+import trackers.vive_tracker.triad_openvr as triad_openvr  # type: ignore
+from openvr import HmdMatrix34_t  # type: ignore
+from trackers.tracker import Tracker, TrackerType  # type: ignore
+
+# trackers = {
+#     "l_arm": "LHR-0D914CCE",
+#     "r_arm": "LHR-D520271F",
+# }
 
 
-trackers = {
-    "l_arm": "LHR-0D914CCE",
-    "r_arm": "LHR-D520271F",
-}
+class ViveTracker(Tracker):
+    """Class for tracking Vive trackers."""
 
+    def __init__(self, tracker_id: str) -> None:
+        """Initialize the ViveTracker class.
 
-class ViveTracker:
-    def __init__(self, tracker_id):
+        Args:
+            tracker_id (str): The ID of the tracker to be used.
+        """
+        super().__init__()
         self.tracker_name = tracker_id
+        self.tracker_type = TrackerType.VIVE
+        config = self.load_config("config.yaml")
+        trackers = config["vive_trackers"]
 
         if self.tracker_name not in trackers:
             print(
@@ -48,12 +61,19 @@ class ViveTracker:
         self.tracker_pose = np.eye(4)  # Current pose
         self.zero_pose = None  # Initial reference frame
 
-    def convert_openvr_matrix(self, hmd_matrix):
-        """
-        Convertit une matrice OpenVR 3x4 (HmdMatrix34_t) en une matrice 4x4 NumPy.
+    def update_tracker_pose(self) -> None:
+        """Update the tracker pose."""
+        pose = self.tracker.get_pose_matrix()
+        self.tracker_pose = self._convert_openvr_matrix(pose)
 
-        :param hmd_matrix: Matrice OpenVR (hmd_matrix.mDeviceToAbsoluteTracking)
-        :return: Matrice 4x4 NumPy
+    def _convert_openvr_matrix(self, hmd_matrix: HmdMatrix34_t) -> np.ndarray:
+        """Converts an OpenVR 3x4 matrix (HmdMatrix34_t) to a 4x4 NumPy matrix.
+
+        Args:
+            hmd_matrix (HmdMatrix34_t): OpenVR 3x4 matrix (HmdMatrix34_t) to be converted.
+
+        Returns:
+            np.ndarray: Converted 4x4 NumPy matrix.
         """
         m = np.array(
             [
@@ -80,6 +100,5 @@ class ViveTracker:
         )
         return m
 
-    def update_tracker_pose(self):
-        pose = self.tracker.get_pose_matrix()
-        self.tracker_pose = self.convert_openvr_matrix(pose)
+    def stop(self):
+        print("Tracking stopped.")

@@ -1,13 +1,35 @@
-import serial  # type: ignore
 import time
+from typing import Optional
+
+import serial  # type: ignore
 
 
 class ArduinoController:
-    def __init__(self, port):
+    """
+    This class handles the communication with the Arduino board.
+    It reads the joystick input and button states from the Arduino.
+    """
+
+    def __init__(self, port: str):
+        """Initializes the ArduinoController with the specified serial port.
+
+        Args :
+            port (str): The serial port to which the Arduino is connected.
+        """
         self.ser = serial.Serial(port, 9600)
         self.ser.flushInput()
 
-    def read(self):
+    def read(
+        self,
+    ) -> tuple[
+        Optional[int], Optional[int], Optional[int], Optional[int], Optional[int]
+    ]:
+        """Reads the joystick input and button states from the Arduino.
+
+        Returns:
+            tuple: A tuple containing the x and y coordinates of the joystick,
+                   the button command, and the states of button A and button B.
+        """
         if self.ser.in_waiting > 0:
             data = self.ser.readline().decode("utf-8", errors="ignore").strip()
             values = data.split(",")
@@ -22,7 +44,8 @@ class ArduinoController:
 
         return None, None, None, None, None, None
 
-    def close(self):
+    def close(self) -> None:
+        """Closes the serial connection to the Arduino."""
         self.ser.close()
 
 

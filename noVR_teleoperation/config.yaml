@@ -1,0 +1,58 @@
+robot_ip: "localhost"
+fake_only: true  # Security to avoid sending command to a real robot if not wanted
+tracker_type: "aruco"  # options: aruco, vive, rgbd
+control_mode: "dual_arm"  # options: dual_arm, l_arm, r_arm
+mirror_mode: false
+
+## For RGBD
+scale_percent: 50
+
+## For Feetech grippers
+feetech_ports:
+  l_arm: "/dev/noVR_left_motor"
+  r_arm: "/dev/noVR_right_motor"
+
+gripper_joints_limit:
+  l_arm: [65, 30]
+  r_arm: [-65, -30]
+
+## For Arduino commands
+arduino_ports:
+  l_arm: "/dev/noVR_left_arduino"
+  r_arm: "/dev/noVR_right_arduino"
+
+## For VIVE
+vive_trackers:
+  l_arm: "LHR-0D914CCE"
+  r_arm: "LHR-D520271F"
+
+## For ARUCO 
+marker_size:
+  l_arm: 0.06
+  r_arm: 0.03
+
+marker_ids:
+  l_arm: [6, 7, 10, 8, 9, 11]
+  r_arm: [0, 1, 5, 2, 4, 3] # back, up, front, left, right, down
+
+camera:
+  usb_mode: true
+  camera_id: "0"
+  with_calibration: false
+
+  camera_matrix:
+    -   - 720.5567465155845
+        - 0.0
+        - 247.64108414499987
+    -   - 0.0
+        - 714.4335786513287
+        - 278.15541462350916
+    -   - 0.0
+        - 0.0
+        - 1.0
+  dist_coeffs:
+    -   - 0.008803296291899812
+        - 0.46398897016824797
+        - 0.02701695107028852
+        - -0.0416190770556984
+        - -0.6751017329030815

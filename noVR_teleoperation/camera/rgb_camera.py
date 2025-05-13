@@ -2,7 +2,6 @@ import threading
 import time
 from typing import Optional
 
-import cv2  # type: ignore
 import numpy as np
 from camera.camera import Camera  # type: ignore
 from scipy.spatial.transform import Rotation as R  # type: ignore
@@ -32,9 +31,9 @@ class RGBCamera(Camera):
         # get the capture device
         if usb_mode:
             camera_index = int(camera_id) if camera_id else 0
-            self.cap = cv2.VideoCapture(camera_index)
+            self.cap = self.cv2.VideoCapture(camera_index)
         else:
-            self.cap = cv2.VideoCapture(f"http://{camera_id}:8080/video")
+            self.cap = self.cv2.VideoCapture(f"http://{camera_id}:8080/video")
 
         # Start the thread to get the camera frame
         self.frame_getter = threading.Thread(target=self.get_frame, daemon=True)
@@ -92,20 +91,20 @@ class RGBCamera(Camera):
         Returns:
             The processed image.
         """
-        frame_gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+        frame_gray = self.cv2.cvtColor(frame, self.cv2.COLOR_BGR2GRAY)
 
-        blurred = cv2.GaussianBlur(frame_gray, (5, 5), 1)
-        edges = cv2.Canny(blurred, threshold1=50, threshold2=150)
+        blurred = self.cv2.GaussianBlur(frame_gray, (5, 5), 1)
+        edges = self.cv2.Canny(blurred, threshold1=50, threshold2=150)
 
         kernel = np.ones((5, 5), np.uint8)
-        edges_dilated = cv2.dilate(edges, kernel, iterations=1)
-        edges_weight = cv2.normalize(edges_dilated, None, 0, 1, cv2.NORM_MINMAX)
+        edges_dilated = self.cv2.dilate(edges, kernel, iterations=1)
+        edges_weight = self.cv2.normalize(edges_dilated, None, 0, 1, self.cv2.NORM_MINMAX)
 
         non_edge_weight = 1 - edges_weight
-        blurred_image = cv2.GaussianBlur(frame_gray, (9, 9), 3)
+        blurred_image = self.cv2.GaussianBlur(frame_gray, (9, 9), 3)
 
         enhanced_image = edges_weight * frame_gray + non_edge_weight * blurred_image
-        enhanced_image = cv2.normalize(enhanced_image, None, 0, 255, cv2.NORM_MINMAX)
+        enhanced_image = self.cv2.normalize(enhanced_image, None, 0, 255, self.cv2.NORM_MINMAX)
 
         return enhanced_image
 
@@ -131,13 +130,13 @@ class RGBCamera(Camera):
                 side = "right" if i == 1 else "left"
                 rvec = R.from_matrix(cube_pose[:3, :3]).as_rotvec()
                 tvec = cube_pose[:3, 3]
-                cv2.drawFrameAxes(frame, self.camera_matrix, self.dist_coeffs, rvec, tvec, 0.03)
+                self.cv2.drawFrameAxes(frame, self.camera_matrix, self.dist_coeffs, rvec, tvec, 0.03)
 
-                cv2.putText(
+                self.cv2.putText(
                     frame,
                     f"{side} cube - x: {np.round(tvec[0],3)}, y: {np.round(tvec[1],3)}, z: {np.round(tvec[2],3)}",
                     (10, 20 + 40 * i),
-                    cv2.FONT_HERSHEY_SIMPLEX,
+                    self.cv2.FONT_HERSHEY_SIMPLEX,
                     0.75,
                     (0, 255, 0),
                     2,
@@ -145,11 +144,11 @@ class RGBCamera(Camera):
 
                 roll, pitch, yaw = R.from_matrix(cube_pose[:3, :3]).as_euler("xyz", degrees=True)
 
-                cv2.putText(
+                self.cv2.putText(
                     frame,
                     f"{side} cube - roll: {np.round(roll)}, pitch: {np.round(pitch)}, yaw: {np.round(yaw)}",
                     (10, 40 + 40 * i),
-                    cv2.FONT_HERSHEY_SIMPLEX,
+                    self.cv2.FONT_HERSHEY_SIMPLEX,
                     0.75,
                     (0, 255, 0),
                     2,
@@ -175,7 +174,7 @@ class RGBCamera(Camera):
             rvec = data["rvec"]
             tvec = data["tvec"]
 
-            cv2.drawFrameAxes(
+            self.cv2.drawFrameAxes(
                 frame,
                 self.camera_matrix,
                 self.dist_coeffs,
@@ -184,14 +183,14 @@ class RGBCamera(Camera):
                 0.03,
             )
             trans = tvec.flatten()
-            cv2.putText(
+            self.cv2.putText(
                 frame,
                 f"{marker_id} - {np.round(trans,3)}",
                 (10, 20 + 20 * marker_id),
-                cv2.FONT_HERSHEY_SIMPLEX,
+                self.cv2.FONT_HERSHEY_SIMPLEX,
                 0.75,
                 (0, 255, 0),
                 2,
             )
-        # cv2.aruco.drawDetectedMarkers(frame, [corners], np.array([[marker_id]]))
+        # self.cv2.aruco.drawDetectedMarkers(frame, [corners], np.array([[marker_id]]))
         return frame

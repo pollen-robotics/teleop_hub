@@ -1,8 +1,6 @@
 import time
 from typing import Optional
 
-import serial  # type: ignore
-
 
 class ArduinoController:
     """
@@ -16,14 +14,14 @@ class ArduinoController:
         Args :
             port (str): The serial port to which the Arduino is connected.
         """
+        import serial  # type: ignore
+
         self.ser = serial.Serial(port, 9600)
         self.ser.flushInput()
 
     def read(
         self,
-    ) -> tuple[
-        Optional[int], Optional[int], Optional[int], Optional[int], Optional[int]
-    ]:
+    ) -> tuple[Optional[int], Optional[int], Optional[int], Optional[int], Optional[int]]:
         """Reads the joystick input and button states from the Arduino.
 
         Returns:
@@ -53,9 +51,7 @@ if __name__ == "__main__":
     while True:
         x, y, button_cmd, buttonA, buttonB = arduino.read()
         if x is not None:
-            print(
-                f"x: {x}, y: {y}, button_cmd: {button_cmd}, buttonA: {buttonA}, buttonB: {buttonB}"
-            )
+            print(f"x: {x}, y: {y}, button_cmd: {button_cmd}, buttonA: {buttonA}, buttonB: {buttonB}")
         else:
             print("No data")
         time.sleep(0.1)

@@ -1,6 +1,5 @@
 import time
 
-import cv2  # type: ignore
 import numpy as np
 from camera.orbbec import Orbbec  # type: ignore
 from controller.rgbd_controller import (  # type: ignore
@@ -110,5 +109,5 @@ class TeleoperationRGBD(Teleoperation):
             rpy[2],
             text_on=True,
         )
-        cv2.imshow("Color Viewer", frame)
-        cv2.waitKey(1)
+        self.camera.cv2.imshow("Color Viewer", frame)
+        self.camera.cv2.waitKey(1)

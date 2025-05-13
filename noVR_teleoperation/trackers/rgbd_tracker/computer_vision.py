@@ -1,8 +1,6 @@
 import time
-from typing import Optional, Tuple
+from typing import Any, Optional, Tuple
 
-import cv2  # type: ignore
-import mediapipe as mp  # type: ignore
 import numpy as np
 from camera.camera import Camera  # type: ignore
 from camera.orbbec import Orbbec  # type: ignore
@@ -35,8 +33,13 @@ class ComputerVision:
         self.image_shape = self.camera.image_shape
         self.up_mode = up_mode
 
+        self.cv2 = self.camera.cv2
+
         # Initialize MediaPipe Holistic
-        self.holistic = mp.solutions.holistic.Holistic(
+        import mediapipe as mp  # type: ignore
+
+        self.mp = mp
+        self.holistic = self.mp.solutions.holistic.Holistic(
             min_detection_confidence=0.5,
             min_tracking_confidence=0.5,
             model_complexity=0,
@@ -74,13 +77,13 @@ class ComputerVision:
         depth_frame = self.camera.depth_frame[0]
         return color_frame, depth_frame
 
-    def process_frame(self, color_frame: np.ndarray) -> Optional[mp.solutions.holistic.Holistic]:
+    def process_frame(self, color_frame: np.ndarray) -> Optional[Any]:
         """Process the color frame with MediaPipe Holistic.
 
         Returns:
             Optional[mp.solutions.holistic.Holistic]: The results of the MediaPipe Holistic processing.
         """
-        return self.holistic.process(cv2.cvtColor(color_frame, cv2.COLOR_BGR2RGB))
+        return self.holistic.process(self.cv2.cvtColor(color_frame, self.cv2.COLOR_BGR2RGB))
 
     def _get_user_parameters(self) -> None:
         """Get the user parameters (shoulder distance and user center)."""
@@ -385,7 +388,7 @@ class ComputerVision:
         Returns:
             np.ndarray: The color frame with the landmarks drawn on it.
         """
-        cv2.circle(
+        self.cv2.circle(
             color_frame,
             (int(self.user_center[0]), int(self.user_center[1])),
             5,
@@ -394,44 +397,44 @@ class ComputerVision:
         )
         if text_on:
             if left_goal_pose is not None:
-                cv2.putText(
+                self.cv2.putText(
                     color_frame,
                     f"left_goal: {left_goal_pose[:3,3]}",
                     (10, 30),
-                    cv2.FONT_HERSHEY_SIMPLEX,
+                    self.cv2.FONT_HERSHEY_SIMPLEX,
                     1,
                     (255, 255, 255),
                     2,
-                    cv2.LINE_AA,
+                    self.cv2.LINE_AA,
                 )
             if right_goal_pose is not None:
-                cv2.putText(
+                self.cv2.putText(
                     color_frame,
                     f"right_goal: {right_goal_pose[:3,3]}",
                     (10, 60),
-                    cv2.FONT_HERSHEY_SIMPLEX,
+                    self.cv2.FONT_HERSHEY_SIMPLEX,
                     1,
                     (255, 255, 255),
                     2,
-                    cv2.LINE_AA,
+                    self.cv2.LINE_AA,
                 )
         if body_on:
             for i in range(2):
-                cv2.circle(
+                self.cv2.circle(
                     color_frame,
                     (int(self.wrists[i][0]), int(self.wrists[i][1])),
                     5,
                     (0, 255, 0),
                     -1,
                 )
-                cv2.circle(
+                self.cv2.circle(
                     color_frame,
                     (int(self.elbows[i][0]), int(self.elbows[i][1])),
                     5,
                     (255, 0, 0),
                     -1,
                 )
-                cv2.circle(
+                self.cv2.circle(
                     color_frame,
                     (int(self.shoulders[i][0]), int(self.shoulders[i][1])),
                     5,
@@ -440,22 +443,22 @@ class ComputerVision:
                 )
         if face_on:
             for i in range(len(FACELANDMARKS_CST)):
-                cv2.circle(
+                self.cv2.circle(
                     color_frame,
                     (int(self.face_points[i][0]), int(self.face_points[i][1])),
                     5,
                     (255, 0, 255),
                     -1,
                 )
-            cv2.putText(
+            self.cv2.putText(
                 color_frame,
                 f"roll: {roll:.2f}, pitch: {pitch:.2f}, yaw: {yaw:.2f}",
                 (10, 90),
-                cv2.FONT_HERSHEY_SIMPLEX,
+                self.cv2.FONT_HERSHEY_SIMPLEX,
                 1,
                 (255, 255, 255),
                 2,
-                cv2.LINE_AA,
+                self.cv2.LINE_AA,
             )
         return color_frame
 
@@ -466,6 +469,8 @@ class ComputerVision:
 
 
 if __name__ == "__main__":
+    import cv2  # type: ignore
+
     camera = Orbbec()
     computer_vision = ComputerVision(camera)
 

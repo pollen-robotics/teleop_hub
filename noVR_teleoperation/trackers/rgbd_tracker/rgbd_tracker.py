@@ -2,7 +2,7 @@ import time
 from abc import ABC, abstractmethod
 from typing import Optional
 
-import cv2  # type: ignore
+# import cv2  # type: ignore
 import numpy as np
 from camera.orbbec import Orbbec  # type: ignore
 from filter.filters import (  # type: ignore
@@ -33,6 +33,8 @@ class RGBDTracker(Tracker, ABC):
         """
         super().__init__()
         self.computer_vision = computer_vision
+        self.cv2 = self.computer_vision.cv2
+
         self.tracker_type = TrackerType.RGBD
         self.tracker_pose: Optional[np.ndarray]
 
@@ -240,6 +242,8 @@ class HeadRGBDTracker(RGBDTracker):
 
 
 if __name__ == "__main__":
+    import cv2  # type: ignore
+
     camera = Orbbec()
     computer_vision = ComputerVision(camera)
     l_rgbd_tracker = ArmRGBDTracker("l_arm", computer_vision)

@@ -91,19 +91,19 @@ class ArucoCube(Tracker):
             ),  # front face
             np.array(
                 [
-                    [-c_pt, c_pt, -c_pt],
-                    [-c_pt, c_pt, c_pt],
-                    [-c_pt, -c_pt, c_pt],
-                    [-c_pt, -c_pt, -c_pt],
+                    [c_pt, c_pt, c_pt],
+                    [c_pt, c_pt, -c_pt],
+                    [c_pt, -c_pt, -c_pt],
+                    [c_pt, -c_pt, c_pt],
                 ],
                 dtype=np.float32,
             ),  # left face
             np.array(
                 [
-                    [c_pt, c_pt, c_pt],
-                    [c_pt, c_pt, -c_pt],
-                    [c_pt, -c_pt, -c_pt],
-                    [c_pt, -c_pt, c_pt],
+                    [-c_pt, c_pt, -c_pt],
+                    [-c_pt, c_pt, c_pt],
+                    [-c_pt, -c_pt, c_pt],
+                    [-c_pt, -c_pt, -c_pt],
                 ],
                 dtype=np.float32,
             ),  # right face

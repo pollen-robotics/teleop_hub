@@ -13,8 +13,8 @@ feetech_ports:
   r_arm: "/dev/noVR_right_motor"
 
 gripper_joints_limit:
-  l_arm: [65, 30]
-  r_arm: [-65, -30]
+  l_arm: [65, 20]
+  r_arm: [-65, -20]
 
 ## For Arduino commands
 arduino_ports:
@@ -33,7 +33,7 @@ marker_size:
 
 marker_ids:
   l_arm: [6, 7, 10, 8, 9, 11]
-  r_arm: [0, 1, 2, 4, 4, 5] # back, up, front, left, right, down
+  r_arm: [0, 1, 2, 3, 4, 5] # back, up, front, left, right, down
 
 camera:
   usb_mode: true

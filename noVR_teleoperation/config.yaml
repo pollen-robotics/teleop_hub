@@ -1,7 +1,7 @@
 robot_ip: "localhost"
 fake_only: true  # Security to avoid sending command to a real robot if not wanted
 tracker_type: "vive"  # options: aruco, vive, rgbd
-control_mode: "r_arm"  # options: dual_arm, l_arm, r_arm
+control_mode: "dual_arm"  # options: dual_arm, l_arm, r_arm
 mirror_mode: false
 
 ## For RGBD

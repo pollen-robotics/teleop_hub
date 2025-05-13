@@ -93,8 +93,6 @@ class JoystickController(Controller):
     def init_gripper(self, joint):
         self.gripper.enable_torque()
         self.gripper.goto_joints([joint], 1)
-        print([joint])
-        print("iciiiiiiiiiiiiiiiiiiii")
         self.gripper.disable_torque()
 
     def init_controller(self) -> None:

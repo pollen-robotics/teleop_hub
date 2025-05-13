@@ -57,13 +57,24 @@ class ArduinoController:
 
 
 if __name__ == "__main__":
-    arduino = ArduinoController("/dev/noVR_right_arduino")
+    gripper_type = POTENTIOMETER_GRIPPER  # Change to FEETECH_GRIPPER for the other gripper
+    # arduino = ArduinoController("/dev/noVR_right_arduino", gripper_type)
+    arduino = ArduinoController("/dev/noVR_left_arduino", gripper_type)
+
     while True:
-        x, y, button_cmd, buttonA, buttonB, potentiometer = arduino.read()
+        if gripper_type == FEETECH_GRIPPER:
+            x, y, button_cmd, buttonA, buttonB = arduino.read()
+        else:
+            x, y, button_cmd, buttonA, buttonB, potentiometer = arduino.read()
         if x is not None:
-            print(
-                f"x: {x}, y: {y}, button_cmd: {button_cmd}, buttonA: {buttonA}, buttonB: {buttonB}, potentiometer: {potentiometer}"
-            )
+            if gripper_type == FEETECH_GRIPPER:
+                print(
+                    f"x: {x}, y: {y}, button_cmd: {button_cmd}, buttonA: {buttonA}, buttonB: {buttonB}"
+                )
+            else:
+                print(
+                    f"x: {x}, y: {y}, button_cmd: {button_cmd}, buttonA: {buttonA}, buttonB: {buttonB}, potentiometer: {potentiometer}"
+                )
         else:
             print("No data")
         time.sleep(0.1)

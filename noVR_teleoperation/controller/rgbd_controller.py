@@ -24,6 +24,7 @@ class RGBDController(Controller, ABC):
 
     def __init__(self, computer_vision: ComputerVision) -> None:
         """Initialize the RGBD controller.
+
         Args:
             computer_vision (ComputerVision): The computer vision object used for tracking.
         """
@@ -32,17 +33,17 @@ class RGBDController(Controller, ABC):
         self.init_user_parameters()
 
     def init_user_parameters(self) -> None:
-        """Initialize user parameters for the RGBD controller."""
+        """Initialize user parameters for the RGBD controller
+        (e.g., user center and normalization factor from pixels to meters).
+        """
         while not np.any(self.computer_vision.user_center):
             time.sleep(0.2)
         self.user_center = self.computer_vision.user_center
-        real_dist_intershoulder = 0.3
-        self.normalization_factor = (
-            real_dist_intershoulder / self.computer_vision.dist_intershoulder
-        )
+        self.normalization_factor = 1 / self.computer_vision.normalization_factor
 
     def get_controller_pose(self) -> np.ndarray:
         """Get the pose of the RGBD tracker.
+
         This method updates the tracker pose and converts it from the image to the robot frame.
 
         Returns:
@@ -69,6 +70,8 @@ class HeadRGBDController(RGBDController):
         """
         super().__init__(computer_vision)
         self.tracker = HeadRGBDTracker(self.computer_vision)
+
+        # Parameters for stopping the teleoperation
         self.former_rpy: Deque = deque(maxlen=10)
         self.stop_flag = False
 
@@ -126,7 +129,8 @@ class ArmRGBDController(RGBDController):
     """
 
     def __init__(self, computer_vision: ComputerVision, arm: str) -> None:
-        """Initialize the arm RGBD controller.
+        """Initialize the arm RGBD controller, with an ArmRGBDTracker and a GripperRGBDTracker.
+
         Args:
             computer_vision (ComputerVision): The computer vision object used for tracking.
             arm (str): The arm to be controlled (e.g., "l_arm" or "r_arm").
@@ -149,9 +153,7 @@ class ArmRGBDController(RGBDController):
             np.ndarray: The converted pose.
         """
         corrected_rotation = self.computer_vision.T_world_camera @ pose[:3, :3]
-        corrected_position = self.computer_vision.T_world_camera @ (
-            pose[:3, 3] - self.user_center
-        )
+        corrected_position = self.computer_vision.T_world_camera @ (pose[:3, 3] - self.user_center)
 
         normalized_position = corrected_position * self.normalization_factor
 

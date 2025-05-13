@@ -37,8 +37,8 @@ marker_size:
   r_arm: 0.03
 
 marker_ids:
-  l_arm: [6, 7, 10, 8, 9, 11]
-  r_arm: [0, 1, 5, 2, 4, 3] # back, up, front, left, right, down
+  l_arm: [6, 7, 10, 9, 8, 11]
+  r_arm: [0, 1, 5, 4, 2, 3] # back, up, front, left, right, down
 
 camera:
   usb_mode: true

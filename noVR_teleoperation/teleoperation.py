@@ -443,6 +443,9 @@ class JoystickTeleoperation(Teleoperation):
                     robot_pose = self.controller_pose_to_robot_pose(pose, controller.arm)
                     self.robot.go_to_pose(robot_pose, controller.arm)
                     self.robot_previous_pose[controller.arm] = robot_pose
+                    gripper_joint = controller.get_gripper_joint()
+                    gripper_joint = self.trigger_joint_to_gripper_joint(gripper_joint, controller.arm)
+                    self.robot.move_gripper(controller.arm, True, gripper_joint)
                 self.controller_previous_pose[controller.arm] = pose
 
             x, y, theta = 0, 0, 0
@@ -488,7 +491,6 @@ class JoystickTeleoperation(Teleoperation):
             gripper_joint = controller.get_gripper_joint()
             gripper_joint = self.trigger_joint_to_gripper_joint(gripper_joint, controller.arm)
             self.robot.move_gripper(controller.arm, True, gripper_joint)
-            
 
         elif self.mode == 1:
             head_orientation = self.controller_to_head_orientation(pose, controller.arm)

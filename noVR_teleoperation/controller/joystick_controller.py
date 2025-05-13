@@ -17,18 +17,6 @@ from utils import (  # type: ignore
     make_homogenous_matrix_from_rotation_matrix,
 )
 
-feetech_ports = {
-    "l_arm": "/dev/noVR_left_motor",
-    "r_arm": "/dev/noVR_right_motor",
-}
-
-arduino_ports = {
-    "l_arm": "/dev/noVR_left_arduino",
-    "r_arm": "/dev/noVR_right_arduino",
-}
-
-gripper_joints = {"l_arm": [65, 30], "r_arm": [-65, -30]}
-
 FEETECH_GRIPPER = "feetech"
 POTENTIOMETER_GRIPPER = "potentiometer"
 
@@ -59,10 +47,22 @@ class JoystickController(Controller):
         self.arm = arm
 
         self.gripper_type = load_config("config.yaml")["gripper_type"]
-        print(f"Gripper type: {self.gripper_type}")
+
+        arduino_port = load_config("config.yaml")["arduino_ports"][arm]
+        self.arduino = ArduinoController(arduino_port, self.gripper_type)
         
-            
-        self.arduino = ArduinoController(arduino_ports[arm], self.gripper_type)
+        if self.gripper_type == FEETECH_GRIPPER:
+            feetech_port = load_config("config.yaml")["feetech_ports"][arm]
+            self.gripper = Feetech(feetech_port)
+            self.gripper_joints_limit = load_config("config.yaml")["feetech_gripper_joints_limit"][
+                self.arm
+            ]
+        elif self.gripper_type == POTENTIOMETER_GRIPPER:
+            self.gripper_joints_limit = load_config("config.yaml")["potentiometer_gripper_joints_limit"][
+                self.arm
+            ]
+        else:
+            raise ValueError(f"Unknown gripper type: {self.gripper_type}")
 
         if self.tracker_type == TrackerType.ARUCO:
             self.camera = camera
@@ -77,7 +77,6 @@ class JoystickController(Controller):
             self.tracker = ViveTracker(arm)
             self.is_filtered = False
 
-        # self.gripper = Feetech(feetech_ports[arm])
         self.joystick_x = None
         self.joystick_y = None
         self.joystick_button = None
@@ -85,30 +84,16 @@ class JoystickController(Controller):
         self.buttonB = None
 
         self.stop_flag = False
-        if self.gripper_type == FEETECH_GRIPPER:
-            self.gripper = Feetech(feetech_ports[arm])
-            self.gripper_joints_limit = load_config("config.yaml")["feetech_gripper_joints_limit"][
-                self.arm
-            ]
-        elif self.gripper_type == POTENTIOMETER_GRIPPER:
-            self.gripper_joints_limit = load_config("config.yaml")["potentiometer_gripper_joints_limit"][
-                self.arm
-            ]
-        else:
-            raise ValueError(f"Unknown gripper type: {self.gripper_type}")
+        
 
         thread = threading.Thread(target=self._update_arduino_data)
         thread.daemon = True
         thread.start()
 
-        # self.init_controller()
-        # self.init_gripper(self.gripper_joints_limit[1])
 
     def init_gripper(self, joint):
         self.gripper.enable_torque()
         self.gripper.goto_joints([joint], 1)
-        print([joint])
-        print("iciiiiiiiiiiiiiiiiiiii")
         self.gripper.disable_torque()
 
     def init_controller(self) -> None:

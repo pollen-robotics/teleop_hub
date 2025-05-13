@@ -17,18 +17,6 @@ from utils import (  # type: ignore
     make_homogenous_matrix_from_rotation_matrix,
 )
 
-feetech_ports = {
-    "l_arm": "/dev/noVR_left_motor",
-    "r_arm": "/dev/noVR_right_motor",
-}
-
-arduino_ports = {
-    "l_arm": "/dev/noVR_left_arduino",
-    "r_arm": "/dev/noVR_right_arduino",
-}
-
-gripper_joints = {"l_arm": [65, 30], "r_arm": [-65, -30]}
-
 
 class JoystickController(Controller):
     """Joystick controller class.
@@ -55,8 +43,10 @@ class JoystickController(Controller):
         super().__init__()
         self.tracker_type = tracker_type
         self.arm = arm
-        self.arduino = ArduinoController(arduino_ports[arm])
-        self.gripper = Feetech(feetech_ports[arm])
+        arduino_port = load_config("config.yaml")["arduino_ports"][arm]
+        self.arduino = ArduinoController(arduino_port)
+        feetech_port = load_config("config.yaml")["feetech_ports"][arm]
+        self.gripper = Feetech(feetech_port)
 
         if self.tracker_type == TrackerType.ARUCO:
             self.camera = camera
@@ -71,7 +61,6 @@ class JoystickController(Controller):
             self.tracker = ViveTracker(arm)
             self.is_filtered = False
 
-        self.gripper = Feetech(feetech_ports[arm])
         self.joystick_x = None
         self.joystick_y = None
         self.joystick_button = None
@@ -87,8 +76,6 @@ class JoystickController(Controller):
         thread.daemon = True
         thread.start()
 
-        # self.init_controller()
-        # self.init_gripper(self.gripper_joints_limit[1])
 
     def init_gripper(self, joint):
         self.gripper.enable_torque()

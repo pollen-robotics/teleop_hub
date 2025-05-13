@@ -3,18 +3,8 @@ import time
 from collections import deque
 from typing import Any, Deque, Optional
 
-# import self.cv2  # type: ignore
 import numpy as np  # type: ignore
 from camera.camera import Camera  # type: ignore
-
-# from pyorbbecsdk import (  # type: ignore
-#     Config,
-#     Frame,
-#     OBAlignMode,
-#     OBFormat,
-#     OBSensorType,
-#     Pipeline,
-# )
 from utils import load_config  # type: ignore
 
 

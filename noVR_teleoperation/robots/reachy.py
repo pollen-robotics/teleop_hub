@@ -1,15 +1,6 @@
 from typing import Optional
 
 import numpy as np
-from google.protobuf.wrappers_pb2 import FloatValue, Int32Value
-
-# from reachy2_sdk import ReachySDK  # type: ignore
-# from reachy2_sdk_api.arm_pb2 import (  # type: ignore
-#     self.ArmCartesianGoal,
-#     self.IKConstrainedMode,
-#     self.IKContinuousMode,
-# )
-# from reachy2_sdk_api.kinematics_pb2 import self.Matrix4x4  # type: ignore
 from robots.robot import Robot  # type: ignore
 from scipy.spatial.transform import Rotation as R  # type: ignore
 from utils import (  # type: ignore
@@ -39,6 +30,7 @@ class Reachy2(Robot):
         self.reachy = self.ReachySDK(self.robot_ip, fake_only=fake_only_parameter)
 
     def _make_imports(self) -> None:
+        from google.protobuf.wrappers_pb2 import FloatValue, Int32Value
         from reachy2_sdk import ReachySDK  # type: ignore
         from reachy2_sdk_api.arm_pb2 import (  # type: ignore
             ArmCartesianGoal,
@@ -52,6 +44,8 @@ class Reachy2(Robot):
         self.IKConstrainedMode = IKConstrainedMode
         self.IKContinuousMode = IKContinuousMode
         self.Matrix4x4 = Matrix4x4
+        self.FloatValue = FloatValue
+        self.Int32Value = Int32Value
 
     def init_robot(self) -> None:
         """Initializes the robot.
@@ -116,11 +110,11 @@ class Reachy2(Robot):
             goal_pose=self.Matrix4x4(data=pose.flatten().tolist()),
             continuous_mode=self.IKContinuousMode.UNFREEZE,
             constrained_mode=self.IKConstrainedMode.UNCONSTRAINED,
-            preferred_theta=FloatValue(
+            preferred_theta=self.FloatValue(
                 value=-4 * np.pi / 6,
             ),
-            d_theta_max=FloatValue(value=0.05),
-            order_id=Int32Value(value=5),
+            d_theta_max=self.FloatValue(value=0.05),
+            order_id=self.Int32Value(value=5),
         )
         robot_arm._stub.SendArmCartesianGoal(request)
 
@@ -149,11 +143,11 @@ class Reachy2(Robot):
             goal_pose=self.Matrix4x4(data=pose.flatten().tolist()),
             continuous_mode=self.IKContinuousMode.UNFREEZE,  # A MODIFIER
             constrained_mode=self.IKConstrainedMode.UNCONSTRAINED,
-            preferred_theta=FloatValue(
+            preferred_theta=self.FloatValue(
                 value=-4 * np.pi / 6,
             ),
-            d_theta_max=FloatValue(value=0.05),
-            order_id=Int32Value(value=5),
+            d_theta_max=self.FloatValue(value=0.05),
+            order_id=self.Int32Value(value=5),
         )
         robot_arm._stub.SendArmCartesianGoal(request)
 

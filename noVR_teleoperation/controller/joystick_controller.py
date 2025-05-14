@@ -124,13 +124,12 @@ class JoystickController(Controller):
                     self.joystick_x = arduino_values[0]
                     self.joystick_y = arduino_values[1]
                 else:
-                    self.buttonA = arduino_values[4]
-                    self.buttonB = arduino_values[3]
+                    self.buttonA = arduino_values[3]
+                    self.buttonB = arduino_values[4]
                     self.joystick_x = 1024 - arduino_values[0]
                     self.joystick_y = 1024 - arduino_values[1]
                 if self.gripper_type == POTENTIOMETER_GRIPPER:
                     self.potentiometer = arduino_values[5]
-                    print(self.potentiometer)
 
             else:
                 print("No data")

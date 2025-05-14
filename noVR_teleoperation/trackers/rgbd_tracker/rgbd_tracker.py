@@ -237,6 +237,11 @@ class HeadRGBDTracker(RGBDTracker):
 
         return rot
 
+    def stop(self) -> None:
+        """Stop the RGBD tracker."""
+        self.computer_vision.stop()
+        print("RGBD Tracker stopped.")
+
 
 if __name__ == "__main__":
     camera = Orbbec()

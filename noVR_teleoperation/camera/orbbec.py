@@ -53,7 +53,7 @@ class Orbbec(Camera):
         self.get_parameters()
 
         # start the thread to get frames
-        self.frame_getter = threading.Thread(target=self.get_frame)
+        self.frame_getter = threading.Thread(target=self.get_frame, daemon=True)
         self.frame_getter.start()
 
     def _set_pipeline(self) -> None:
@@ -79,16 +79,16 @@ class Orbbec(Camera):
 
         if align_mode == "HW":
             if device_pid == 0x066B:
-                self.config._set_align_mode(OBAlignMode.SW_MODE)
+                self.config.set_align_mode(OBAlignMode.SW_MODE)
                 print("Alignment mode : Software (auto for Femto Mega)")
             else:
-                self.config._set_align_mode(OBAlignMode.HW_MODE)
+                self.config.set_align_mode(OBAlignMode.HW_MODE)
                 print("Alignment mode : Hardware")
         elif align_mode == "SW":
-            self.config._set_align_mode(OBAlignMode.SW_MODE)
+            self.config.set_align_mode(OBAlignMode.SW_MODE)
             print("Alignment mode : Software")
         else:
-            self.config._set_align_mode(OBAlignMode.DISABLE)
+            self.config.set_align_mode(OBAlignMode.DISABLE)
             print("Alignment deactivated")
 
         if enable_sync:
@@ -232,8 +232,8 @@ class Orbbec(Camera):
 
     def stop(self) -> None:
         """Stop the camera and close all OpenCV windows."""
-        self.pipeline.stop()
         cv2.destroyAllWindows()
+        self.pipeline.stop()
         print("Orbbec stopped.")
 
 

@@ -465,8 +465,7 @@ class ComputerVision:
         return color_frame
 
     def stop(self):
-        """Stop the camera and close the MediaPipe Holistic."""
-        self.holistic.close()
+        """Stop the camera"""
         self.camera.stop()
 
 

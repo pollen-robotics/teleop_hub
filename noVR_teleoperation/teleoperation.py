@@ -39,6 +39,7 @@ class Teleoperation(ABC):
         self.controllers: dict = {}
         self.controller_previous_pose = {LEFT_ARM: np.eye(4), RIGHT_ARM: np.eye(4)}
         self.robot_previous_pose = {LEFT_ARM: np.eye(4), RIGHT_ARM: np.eye(4)}
+        self.stop_flag = False
 
     @abstractmethod
     def init_teleoperation(self) -> None:
@@ -51,10 +52,11 @@ class Teleoperation(ABC):
         """
         self.init_teleoperation()
         frequency = 100
-        while True:
+        while not self.stop_flag:
             t = time.time()
             self.step()
             time.sleep(max(0, 1 / frequency - (time.time() - t)))
+        self.robot.stop()
 
     @abstractmethod
     def step(self):
@@ -79,6 +81,7 @@ class TeleoperationRGBD(Teleoperation):
         }
         self.head_controller = HeadRGBDController(self.computer_vision)
         self.first_command_ok = False
+        self.user_offsets = np.zeros(3)
 
     def init_teleoperation(self) -> None:
         """Initialize the teleoperation.
@@ -87,43 +90,55 @@ class TeleoperationRGBD(Teleoperation):
         before starting the teleoperation.
         """
         self.robot.init_robot()
+        robot_poses = [self.robot.fk(LEFT_ARM), self.robot.fk(RIGHT_ARM)]
 
-        # check that the command is in a specific area before starting the teleoperation
+        # check that the first commands are in a specific area before starting the teleoperation
+        # and set the user offsets
         while not self.first_command_ok:
+            is_pose_ok = [False, False]
             self.computer_vision.update_landmarks_coordinates(True)
-            l_pose = self.controllers[LEFT_ARM].get_controller_pose()
-            r_pose = self.controllers[RIGHT_ARM].get_controller_pose()
-            if self.is_first_command_ok(l_pose, False) and self.is_first_command_ok(r_pose, True):
+            for i, controller in enumerate(self.controllers.values()):
+                pose = controller.get_controller_pose()
+                is_pose_ok[i] = controller.check_first_command(pose)
+            if all(is_pose_ok):
                 self.first_command_ok = True
-            else:
-                print(f"l_pose: {l_pose[:3,3]}, r_pose: {r_pose[:3,3]}")
-                time.sleep(0.05)
+                self._set_user_offsets(
+                    [self.controllers[LEFT_ARM].first_pose, self.controllers[RIGHT_ARM].first_pose], robot_poses
+                )
 
-    def is_first_command_ok(self, pose: np.ndarray, is_for_r_arm: bool) -> bool:
-        """Check if the first command is in a specific area.
+    def _set_user_offsets(self, user_poses: list[np.ndarray], robot_poses: list[np.ndarray]) -> None:
+        """Set the user offsets based on the initial poses of the user and robot.
+
+        The offsets are calculated as the difference between the robot and user positions in the x, y, and z axes,
+        and they are stored in the `user_offsets` attribute.
+
+        Args:
+            user_poses (list[np.ndarray]): The initial poses of the user.
+            robot_poses (list[np.ndarray]): The initial poses of the robot.
+        """
+        user_l_position = user_poses[0][:3, 3]
+        user_r_position = user_poses[1][:3, 3]
+        robot_l_position = robot_poses[0][:3, 3]
+        robot_r_position = robot_poses[1][:3, 3]
+
+        # calculate the offsets between the robot and user positions (as the mean of the two arms)
+        x_offset = np.mean([robot_l_position[0] - user_l_position[0], robot_r_position[0] - user_r_position[0]])
+        y_offset = np.mean([robot_l_position[1] - user_l_position[1], robot_r_position[1] - user_r_position[1]])
+        z_offset = np.mean([robot_l_position[2] - user_l_position[2], robot_r_position[2] - user_r_position[2]])
+
+        self.user_offsets = np.array([x_offset, y_offset, z_offset])
+        print(f"User offsets: {self.user_offsets}")
+
+    def recalibrate_goal_position(self, pose: np.ndarray) -> np.ndarray:
+        """Recalibrate the goal position based on the user offsets.
 
         Args:
             pose (np.ndarray): The pose of the controller.
-            is_for_r_arm (bool): True if the pose is for the right arm, False if for the left arm.
         Returns:
-            bool: True if the first command is valid, False otherwise.
+            np.ndarray: The recalibrated pose.
         """
-        if pose is None:
-            return False
-        # check if the first command is in the cube : x 0,2/O,35 y 0,15/0.3 z -0,35/-0.2
-        command = pose[:3, 3]
-        if is_for_r_arm:
-            command[1] = -command[1]
-        if (
-            command[0] < 0.35
-            and command[0] > 0.2
-            and command[1] < 0.3
-            and command[1] > 0.15
-            and command[2] < -0.15
-            and command[2] > -0.35
-        ):
-            return True
-        return False
+        pose[:3, 3] += self.user_offsets
+        return pose
 
     def step(self) -> None:
         """Step called at each iteration of the teleoperation loop.
@@ -132,9 +147,7 @@ class TeleoperationRGBD(Teleoperation):
         """
         # Check if the stop flag is raised
         if self.head_controller.stop_flag:
-            for controller in self.controllers.values():
-                controller.stop()
-            self.robot.stop()
+            self.stop_flag = True
             return
 
         self.computer_vision.update_landmarks_coordinates(True)
@@ -142,6 +155,7 @@ class TeleoperationRGBD(Teleoperation):
         for controller in self.controllers.values():
             # Get the wrist command
             pose = controller.get_controller_pose()
+            pose = self.recalibrate_goal_position(pose)
             self.robot.go_to_pose(pose, controller.arm)
             self.controller_previous_pose[controller.arm] = pose
 

@@ -1,10 +1,8 @@
-# reachy2_noVR_teleoperation
-
 # Teleoperation without VR
 
 A general project combining different methods for teleoperating Reachy2 without virtual reality. 
 
-You can find the article on the development of the project and the technical details at this [link](Medium link). 
+You can find the article on the development of the project and the technical details at this [link](AJOUT DU Medium link). 
 
 ## Methods available
 
@@ -13,7 +11,7 @@ There are currently 5 methods available:
 - the controller with the ArUco cube
 - RGBD camera
 - the SOARM-100 robotic arm
-- the console controller
+- the gamepad
 
 They all have their pros and cons, which you can read about in the article, or find out for yourself by testing them. 
 
@@ -21,17 +19,22 @@ They all have their pros and cons, which you can read about in the article, or f
 
 1. Clone this repository 
 
-<code> git clone blablabla </code>
+        git clone blablabla 
 
-2. Install the dependencies 
+2. Install the dependencies, according to which modalities and robot you want to use : 
 
-```bash
-sudo cp 11-noVR.setup.rules /etc/udev/rules.d/
-sudo udevadm control --reload-rules && sudo udevadm trigger
-```
+        pip install -e ".[_modalities_]"
+    
+    For example, if you want to install the required libraries for Reachy2, Vive Tracker and RGBD Camera : <code> pip install -e ".[reachy2, vive, rgbd]"</code>
+    
+    The options are : *reachy2*, *vive*, *aruco*, *rgbd*, *so100*, *all*. 
 
-docker build -t teleop_tracker -f Docker/Dockerfile .
+3. Apply the dev rules: 
 
+        sudo cp 11-noVR.setup.rules /etc/udev/rules.d/
+        sudo udevadm control --reload-rules && sudo udevadm trigger
+
+> Be careful, if you're using the RGBD modality with the supplied Orbbec class, you need to manually install *pyorbbecsdk*. The instructions are below in the specific [RGBD Camera section](#how-to-set-up-each-modality). 
 
 ## How to use it ?
 The project configuration file is used to select a particular teleoperation mode. 
@@ -40,7 +43,7 @@ You can therefore modify it according to what you want to use.
 To do this, go to the project's config.yaml file:
 
 ```
-cd project_tracker
+cd noVR_teleoperation
 nano config.yaml 
 ```
 
@@ -75,7 +78,7 @@ If you'd like to add your own robot, it is possible ! You have to add a child cl
 Feel free to test it and to suggest your additions!
 
 
-## How to set-up each modality ?
+## How to set-up each modality
 
 <details>
 <summary> <span style="font-size: 1.2em;"><strong>Vive Tracker & ArUco cube </strong></span></summary>
@@ -109,13 +112,16 @@ This modality requires 1 Vive tracker for each controller used (it is possible t
 
 6. Disable the headset requirement : 
 there are 2 files to modify using those commands on a terminal : 
-> <code>gedit ~/.steam/steam/steamapps/common/SteamVR/resources/settings/default.vrsettings</code>
->
-> Change the value of "requireHmd" to *false*, "forcedDriver" to *null*, and 'activateMultipleDrivers" to *true*. 
-> 
-> <code>gedit ~/.steam/steam/steamapps/common/SteamVR/drivers/null/resources/settings/default.vrsettings </code>
->
-> Change the value of "enable" to *true*. 
+
+    a. <code>gedit ~/.steam/steam/steamapps/common/SteamVR/resources/settings/default.vrsettings</code>
+    
+    Change the value of "requireHmd" to *false*, "forcedDriver" to *null*, and 'activateMultipleDrivers" to *true*. 
+
+    b. <code>gedit ~/.steam/steam/steamapps/common/SteamVR/drivers/null/resources/settings/default.vrsettings </code>
+
+    Change the value of "enable" to *true*. 
+> Be careful that SteamVR updates can sometimes overwrite changes to files. If the base station and trackers are no longer detected, don't hesitate to check that the changes are still there. If not, edit again and restart SteamVR.
+
 
 </details>
 
@@ -197,9 +203,58 @@ It is therefore necessary to enter the type of trigger control and the Arduino +
 <details>
 <summary> <span style="font-size: 1.2em;"><strong> RGBD Camera </strong></span></summary>
 
-We use an [Orbbec Femto Bold](https://www.orbbec.com/products/tof-camera/femto-bolt/), but you are free to adapt the code to use your own RGBD Camera. 
+The posture detection model is [Mediapipe](https://chuoling.github.io/mediapipe/solutions/holistic.html). 
 
-The posture detection model is Mediapipe. 
+We use an [Orbbec Femto Bold](https://www.orbbec.com/products/tof-camera/femto-bolt/), but you are free to adapt the code to use your own RGBD Camera. 
+To use an Orbbec camera, you need the package pyorbbecsdk.
+
+<details>
+<summary><strong>Download pyorbbecsdk : </strong></summary>
+
+1. Clone the repository (virtual environment recommended) : <code> git clone https://github.com/orbbec/pyorbbecsdk.git </code>
+
+2. Make sure you have the needed dependencies : <code> sudo apt-get install python3-dev python3-pip python3-opencv </code>
+
+3. Install the requirements : 
+    
+    ```
+    cd pyorbbecsdk
+    pip3 install -r requirements.txt 
+    ```
+
+4. Create a folder for the build : 
+
+        mkdir build
+        cd build
+        cmake -Dpybind11_DIR=`pybind11-config --cmakedir` ..
+        
+
+5. Build the wrapper : 
+        
+        make -j4
+        make install
+
+6. Add the library directory to the list (*to know your python path, write <code> which python </code> in your terminal*): 
+
+    <code>export PYTHONPATH=$PYTHONPATH:$(pwd)/install/lib/</code>
+
+7. Import and apply dev rules : 
+
+    ```
+    sudo bash ./scripts/install_udev_rules.sh
+    sudo udevadm control --reload-rules && sudo udevadm trigger
+    ```
+
+8. Install the library : 
+    
+    ```
+    cd ..
+    pip install -e .
+    ```
+
+</details>
+
+
 
 To set-up your environment : 
 - Position the camera high up, to avoid getting occlusion. A calibration will be performed when the script is launched to calculate the orientation and adapt the calculation of the poses. 
@@ -221,7 +276,7 @@ To set-up your environment :
 </details>
 
 <details>
-<summary> <span style="font-size: 1.2em;"><strong> Console controller </strong></span></summary>
+<summary> <span style="font-size: 1.2em;"><strong> Gamepad </strong></span></summary>
 
 
 </details>

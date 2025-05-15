@@ -62,17 +62,16 @@ if __name__ == "__main__":
 
     while True:
         if gripper_type == FEETECH_GRIPPER:
-            x, y, button_cmd, buttonA, buttonB = arduino.read()
+            x, y, button_cmd, buttonA, buttonB, _ = arduino.read()
         else:
             x, y, button_cmd, buttonA, buttonB, potentiometer = arduino.read()
         if x is not None:
             if gripper_type == FEETECH_GRIPPER:
-                print(
-                    f"x: {x}, y: {y}, button_cmd: {button_cmd}, buttonA: {buttonA}, buttonB: {buttonB}"
-                )
+                print(f"x: {x}, y: {y}, button_cmd: {button_cmd}, buttonA: {buttonA}, buttonB: {buttonB}")
             else:
                 print(
-                    f"x: {x}, y: {y}, button_cmd: {button_cmd}, buttonA: {buttonA}, buttonB: {buttonB}, potentiometer: {potentiometer}"
+                    f"x: {x}, y: {y}, button_cmd: {button_cmd}, buttonA: {buttonA}, buttonB: {buttonB},"
+                    + f"potentiometer: {potentiometer}",
                 )
         else:
             print("No data")

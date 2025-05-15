@@ -1,6 +1,6 @@
 robot_ip: "localhost"
 fake_only: true  # Security to avoid sending command to a real robot if not wanted
-tracker_type: "vive"  # options: aruco, vive, rgbd
+tracker_type: "aruco"  # options: aruco, vive, rgbd
 gripper_type: "potentiometer" # options: feetech, potentiometer 
 control_mode: "dual_arm"  # options: dual_arm, l_arm, r_arm
 mirror_mode: false
@@ -33,11 +33,11 @@ vive_trackers:
 
 ## For ARUCO 
 marker_size:
-  l_arm: 0.06
-  r_arm: 0.03
+  l_arm: 0.053
+  r_arm: 0.053
 
 marker_ids:
-  l_arm: [6, 7, 10, 8, 9, 11]
+  l_arm: [6, 7, 8, 9, 10, 11]
   r_arm: [0, 1, 2, 3, 4, 5] # back, up, front, left, right, down
 
 camera:

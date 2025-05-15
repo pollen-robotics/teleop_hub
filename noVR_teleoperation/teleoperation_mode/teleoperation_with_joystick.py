@@ -132,10 +132,6 @@ class JoystickTeleoperation(Teleoperation):
             int: The corresponding gripper joint position.
         """
         min_joint, max_joint = self.controllers[arm].gripper_joints_limit
-        # if arm == "r_arm":
-        #     min_joint, max_joint = -60, -20
-        # else:
-        #     min_joint, max_joint = 60, 20
         min_gripper, max_gripper = 0, 130
         gripper_opening = ((joint - min_joint) / (max_joint - min_joint)) * (max_gripper - min_gripper) + min_gripper
         return int(gripper_opening)

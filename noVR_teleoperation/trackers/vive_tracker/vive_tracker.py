@@ -4,6 +4,7 @@ import numpy as np
 import trackers.vive_tracker.triad_openvr as triad_openvr  # type: ignore
 from openvr import HmdMatrix34_t  # type: ignore
 from trackers.tracker import Tracker, TrackerType  # type: ignore
+from utils import load_config  # type: ignore
 
 # trackers = {
 #     "l_arm": "LHR-0D914CCE",
@@ -23,7 +24,7 @@ class ViveTracker(Tracker):
         super().__init__()
         self.tracker_name = tracker_id
         self.tracker_type = TrackerType.VIVE
-        config = self.load_config("config.yaml")
+        config = load_config("config.yaml")
         trackers = config["vive_trackers"]
 
         if self.tracker_name not in trackers:

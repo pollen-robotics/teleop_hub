@@ -2,15 +2,18 @@ import time
 from abc import ABC, abstractmethod
 from typing import Optional
 
-import cv2  # type: ignore
+# import cv2  # type: ignore
 import numpy as np
-from camera.camera import Camera  # type: ignore
-from camera.orbbec import Orbbec  # type: ignore
-from camera.rgb_camera import RGBCamera  # type: ignore
+
+# from camera.camera import Camera  # type: ignore
+# from camera.orbbec import Orbbec  # type: ignore
+# from camera.rgb_camera import RGBCamera  # type: ignore
 from controller.joystick_controller import JoystickController  # type: ignore
-from controller.rgbd_controller import ArmRGBDController, HeadRGBDController
+
+# from controller.rgbd_controller import ArmRGBDController, HeadRGBDController
 from robots.reachy import Reachy2
-from trackers.rgbd_tracker.computer_vision import ComputerVision  # type: ignore
+
+# from trackers.rgbd_tracker.computer_vision import ComputerVision  # type: ignore
 from trackers.tracker import TrackerType  # type: ignore
 from utils import load_config
 
@@ -36,6 +39,7 @@ class Teleoperation(ABC):
         self.controllers: dict = {}
         self.controller_previous_pose = {LEFT_ARM: np.eye(4), RIGHT_ARM: np.eye(4)}
         self.robot_previous_pose = {LEFT_ARM: np.eye(4), RIGHT_ARM: np.eye(4)}
+        self.stop_flag = False
 
     @abstractmethod
     def init_teleoperation(self) -> None:
@@ -48,10 +52,11 @@ class Teleoperation(ABC):
         """
         self.init_teleoperation()
         frequency = 100
-        while True:
+        while not self.stop_flag:
             t = time.time()
             self.step()
             time.sleep(max(0, 1 / frequency - (time.time() - t)))
+        self.robot.stop()
 
     @abstractmethod
     def step(self):
@@ -59,7 +64,7 @@ class Teleoperation(ABC):
 
 
 class TeleoperationRGBD(Teleoperation):
-    """Teleoperation class with RGBD-type tracker."""
+    """Teleoperation class with RGBD-type controller."""
 
     def __init__(self) -> None:
         """Initialize the teleoperation class.
@@ -76,76 +81,96 @@ class TeleoperationRGBD(Teleoperation):
         }
         self.head_controller = HeadRGBDController(self.computer_vision)
         self.first_command_ok = False
+        self.user_offsets = np.zeros(3)
 
     def init_teleoperation(self) -> None:
         """Initialize the teleoperation.
 
-        Initializes the robot and controllers, and waits for the first command to be valid.
+        Initializes the robot and controllers, and waits for the first command to be valid,
+        before starting the teleoperation.
         """
         self.robot.init_robot()
+        robot_poses = [self.robot.fk(LEFT_ARM), self.robot.fk(RIGHT_ARM)]
 
-        # check that the command is in a specific area before starting the teleoperation
+        # check that the first commands are in a specific area before starting the teleoperation
+        # and set the user offsets
         while not self.first_command_ok:
+            is_pose_ok = [False, False]
             self.computer_vision.update_landmarks_coordinates(True)
-            l_pose = self.controllers[LEFT_ARM].get_controller_pose()
-            r_pose = self.controllers[RIGHT_ARM].get_controller_pose()
-            if self.is_first_command_ok(l_pose, False) and self.is_first_command_ok(r_pose, True):
+            for i, controller in enumerate(self.controllers.values()):
+                pose = controller.get_controller_pose()
+                is_pose_ok[i] = controller.check_first_command(pose)
+            if all(is_pose_ok):
                 self.first_command_ok = True
-            else:
-                print(f"l_pose: {l_pose[:3,3]}, r_pose: {r_pose[:3,3]}")
-                time.sleep(0.05)
+                self._set_user_offsets(
+                    [self.controllers[LEFT_ARM].first_pose, self.controllers[RIGHT_ARM].first_pose], robot_poses
+                )
 
-    def is_first_command_ok(self, pose: np.ndarray, is_for_r_arm: bool) -> bool:
-        """Check if the first command is in a specific area.
+    def _set_user_offsets(self, user_poses: list[np.ndarray], robot_poses: list[np.ndarray]) -> None:
+        """Set the user offsets based on the initial poses of the user and robot.
+
+        The offsets are calculated as the difference between the robot and user positions in the x, y, and z axes,
+        and they are stored in the `user_offsets` attribute.
+
+        Args:
+            user_poses (list[np.ndarray]): The initial poses of the user.
+            robot_poses (list[np.ndarray]): The initial poses of the robot.
+        """
+        user_l_position = user_poses[0][:3, 3]
+        user_r_position = user_poses[1][:3, 3]
+        robot_l_position = robot_poses[0][:3, 3]
+        robot_r_position = robot_poses[1][:3, 3]
+
+        # calculate the offsets between the robot and user positions (as the mean of the two arms)
+        x_offset = np.mean([robot_l_position[0] - user_l_position[0], robot_r_position[0] - user_r_position[0]])
+        y_offset = np.mean([robot_l_position[1] - user_l_position[1], robot_r_position[1] - user_r_position[1]])
+        z_offset = np.mean([robot_l_position[2] - user_l_position[2], robot_r_position[2] - user_r_position[2]])
+
+        self.user_offsets = np.array([x_offset, y_offset, z_offset])
+        print(f"User offsets: {self.user_offsets}")
+
+    def recalibrate_goal_position(self, pose: np.ndarray) -> np.ndarray:
+        """Recalibrate the goal position based on the user offsets.
 
         Args:
             pose (np.ndarray): The pose of the controller.
-            is_for_r_arm (bool): True if the pose is for the right arm, False if for the left arm.
         Returns:
-            bool: True if the first command is valid, False otherwise.
+            np.ndarray: The recalibrated pose.
         """
-        if pose is None:
-            return False
-        # check if the first command is in the cube : x 0,2/O,35 y 0,15/0.3 z -0,35/-0.2
-        command = pose[:3, 3]
-        if is_for_r_arm:
-            command[1] = -command[1]
-        if (
-            command[0] < 0.35
-            and command[0] > 0.2
-            and command[1] < 0.3
-            and command[1] > 0.15
-            and command[2] < -0.15
-            and command[2] > -0.35
-        ):
-            return True
-        return False
+        pose[:3, 3] += self.user_offsets
+        return pose
 
     def step(self) -> None:
         """Step called at each iteration of the teleoperation loop.
 
         Update the robot's state (arms, grippers, head), check for stop flag, and visualize the landmarks.
         """
+        # Check if the stop flag is raised
         if self.head_controller.stop_flag:
-            for controller in self.controllers.values():
-                controller.stop()
-            self.robot.stop()
+            self.stop_flag = True
             return
 
         self.computer_vision.update_landmarks_coordinates(True)
 
         for controller in self.controllers.values():
+            # Get the wrist command
             pose = controller.get_controller_pose()
+            pose = self.recalibrate_goal_position(pose)
             self.robot.go_to_pose(pose, controller.arm)
             self.controller_previous_pose[controller.arm] = pose
+
+            # Get the gripper command
             gripper_command = controller.get_gripper_command()
             if gripper_command is not None:
                 self.robot.move_gripper(controller.arm, False, gripper_command)
+
+        # Get the head command
         head_pose = self.head_controller.get_controller_pose()
         self.robot.move_head(head_pose)
 
         rpy = self.head_controller.former_rpy[-1]
 
+        # Show the landmarks on the frame
         color_frame = self.computer_vision.camera.color_frame[0]
         frame = self.computer_vision.visualization_landmarks(
             color_frame,
@@ -217,8 +242,10 @@ class JoystickTeleoperation(Teleoperation):
         for controller in self.controllers.values():
             controller.init_controller()
             self.controller_previous_pose[controller.arm] = controller.get_controller_pose()
-
+            self.antenna_previous_position = {RIGHT_ARM: 0, LEFT_ARM: 0}
             self.robot_previous_pose[controller.arm] = self.robot.fk(controller.arm)
+            self.mode = 0
+            self.head_previous_pose = np.eye(3)
 
     def controller_pose_to_robot_pose(self, controller_pose: np.ndarray, arm: str) -> np.ndarray:
         """Convert a controller pose to a robot pose.
@@ -265,7 +292,7 @@ class JoystickTeleoperation(Teleoperation):
             y_goal = command_max / center_joystick * x_input - command_max
         if not np.isclose(y_input, center_joystick, atol=70):
             x_goal = command_max / center_joystick * y_input - command_max
-        return int(x_goal), int(y_goal)
+        return x_goal, y_goal
 
     def trigger_joint_to_gripper_joint(self, joint: int, arm: str) -> int:
         """Convert trigger joint position to gripper joint position.
@@ -276,10 +303,11 @@ class JoystickTeleoperation(Teleoperation):
         Returns:
             int: The corresponding gripper joint position.
         """
-        if arm == "r_arm":
-            min_joint, max_joint = -60, -15
-        else:
-            min_joint, max_joint = 60, 15
+        min_joint, max_joint = self.controllers[arm].gripper_joints_limit
+        # if arm == "r_arm":
+        #     min_joint, max_joint = -60, -20
+        # else:
+        #     min_joint, max_joint = 60, 20
         min_gripper, max_gripper = 0, 130
         gripper_opening = ((joint - min_joint) / (max_joint - min_joint)) * (max_gripper - min_gripper) + min_gripper
         return int(gripper_opening)
@@ -341,6 +369,7 @@ class JoystickTeleoperation(Teleoperation):
             self.stop = not self.stop
             if not self.stop:
                 self.init_teleoperation()
+
             else:
                 self.robot.stop()
 
@@ -399,7 +428,7 @@ class JoystickTeleoperation(Teleoperation):
 
     def step(self) -> None:
         """Step called at each iteration of the teleoperation loop, updating the robot state."""
-        # self.manage_mode()
+        self.manage_mode()
         if not self.stop:
             self.update_robot_state()
             if tracker_type == TrackerType.ARUCO and isinstance(self.camera, RGBCamera):
@@ -439,30 +468,33 @@ class JoystickTeleoperation(Teleoperation):
                     robot_pose = self.controller_pose_to_robot_pose(pose, controller.arm)
                     self.robot.go_to_pose(robot_pose, controller.arm)
                     self.robot_previous_pose[controller.arm] = robot_pose
+                    gripper_joint = controller.get_gripper_joint()
+                    gripper_joint = self.trigger_joint_to_gripper_joint(gripper_joint, controller.arm)
+                    self.robot.move_gripper(controller.arm, True, gripper_joint)
                 self.controller_previous_pose[controller.arm] = pose
 
-            # x, y, theta = 0, 0, 0
-            # if self.joystick_mode[RIGHT_ARM] == 0:
-            #     _, r_y = self.joystick_to_mobile_base(
-            #         self.controllers[RIGHT_ARM].joystick_x,
-            #         self.controllers[RIGHT_ARM].joystick_y,
-            #     )
-            #     theta = r_y * 100
+            x, y, theta = 0, 0, 0
+            if self.joystick_mode[RIGHT_ARM] == 0:
+                _, r_y = self.joystick_to_mobile_base(
+                    self.controllers[RIGHT_ARM].joystick_x,
+                    self.controllers[RIGHT_ARM].joystick_y,
+                )
+                theta = r_y * 100
 
-            # else:
-            #     antenna = self.joystick_to_antenna(self.controllers[RIGHT_ARM].joystick_x, RIGHT_ARM)
-            #     self.robot.move_antenna(antenna, RIGHT_ARM)
-            #     self.antenna_previous_position[RIGHT_ARM] = antenna
-            # if self.joystick_mode[LEFT_ARM] == 0:
-            #     x, y = self.joystick_to_mobile_base(
-            #         self.controllers[LEFT_ARM].joystick_x,
-            #         self.controllers[LEFT_ARM].joystick_y,
-            #     )
-            # else:
-            #     antenna = self.joystick_to_antenna(self.controllers[LEFT_ARM].joystick_x, LEFT_ARM)
-            #     self.robot.move_antenna(antenna, LEFT_ARM)
-            #     self.antenna_previous_position[LEFT_ARM] = antenna
-            # self.robot.move_mobile_base(x, y, theta)
+            else:
+                antenna = self.joystick_to_antenna(self.controllers[RIGHT_ARM].joystick_x, RIGHT_ARM)
+                self.robot.move_antenna(antenna, RIGHT_ARM)
+                self.antenna_previous_position[RIGHT_ARM] = antenna
+            if self.joystick_mode[LEFT_ARM] == 0:
+                x, y = self.joystick_to_mobile_base(
+                    self.controllers[LEFT_ARM].joystick_x,
+                    self.controllers[LEFT_ARM].joystick_y,
+                )
+            else:
+                antenna = self.joystick_to_antenna(self.controllers[LEFT_ARM].joystick_x, LEFT_ARM)
+                self.robot.move_antenna(antenna, LEFT_ARM)
+                self.antenna_previous_position[LEFT_ARM] = antenna
+            self.robot.move_mobile_base(x, y, theta)
 
     def update_single_arm_state(self) -> None:
         """Update the robot state for single-arm teleoperation."""
@@ -473,22 +505,25 @@ class JoystickTeleoperation(Teleoperation):
             robot_pose = self.controller_pose_to_robot_pose(pose, controller.arm)
             self.robot.go_to_pose(robot_pose, controller.arm)
             self.robot_previous_pose[controller.arm] = robot_pose
-            # x, y, theta = 0, 0, 0
-            # joystick_x, joystick_y = self.joystick_to_mobile_base(controller.joystick_x, controller.joystick_y)
-            # if self.joystick_mode[self.control_mode] == 0:
-            #     x, y = joystick_x, joystick_y
-            # else:
-            #     x = joystick_x
-            #     theta = joystick_y * 100
-            # self.robot.move_mobile_base(x, y, theta)
+            x, y, theta = 0, 0, 0
+            joystick_x, joystick_y = self.joystick_to_mobile_base(controller.joystick_x, controller.joystick_y)
+            if self.joystick_mode[self.control_mode] == 0:
+                x, y = joystick_x, joystick_y
+            else:
+                x = joystick_x
+                theta = joystick_y * 100
+            self.robot.move_mobile_base(x, y, theta)
+            gripper_joint = controller.get_gripper_joint()
+            gripper_joint = self.trigger_joint_to_gripper_joint(gripper_joint, controller.arm)
+            self.robot.move_gripper(controller.arm, True, gripper_joint)
 
         elif self.mode == 1:
             head_orientation = self.controller_to_head_orientation(pose, controller.arm)
             self.robot.move_head(head_orientation)
             self.head_previous_pose = head_orientation
-            # antenna = self.joystick_to_antenna(controller.joystick_x, controller.arm)
-            # self.robot.move_antenna(antenna)
-            # self.antenna_previous_position[controller.arm] = antenna
+            antenna = self.joystick_to_antenna(controller.joystick_x, controller.arm)
+            self.robot.move_antenna(antenna)
+            self.antenna_previous_position[controller.arm] = antenna
         self.controller_previous_pose[controller.arm] = pose
 
     def get_video_streaming(self) -> Optional[np.ndarray]:

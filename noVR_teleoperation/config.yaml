@@ -1,6 +1,7 @@
 robot_ip: "localhost"
 fake_only: true  # Security to avoid sending command to a real robot if not wanted
-tracker_type: "aruco"  # options: aruco, vive, rgbd
+tracker_type: "vive"  # options: aruco, vive, rgbd
+gripper_type: "potentiometer" # options: feetech, potentiometer 
 control_mode: "dual_arm"  # options: dual_arm, l_arm, r_arm
 mirror_mode: false
 
@@ -12,9 +13,13 @@ feetech_ports:
   l_arm: "/dev/noVR_left_motor"
   r_arm: "/dev/noVR_right_motor"
 
-gripper_joints_limit:
-  l_arm: [65, 30]
-  r_arm: [-65, -30]
+feetech_gripper_joints_limit:
+  l_arm: [65, 20]
+  r_arm: [-65, -20]
+
+potentiometer_gripper_joints_limit:
+  l_arm: [450, 570]
+  r_arm: [630, 790]
 
 ## For Arduino commands
 arduino_ports:
@@ -32,8 +37,8 @@ marker_size:
   r_arm: 0.03
 
 marker_ids:
-  l_arm: [6, 7, 10, 8, 9, 11]
-  r_arm: [0, 1, 5, 2, 4, 3] # back, up, front, left, right, down
+  l_arm: [6, 7, 10, 9, 8, 11]
+  r_arm: [0, 1, 5, 4, 2, 3] # back, up, front, left, right, down
 
 camera:
   usb_mode: true

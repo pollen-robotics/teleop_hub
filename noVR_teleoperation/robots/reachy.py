@@ -132,7 +132,7 @@ class Reachy2(Robot):
         request = ArmCartesianGoal(
             id=robot_arm._part_id,
             goal_pose=Matrix4x4(data=pose.flatten().tolist()),
-            continuous_mode=IKContinuousMode.UNFREEZE,  # A MODIFIER
+            continuous_mode=IKContinuousMode.CONTINUOUS,
             constrained_mode=IKConstrainedMode.UNCONSTRAINED,
             preferred_theta=FloatValue(
                 value=-4 * np.pi / 6,

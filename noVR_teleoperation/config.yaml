@@ -1,12 +1,14 @@
 robot_ip: "localhost"
 fake_only: true  # Security to avoid sending command to a real robot if not wanted
-tracker_type: "vive"  # options: aruco, vive, rgbd
-gripper_type: "potentiometer" # options: feetech, potentiometer 
+tracker_type: "vive"  # options: aruco, vive, rgbd, arm, gamepad
 control_mode: "dual_arm"  # options: dual_arm, l_arm, r_arm
 mirror_mode: false
 
-## For RGBD
-scale_percent: 50
+## Fot custom controller (ARUCO and VIVE)
+gripper_type: "potentiometer" # options: feetech, potentiometer 
+arduino_ports:
+  l_arm: "/dev/noVR_left_arduino"
+  r_arm: "/dev/noVR_right_arduino"
 
 ## For Feetech grippers
 feetech_ports:
@@ -17,14 +19,12 @@ feetech_gripper_joints_limit:
   l_arm: [65, 20]
   r_arm: [-65, -20]
 
+
+## For Potentiometer grippers
 potentiometer_gripper_joints_limit:
   l_arm: [450, 570]
   r_arm: [630, 790]
 
-## For Arduino commands
-arduino_ports:
-  l_arm: "/dev/noVR_left_arduino"
-  r_arm: "/dev/noVR_right_arduino"
 
 ## For VIVE
 vive_trackers:
@@ -61,3 +61,7 @@ camera:
         - 0.02701695107028852
         - -0.0416190770556984
         - -0.6751017329030815
+
+
+## For RGBD
+scale_percent: 50

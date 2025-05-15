@@ -17,6 +17,8 @@ from utils import (  # type: ignore
     make_homogenous_matrix_from_rotation_matrix,
 )
 
+FEETECH_GRIPPER = "feetech"
+POTENTIOMETER_GRIPPER = "potentiometer"
 
 class JoystickController(Controller):
     """Joystick controller class.
@@ -43,10 +45,24 @@ class JoystickController(Controller):
         super().__init__()
         self.tracker_type = tracker_type
         self.arm = arm
+
+        self.gripper_type = load_config("config.yaml")["gripper_type"]
+
         arduino_port = load_config("config.yaml")["arduino_ports"][arm]
-        self.arduino = ArduinoController(arduino_port)
-        feetech_port = load_config("config.yaml")["feetech_ports"][arm]
-        self.gripper = Feetech(feetech_port)
+        self.arduino = ArduinoController(arduino_port, self.gripper_type)
+        
+        if self.gripper_type == FEETECH_GRIPPER:
+            feetech_port = load_config("config.yaml")["feetech_ports"][arm]
+            self.gripper = Feetech(feetech_port)
+            self.gripper_joints_limit = load_config("config.yaml")["feetech_gripper_joints_limit"][
+                self.arm
+            ]
+        elif self.gripper_type == POTENTIOMETER_GRIPPER:
+            self.gripper_joints_limit = load_config("config.yaml")["potentiometer_gripper_joints_limit"][
+                self.arm
+            ]
+        else:
+            raise ValueError(f"Unknown gripper type: {self.gripper_type}")
 
         if self.tracker_type == TrackerType.ARUCO:
             self.camera = camera
@@ -68,9 +84,7 @@ class JoystickController(Controller):
         self.buttonB = None
 
         self.stop_flag = False
-        self.gripper_joints_limit = load_config("config.yaml")["gripper_joints_limit"][
-            self.arm
-        ]
+        
 
         thread = threading.Thread(target=self._update_arduino_data)
         thread.daemon = True
@@ -91,7 +105,8 @@ class JoystickController(Controller):
             self.tracker.update_tracker_pose()
             time.sleep(0.1)
         self.tracker_init_pose = self.tracker.tracker_pose
-        self.init_gripper(self.gripper_joints_limit[1])
+        if self.gripper_type == FEETECH_GRIPPER:
+            self.init_gripper(self.gripper_joints_limit[1])
 
     def _update_arduino_data(self) -> None:
         """Update the Arduino data in a separate thread.
@@ -99,25 +114,33 @@ class JoystickController(Controller):
         This method reads the joystick data from the Arduino and updates the joystick position and button states.
         """
         while not self.stop_flag:
-            x, y, button_cmd, buttonA, buttonB = self.arduino.read()
-            if x is not None:
-                self.joystick_button = button_cmd
+            arduino_values = self.arduino.read()
+            # x, y, button_cmd, buttonA, buttonB, potentiometer = self.arduino.read()
+            if arduino_values[0] is not None:
+                self.joystick_button = arduino_values[2]
                 if self.arm == "r_arm":
-                    self.buttonA = buttonA
-                    self.buttonB = buttonB
-                    self.joystick_x = x
-                    self.joystick_y = y
+                    self.buttonA = arduino_values[3]
+                    self.buttonB = arduino_values[4]
+                    self.joystick_x = arduino_values[0]
+                    self.joystick_y = arduino_values[1]
                 else:
-                    self.buttonA = buttonB
-                    self.buttonB = buttonA
-                    self.joystick_x = 1024 - x
-                    self.joystick_y = 1024 - y
+                    self.buttonA = arduino_values[3]
+                    self.buttonB = arduino_values[4]
+                    self.joystick_x = 1024 - arduino_values[0]
+                    self.joystick_y = 1024 - arduino_values[1]
+                if self.gripper_type == POTENTIOMETER_GRIPPER:
+                    self.potentiometer = arduino_values[5]
+
             else:
                 print("No data")
             time.sleep(0.1)
 
     def get_gripper_joint(self):
-        return self.gripper.get_joints()[0]
+        if self.gripper_type == FEETECH_GRIPPER:
+            gripper_joint = self.gripper.get_joints()[0]
+        if self.gripper_type == POTENTIOMETER_GRIPPER:
+            gripper_joint = self.potentiometer
+        return gripper_joint
 
     def get_controller_pose(self) -> Optional[np.ndarray]:
         """Get the pose of the controller.

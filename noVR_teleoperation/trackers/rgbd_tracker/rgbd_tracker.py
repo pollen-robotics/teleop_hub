@@ -67,6 +67,25 @@ class ArmRGBDTracker(RGBDTracker):
         self.kalman_filters = [KalmanFilter3D() for _ in range(2)]
         self.rotation_smoother = RotationSmoother()
 
+    def update_tracker_pose(self) -> None:
+        """Update the tracker pose based on the arm points.
+
+        This method uses the wrist position as the goal position,
+        retrieves the elbow and wrist positions, applies Kalman filtering to smooth the positions,
+        and computes the rotation matrix from the vector elbow-wrist.
+        """
+        elbow_position, wrist_position = self.get_points()
+
+        #  Apply Kalman filter to smooth the elbow and wrist positions
+        elbow_position_filtered = self.kalman_filters[0].update(elbow_position)
+        wrist_position_filtered = self.kalman_filters[1].update(wrist_position)
+
+        # get the rotation matrix from the vector elbow-wrist
+        wrist_rotation = rotation_matrix_from_vector(wrist_position_filtered - elbow_position_filtered)
+        wrist_rotation_filtered = self.rotation_smoother.update(wrist_rotation)
+
+        self.tracker_pose = recompose_matrix(wrist_rotation_filtered, wrist_position_filtered)
+
     def get_points(self) -> tuple[np.ndarray, np.ndarray]:
         """Get the 3D coordinates of the arm points (elbow, wrist) for the specified arm.
 
@@ -77,26 +96,6 @@ class ArmRGBDTracker(RGBDTracker):
         return (
             np.array(self.computer_vision.elbows[side_int]),
             np.array(self.computer_vision.wrists[side_int]),
-        )
-
-    def update_tracker_pose(self) -> None:
-        """Update the tracker pose based on the arm points.
-
-        This method uses the wrist position as the goal position,
-        and retrieves the elbow and wrist positions, applies Kalman filtering to smooth the positions,
-        and computes the rotation matrix from the vector elbow-wrist.
-        """
-        elbow_position, wrist_position = self.get_points()
-        # Apply Kalman filter to smooth the elbow and wrist positions
-        elbow_position_filtered = self.kalman_filters[0].update(elbow_position)
-        wrist_position_filtered = self.kalman_filters[1].update(wrist_position)
-
-        # get the rotation matrix from the vector elbow-wrist
-        wrist_rotation = rotation_matrix_from_vector(wrist_position_filtered - elbow_position_filtered)
-        wrist_rotation_filtered = self.rotation_smoother.update(wrist_rotation)
-
-        self.tracker_pose = make_homogenous_matrix_from_rotation_matrix(
-            wrist_rotation_filtered, wrist_position_filtered
         )
 
     def stop(self) -> None:
@@ -114,6 +113,7 @@ class GripperRGBDTracker(RGBDTracker):
 
     def __init__(self, arm: str, computer_vision: ComputerVision) -> None:
         """Initialize the GripperRGBDTracker.
+
         Args:
             arm (str): The arm to be tracked ("l_arm" or "r_arm").
             computer_vision (ComputerVision): An instance of the ComputerVision class for processing RGBD data.
@@ -122,6 +122,23 @@ class GripperRGBDTracker(RGBDTracker):
         self.arm = arm
         self.kf = [KalmanFilter3D() for _ in range(4)]
         self.mf_gripper = MedianFilter()
+
+    def update_tracker_pose(self) -> Optional[float]:
+        """Update the gripper opening based on the hand points.
+
+        This method retrieves the hand points, applies Kalman filtering to smooth the positions,
+        and computes the gripper opening.
+
+        Returns:
+            Optional[float]: The estimated gripper opening. Returns None if hand points are not available.
+        """
+        hand_points = self.get_points()
+        # Apply Kalman filter to smooth the hand points
+        hand_points_filtered = [self.kf[i].update(hand_points[i]) for i in range(4)]
+        # get the rotation matrix
+        gripper_opening = self._estimate_gripper_opening(hand_points_filtered)
+
+        return gripper_opening
 
     def get_points(self) -> np.ndarray:
         """Get the 3D coordinates of the hand points (thumb mcp, thumb tip, index mcp, index tip)
@@ -135,11 +152,12 @@ class GripperRGBDTracker(RGBDTracker):
         else:
             return self.computer_vision.right_hand_points
 
-    def estimate_gripper_opening(self, hand_points) -> Optional[float]:
+    def _estimate_gripper_opening(self, hand_points) -> Optional[float]:
         """Estimate the gripper opening based on the hand points.
 
         The gripper opening is calculated as the ratio of the distance between the index tip and thumb tip
         to the distance between the index mcp and thumb mcp.
+        A median filter is applied to smooth the opening value.
 
         Args:
             hand_points (np.ndarray): A numpy array containing the 3D coordinates of the hand points.
@@ -156,23 +174,6 @@ class GripperRGBDTracker(RGBDTracker):
         opening = float(np.linalg.norm(index_tip - thumb_tip) / np.linalg.norm(index_mcp - thumb_mcp))
         opening_filtered = self.mf_gripper.update(opening)
         return opening_filtered
-
-    def update_tracker_pose(self) -> Optional[float]:
-        """Update the gripper opening based on the hand points.
-
-        This method retrieves the hand points, applies Kalman filtering to smooth the positions,
-        and computes the gripper opening.
-
-        Returns:
-            Optional[float]: The estimated gripper opening. Returns None if hand points are not available.
-        """
-        hand_points = self.get_points()
-        # Apply Kalman filter to smooth the hand points
-        hand_points_filtered = [self.kf[i].update(hand_points[i]) for i in range(4)]
-        # get the rotation matrix
-        gripper_opening = self.estimate_gripper_opening(hand_points_filtered)
-
-        return gripper_opening
 
 
 class HeadRGBDTracker(RGBDTracker):
@@ -191,6 +192,19 @@ class HeadRGBDTracker(RGBDTracker):
         self.kf = [KalmanFilter3D() for _ in range(4)]
         self.rotation_smoother = RotationSmoother()
 
+    def update_tracker_pose(self) -> None:
+        """Update the head pose based on the head points.
+
+        This method retrieves the head points, applies Kalman filtering to smooth the positions,
+        and computes the head orientation.
+        """
+        head_points = self.get_points()
+        # Apply Kalman filter to smooth the head points
+        head_points_filtered = [self.kf[i].update(head_points[i]) for i in range(4)]
+        # get the rotation matrix
+        tracker_pose = self._estimate_head_orientation(head_points_filtered)
+        self.tracker_pose = tracker_pose
+
     def get_points(self) -> np.ndarray:
         """Get the 3D coordinates of the face points (nose, chin, left eye, right eye).
 
@@ -200,7 +214,7 @@ class HeadRGBDTracker(RGBDTracker):
         face_points = self.computer_vision.face_points
         return face_points
 
-    def estimate_head_orientation(self, head_points: list) -> np.ndarray:
+    def _estimate_head_orientation(self, head_points: list) -> np.ndarray:
         """Estimate the head orientation based on the head points.
 
         The head orientation is calculated using the nose, chin, left eye, and right eye points.
@@ -215,7 +229,7 @@ class HeadRGBDTracker(RGBDTracker):
         left_eye = head_points[2]
         right_eye = head_points[3]
 
-        # in IMAGE FRAME
+        # Create the 3D axes from the points
         x_axis = np.array(right_eye) - np.array(left_eye)
         x_axis = x_axis / np.linalg.norm(x_axis)
         y_axis = np.array(chin) - np.array(nose)
@@ -227,18 +241,10 @@ class HeadRGBDTracker(RGBDTracker):
 
         return rot
 
-    def update_tracker_pose(self) -> None:
-        """Update the head pose based on the head points.
-
-        This method retrieves the head points, applies Kalman filtering to smooth the positions,
-        and computes the head orientation.
-        """
-        head_points = self.get_points()
-        # Apply Kalman filter to smooth the head points
-        head_points_filtered = [self.kf[i].update(head_points[i]) for i in range(4)]
-        # get the rotation matrix
-        tracker_pose = self.estimate_head_orientation(head_points_filtered)
-        self.tracker_pose = tracker_pose
+    def stop(self) -> None:
+        """Stop the RGBD tracker."""
+        self.computer_vision.stop()
+        print("RGBD Tracker stopped.")
 
 
 if __name__ == "__main__":

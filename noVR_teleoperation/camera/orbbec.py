@@ -48,7 +48,7 @@ class Orbbec(Camera):
         self.get_parameters()
 
         # start the thread to get frames
-        self.frame_getter = threading.Thread(target=self.get_frame)
+        self.frame_getter = threading.Thread(target=self.get_frame, daemon=True)
         self.frame_getter.start()
 
     def _set_pipeline(self) -> None:
@@ -227,8 +227,8 @@ class Orbbec(Camera):
 
     def stop(self) -> None:
         """Stop the camera and close all OpenCV windows."""
-        self.pipeline.stop()
         self.cv2.destroyAllWindows()
+        self.pipeline.stop()
         print("Orbbec stopped.")
 
 

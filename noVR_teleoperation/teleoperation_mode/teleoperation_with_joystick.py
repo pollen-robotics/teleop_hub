@@ -103,7 +103,7 @@ class JoystickTeleoperation(Teleoperation):
         head_orientation = diff_orientation @ self.head_previous_pose
         return head_orientation
 
-    def joystick_to_mobile_base(self, x_input: float, y_input: float) -> tuple[int, int]:
+    def joystick_to_mobile_base(self, x_input: float, y_input: float) -> tuple[float, float]:
         """Convert joystick input to mobile base movement.
 
         Args:

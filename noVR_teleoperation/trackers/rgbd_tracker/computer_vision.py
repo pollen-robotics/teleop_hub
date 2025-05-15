@@ -21,17 +21,14 @@ HANDLANDMARKS_CST = [2, 4, 5, 8]
 class ComputerVision:
     """Class for computer vision using MediaPipe."""
 
-    def __init__(self, camera: Camera, up_mode: bool = True) -> None:
+    def __init__(self, camera: Camera) -> None:
         """Initialize the computer vision class.
 
         Args:
             camera (Camera): The camera object.
-            up_mode (bool): If True, calibrate the camera with the angle between the shoulders and the forehead.
-                This is used to align the camera with the user.
         """
         self.camera = camera
         self.image_shape = self.camera.image_shape
-        self.up_mode = up_mode
 
         self.cv2 = self.camera.cv2
 
@@ -48,18 +45,19 @@ class ComputerVision:
         )
 
         self._initialize_landmarks()
-        self.user_center = np.zeros(3)
         self.T_world_camera = np.eye(3)
 
+        # Get the user center and the normalization factor from meters to pixels
         self._get_user_parameters()
 
-        if self.up_mode:
-            self.calibrate()
+        # Get the camera orientation angle
+        self.calibrate()
 
         print("Computer vision initialized")
 
     def _initialize_landmarks(self) -> None:
-        """Initialize the keypoints (shoulders, elbows, wrists, face and hands)."""
+        """Initialize the keypoints (user center, shoulders, elbows, wrists, face and hands)."""
+        self.user_center = np.zeros(3)
         self.shoulders = np.zeros((2, 3))
         self.elbows = np.zeros((2, 3))
         self.wrists = np.zeros((2, 3))
@@ -86,7 +84,7 @@ class ComputerVision:
         return self.holistic.process(self.cv2.cvtColor(color_frame, self.cv2.COLOR_BGR2RGB))
 
     def _get_user_parameters(self) -> None:
-        """Get the user parameters (shoulder distance and user center)."""
+        """Get the user parameters (shoulder distance, normalization factor and user center)."""
         dist_intershoulder_list: list = []
         user_center_list: list = []
         nb_frames = 10
@@ -110,15 +108,13 @@ class ComputerVision:
                 )
 
         self.dist_intershoulder = np.median(dist_intershoulder_list)
+
+        # Get the normalization factor from meters to pixels
         self.normalization_factor = self.dist_intershoulder / 0.3
 
         # then, get the user center as the median of the last 10 frames
         while len(user_center_list) < nb_frames:
-            try:
-                color_frame, depth_frame = self.get_frames()
-            except Exception:
-                continue
-
+            color_frame, depth_frame = self.get_frames()
             results = self.process_frame(color_frame)
             if not results:
                 continue
@@ -146,12 +142,9 @@ class ComputerVision:
         forehead_tab = np.zeros((nb_frames, 3))
         ite = 0
 
+        # Get the positions of the shoulders and the forehead as the median of the last 10 frames
         while ite < nb_frames:
-            try:
-                color_frame, depth_frame = self.get_frames()
-            except Exception:
-                continue
-
+            color_frame, depth_frame = self.get_frames()
             results = self.process_frame(color_frame)
             if not results:
                 continue
@@ -172,6 +165,7 @@ class ComputerVision:
         shoulders_median = np.median(shoulders_tab, axis=0)
         forehead_median = np.median(forehead_tab, axis=0)
 
+        # Calculate the angle between the shoulders and the forehead
         angle = np.arctan(
             (forehead_median[2] - np.mean(shoulders_median[:, 2]))
             / (forehead_median[1] - (np.mean(shoulders_median[:, 1])))
@@ -195,16 +189,19 @@ class ComputerVision:
         if not results:
             return False
 
+        # Get the 2D landmarks for the body and 3D landmarks for the hands and face
         body_landmarks = self._get_2D_landmarks(results.pose_landmarks)
         left_hand_landmarks = self._get_3D_landmarks(results.left_hand_landmarks)
         right_hand_landmarks = self._get_3D_landmarks(results.right_hand_landmarks)
         face_landmarks = self._get_3D_landmarks(results.face_landmarks)
 
+        # Update the body coordinates with the RGBD depth data
         if body_landmarks is not None:
             if not fixed_user:
                 self._update_shoulders(body_landmarks, depth_frame)
             self._update_elbows_and_wrists(body_landmarks, depth_frame)
 
+        # Update the hands and face coordinates with Mediapipe depth estimation
         if left_hand_landmarks is not None and right_hand_landmarks is not None:
             self._update_hand_landmarks(left_hand_landmarks, right_hand_landmarks)
         if face_landmarks is not None:
@@ -224,10 +221,15 @@ class ComputerVision:
         if original_landmarks is None:
             return None
         original_landmarks = np.array([(lm.x, lm.y) for lm in original_landmarks.landmark])
+
+        # Convert the normalized coordinates to pixel coordinate
         x_init = (original_landmarks[:, 0] * self.image_shape[1]).astype(int)
         y_init = (original_landmarks[:, 1] * self.image_shape[0]).astype(int)
+
+        # Clip the values to be within the image shape
         x = np.clip(x_init, 0, self.image_shape[1] - 1)
         y = np.clip(y_init, 0, self.image_shape[0] - 1)
+
         return np.vstack((x, y)).T
 
     def _get_3D_landmarks(self, original_landmarks) -> Optional[np.ndarray]:
@@ -242,10 +244,13 @@ class ComputerVision:
             return None
 
         original_landmarks = np.array([(lm.x, lm.y, lm.z) for lm in original_landmarks.landmark])
+
+        # Convert the normalized coordinates to pixel coordinates
         x_init = (original_landmarks[:, 0] * self.image_shape[1]).astype(int)
         y_init = (original_landmarks[:, 1] * self.image_shape[0]).astype(int)
         z = (original_landmarks[:, 2] * self.image_shape[1]).astype(int)
 
+        # Clip the values to be within the image shape
         x = np.clip(x_init, 0, self.image_shape[1] - 1)
         y = np.clip(y_init, 0, self.image_shape[0] - 1)
         return np.vstack((x, y, z)).T.astype(np.float32)
@@ -463,8 +468,7 @@ class ComputerVision:
         return color_frame
 
     def stop(self):
-        """Stop the camera and close the MediaPipe Holistic."""
-        self.holistic.close()
+        """Stop the camera"""
         self.camera.stop()
 
 

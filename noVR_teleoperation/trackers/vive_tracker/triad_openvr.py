@@ -150,11 +150,7 @@ class pose_sample_buffer:
         self.pitch.append(
             180
             / math.pi
-            * math.atan(
-                -1
-                * pose_mat[2][0]
-                / math.sqrt(pow(pose_mat[2][1], 2) + math.pow(pose_mat[2][2], 2))
-            )
+            * math.atan(-1 * pose_mat[2][0] / math.sqrt(pow(pose_mat[2][1], 2) + math.pow(pose_mat[2][2], 2)))
         )
         self.roll.append(180 / math.pi * math.atan(pose_mat[2][1] / pose_mat[2][2]))
         r_w = math.sqrt(abs(1 + pose_mat[0][0] + pose_mat[1][1] + pose_mat[2][2])) / 2
@@ -171,14 +167,10 @@ class vr_tracked_device:
         self.vr = vr_obj
 
     def get_serial(self):
-        return self.vr.getStringTrackedDeviceProperty(
-            self.index, openvr.Prop_SerialNumber_String
-        ).encode("utf-8")
+        return self.vr.getStringTrackedDeviceProperty(self.index, openvr.Prop_SerialNumber_String).encode("utf-8")
 
     def get_model(self):
-        return self.vr.getStringTrackedDeviceProperty(
-            self.index, openvr.Prop_ModelNumber_String
-        ).encode("utf-8")
+        return self.vr.getStringTrackedDeviceProperty(self.index, openvr.Prop_ModelNumber_String).encode("utf-8")
 
     def sample(self, num_samples, sample_rate):
         interval = 1 / sample_rate
@@ -189,9 +181,7 @@ class vr_tracked_device:
             pose = self.vr.getDeviceToAbsoluteTrackingPose(
                 openvr.TrackingUniverseStanding, 0, openvr.k_unMaxTrackedDeviceCount
             )
-            rtn.append(
-                pose[self.index].mDeviceToAbsoluteTracking, time.time() - sample_start
-            )
+            rtn.append(pose[self.index].mDeviceToAbsoluteTracking, time.time() - sample_start)
             sleep_time = interval - (time.time() - start)
             if sleep_time > 0:
                 time.sleep(sleep_time)
@@ -230,13 +220,7 @@ class vr_tracked_device:
 
 class vr_tracking_reference(vr_tracked_device):
     def get_mode(self):
-        return (
-            self.vr.getStringTrackedDeviceProperty(
-                self.index, openvr.Prop_ModeLabel_String
-            )
-            .encode("utf-8")
-            .upper()
-        )
+        return self.vr.getStringTrackedDeviceProperty(self.index, openvr.Prop_ModeLabel_String).encode("utf-8").upper()
 
     def sample(self, num_samples, sample_rate):
         print("Warning: Tracking References do not move, sample isn't much use...")
@@ -263,44 +247,27 @@ class triad_openvr:
             if poses[i].bPoseIsValid:
                 device_class = self.vr.getTrackedDeviceClass(i)
                 if device_class == openvr.TrackedDeviceClass_Controller:
-                    device_name = "controller_" + str(
-                        len(self.object_names["Controller"]) + 1
-                    )
+                    device_name = "controller_" + str(len(self.object_names["Controller"]) + 1)
                     self.object_names["Controller"].append(device_name)
-                    self.devices[device_name] = vr_tracked_device(
-                        self.vr, i, "Controller"
-                    )
+                    self.devices[device_name] = vr_tracked_device(self.vr, i, "Controller")
                 elif device_class == openvr.TrackedDeviceClass_HMD:
                     device_name = "hmd_" + str(len(self.object_names["HMD"]) + 1)
                     self.object_names["HMD"].append(device_name)
                     self.devices[device_name] = vr_tracked_device(self.vr, i, "HMD")
                 elif device_class == openvr.TrackedDeviceClass_GenericTracker:
-                    device_name = "tracker_" + str(
-                        len(self.object_names["Tracker"]) + 1
-                    )
+                    device_name = "tracker_" + str(len(self.object_names["Tracker"]) + 1)
                     self.object_names["Tracker"].append(device_name)
                     self.devices[device_name] = vr_tracked_device(self.vr, i, "Tracker")
                 elif device_class == openvr.TrackedDeviceClass_TrackingReference:
-                    device_name = "tracking_reference_" + str(
-                        len(self.object_names["Tracking Reference"]) + 1
-                    )
+                    device_name = "tracking_reference_" + str(len(self.object_names["Tracking Reference"]) + 1)
                     self.object_names["Tracking Reference"].append(device_name)
-                    self.devices[device_name] = vr_tracking_reference(
-                        self.vr, i, "Tracking Reference"
-                    )
+                    self.devices[device_name] = vr_tracking_reference(self.vr, i, "Tracking Reference")
 
     def rename_device(self, old_device_name, new_device_name):
         self.devices[new_device_name] = self.devices.pop(old_device_name)
-        for i in range(
-            len(self.object_names[self.devices[new_device_name].device_class])
-        ):
-            if (
-                self.object_names[self.devices[new_device_name].device_class][i]
-                == old_device_name
-            ):
-                self.object_names[self.devices[new_device_name].device_class][
-                    i
-                ] = new_device_name
+        for i in range(len(self.object_names[self.devices[new_device_name].device_class])):
+            if self.object_names[self.devices[new_device_name].device_class][i] == old_device_name:
+                self.object_names[self.devices[new_device_name].device_class][i] = new_device_name
 
     def get_device_count(self):
         return len(self.devices)
@@ -334,3 +301,45 @@ class triad_openvr:
                         + str(self.devices[device].get_model())
                         + ")"
                     )
+
+    def print_trackers_name(self):
+        trackers = []
+        for deviceName in self.devices:
+            [x, y, z, roll, pitch, yaw] = v.devices[deviceName].get_pose_euler()
+            if deviceName == "tracker_1" or deviceName == "tracker_2":
+                trackers.append((v.devices[deviceName].get_serial(), x))
+
+        if len(trackers) == 0:
+            print("No trackers found.")
+            return
+
+        elif len(trackers) == 1:
+            print("Tracker name : ", trackers[0][0])
+
+        else:
+            trackers.sort(key=lambda x: x[1])
+            r_tracker = {"name": trackers[0][0].decode(), "x": trackers[0][1]}
+            l_tracker = {"name": trackers[1][0].decode(), "x": trackers[1][1]}
+            print("Left Tracker name : ", l_tracker["name"])
+            print("Right Tracker name : ", r_tracker["name"])
+
+
+if __name__ == "__main__":
+    try:
+        v = triad_openvr()
+        v.print_trackers_name()
+
+    except Exception as ex:
+        if (
+            type(ex).__name__ == "OpenVRError"
+            and ex.args[0] == "VRInitError_Init_HmdNotFoundPresenceFailed (error number 126)"
+        ):
+            print("Cannot find the tracker.")
+            print("Is SteamVR running?")
+            print("Is the Vive Tracker turned on, connected, and paired with SteamVR?")
+            print("Are the Lighthouse Base Stations powered and in view of the Tracker?\n\n")
+        else:
+            template = "An exception of type {0} occurred. Arguments:\n{1!r}"
+            message = template.format(type(ex).__name__, ex.args)
+            print(message)
+        print(ex.args)

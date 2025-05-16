@@ -14,7 +14,7 @@ There are currently 5 methods available:
 - the gamepad
 
 <p align = "center"> 
-    <img src="images/vive_tracker.png" alt="vive_tracker" style="width: 14.35%; margin-right: 5px;"/>
+    <img src="images/vive_tracker.png" alt="vive_tracker" style="width: 15%; margin-right: 5px;"/>
     <img src="images/aruco_tracker.png" alt="aruco_tracker" style="width: 15%; margin-right: 5px;"/>
     <img src="images/Orbbec.png" alt="aruco_tracker" style="width: 15%; margin-right: 5px;"/>
     <img src="images/SO100.png" alt="aruco_tracker" style="width: 15%; margin-right: 5px;"/>
@@ -149,9 +149,30 @@ To launch the teleoperation, it needs :
 - Vive Base Station plugged, at least 1m away from the trackers, with no obstacles in the way (avoid being too close to a computer, which can interfere with the signal)
 - Detected trackers - *You can find out more about pairing trackers on the [Vive website](https://www.vive.com/us/support/tracker3/category_howto/pairing-vive-tracker.html)*
 
-You need to find the name of your Vive Trackers to put them in the config file [COMPLETER] 
+You need to find the name of your Vive Trackers to put them in the config file : 
 
-</details>
+1. Check that your tracker is **well detected** in SteamVR 
+
+2. If you have two trackers, put them in front of the **base station**, the left tracker at the **left side** and your right tracker at the **right side**. 
+
+3. Execute the **triad_openvr** script and get the names :
+
+```
+cd noVR_teleoperation/trackers/vive_trackers
+python3 triad_openvr.py
+``` 
+The names will be printed in your terminal.
+
+4. Copy/paste them in the **config file** 
+
+```
+cd ../..
+nano config.yaml 
+```
+
+In the *vive_trackers*, put the left tracker in *l_arm* and the right_tracker in *r_arm* and save it. 
+
+
 <details>
 <summary><span style="font-size: 1.1em;"><strong>ArUco cube</strong></span></summary>
 

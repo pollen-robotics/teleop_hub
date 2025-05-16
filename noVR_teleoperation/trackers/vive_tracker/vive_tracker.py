@@ -6,11 +6,6 @@ from openvr import HmdMatrix34_t  # type: ignore
 from trackers.tracker import Tracker, TrackerType  # type: ignore
 from utils import load_config  # type: ignore
 
-# trackers = {
-#     "l_arm": "LHR-0D914CCE",
-#     "r_arm": "LHR-D520271F",
-# }
-
 
 class ViveTracker(Tracker):
     """Class for tracking Vive trackers."""

@@ -21,6 +21,9 @@ potentiometer_gripper_joints_limit:
   l_arm: [450, 570]
   r_arm: [630, 790]
 
+## For so Arm
+port : "/dev/ttyACM0"
+
 ## For Arduino commands
 arduino_ports:
   l_arm: "/dev/noVR_left_arduino"

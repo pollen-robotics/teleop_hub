@@ -1,8 +1,8 @@
 robot_ip: "localhost"
-fake_only: true  # Security to avoid sending command to a real robot if not wanted
-tracker_type: "so_arm"  # options: aruco, vive, rgbd, so_arm
-gripper_type: "potentiometer" # options: feetech, potentiometer 
-control_mode: "dual_arm"  # options: dual_arm, l_arm, r_arm
+fake_only: true # Security to avoid sending command to a real robot if not wanted
+tracker_type: "dualshock" # options: aruco, vive, rgbd, so_arm
+gripper_type: "potentiometer" # options: feetech, potentiometer
+control_mode: "dual_arm" # options: dual_arm, l_arm, r_arm
 mirror_mode: false
 
 ## For RGBD
@@ -22,7 +22,7 @@ potentiometer_gripper_joints_limit:
   r_arm: [630, 790]
 
 ## For so Arm
-port : "/dev/ttyACM0"
+port: "/dev/ttyACM0"
 
 ## For Arduino commands
 arduino_ports:
@@ -34,7 +34,7 @@ vive_trackers:
   l_arm: "LHR-0D914CCE"
   r_arm: "LHR-D520271F"
 
-## For ARUCO 
+## For ARUCO
 marker_size:
   l_arm: 0.06
   r_arm: 0.03
@@ -49,18 +49,23 @@ camera:
   with_calibration: false
 
   camera_matrix:
-    -   - 720.5567465155845
-        - 0.0
-        - 247.64108414499987
-    -   - 0.0
-        - 714.4335786513287
-        - 278.15541462350916
-    -   - 0.0
-        - 0.0
-        - 1.0
+    - - 720.5567465155845
+      - 0.0
+      - 247.64108414499987
+    - - 0.0
+      - 714.4335786513287
+      - 278.15541462350916
+    - - 0.0
+      - 0.0
+      - 1.0
   dist_coeffs:
-    -   - 0.008803296291899812
-        - 0.46398897016824797
-        - 0.02701695107028852
-        - -0.0416190770556984
-        - -0.6751017329030815
+    - - 0.008803296291899812
+      - 0.46398897016824797
+      - 0.02701695107028852
+      - -0.0416190770556984
+      - -0.6751017329030815
+
+# dualshock 4
+angle_step: 3
+z_increment: 0.01
+x_y_joystick_ratio: 0.01

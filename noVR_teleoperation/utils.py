@@ -67,7 +67,9 @@ def rotation_matrix_from_vector(vect: np.ndarray) -> np.ndarray:
     return rotation_matrix
 
 
-def make_homogenous_matrix_from_rotation_matrix(rotation_matrix: np.ndarray, position: np.ndarray) -> np.ndarray:
+def make_homogenous_matrix_from_rotation_matrix(
+    rotation_matrix: np.ndarray, position: np.ndarray
+) -> np.ndarray:
     """Convert a 3x3 rotation matrix to a 4x4 homogenous matrix.
 
     Args:
@@ -82,7 +84,9 @@ def make_homogenous_matrix_from_rotation_matrix(rotation_matrix: np.ndarray, pos
     return matrix
 
 
-def limit_orbita3d_joints(joints: list[float], orbita3D_max_angle: float) -> list[float]:
+def limit_orbita3d_joints(
+    joints: list[float], orbita3D_max_angle: float
+) -> list[float]:
     """Casts the 3 orientations to ensure the orientation is reachable by an Orbita3D,
     i.e. casting into Orbita's cone.
 
@@ -112,3 +116,15 @@ def load_config(path: str = "config.yaml") -> dict:
     with open(path, "r") as file:
         config = yaml.safe_load(file)
     return config
+
+
+# threshold to ignore small joystick noise
+def axis_cleaner(value: float, deadzone: float = 0.05) -> float:
+    if abs(value) < deadzone:
+        return 0.0
+    return value
+
+
+# D-pad mapping
+def parse_hat(hat: tuple[int, int]) -> tuple[int, int]:
+    return hat

@@ -12,6 +12,7 @@ class TrackerType(Enum):
     VIVE = "vive"
     RGBD = "rgbd"
     SO_ARM = "so_arm"
+    DUALSHOCK = "dualshock"
 
 
 class Tracker(ABC):

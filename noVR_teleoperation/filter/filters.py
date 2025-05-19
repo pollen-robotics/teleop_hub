@@ -1,7 +1,6 @@
 from collections import deque
 from typing import Deque, Optional
 
-import cv2  # type: ignore
 import numpy as np
 from scipy.spatial.transform import Rotation as R  # type: ignore
 
@@ -33,6 +32,8 @@ class KalmanFilter3D:
             - median_filter_size : Size of the median filter window.
             - dt : Time step between measurements (in seconds).
         """
+        import cv2  # type: ignore
+
         self.kf = cv2.KalmanFilter(
             9, 3
         )  # 9 states : position (x,y,z) + velocity (vx,vy,vz) + acceleration (ax,ay,az)

@@ -6,7 +6,6 @@ import sys
 import time
 
 import numpy
-import openvr  # type: ignore
 
 
 # Function to print out text but instead of starting a new line it will overwrite the existing line
@@ -166,18 +165,21 @@ class pose_sample_buffer:
 
 class vr_tracked_device:
     def __init__(self, vr_obj, index, device_class):
+        import openvr
+
+        self.openvr = openvr
         self.device_class = device_class
         self.index = index
         self.vr = vr_obj
 
     def get_serial(self):
         return self.vr.getStringTrackedDeviceProperty(
-            self.index, openvr.Prop_SerialNumber_String
+            self.index, self.openvr.Prop_SerialNumber_String
         ).encode("utf-8")
 
     def get_model(self):
         return self.vr.getStringTrackedDeviceProperty(
-            self.index, openvr.Prop_ModelNumber_String
+            self.index, self.openvr.Prop_ModelNumber_String
         ).encode("utf-8")
 
     def sample(self, num_samples, sample_rate):
@@ -187,7 +189,9 @@ class vr_tracked_device:
         for i in range(num_samples):
             start = time.time()
             pose = self.vr.getDeviceToAbsoluteTrackingPose(
-                openvr.TrackingUniverseStanding, 0, openvr.k_unMaxTrackedDeviceCount
+                self.openvr.TrackingUniverseStanding,
+                0,
+                self.openvr.k_unMaxTrackedDeviceCount,
             )
             rtn.append(
                 pose[self.index].mDeviceToAbsoluteTracking, time.time() - sample_start
@@ -199,25 +203,33 @@ class vr_tracked_device:
 
     def get_pose_euler(self):
         pose = self.vr.getDeviceToAbsoluteTrackingPose(
-            openvr.TrackingUniverseStanding, 0, openvr.k_unMaxTrackedDeviceCount
+            self.openvr.TrackingUniverseStanding,
+            0,
+            self.openvr.k_unMaxTrackedDeviceCount,
         )
         return convert_to_euler(pose[self.index].mDeviceToAbsoluteTracking)
 
     def get_pose_quaternion(self):
         pose = self.vr.getDeviceToAbsoluteTrackingPose(
-            openvr.TrackingUniverseStanding, 0, openvr.k_unMaxTrackedDeviceCount
+            self.openvr.TrackingUniverseStanding,
+            0,
+            self.openvr.k_unMaxTrackedDeviceCount,
         )
         return convert_to_quaternion(pose[self.index].mDeviceToAbsoluteTracking)
 
     def get_pose_matrix(self):
         pose = self.vr.getDeviceToAbsoluteTrackingPose(
-            openvr.TrackingUniverseStanding, 0, openvr.k_unMaxTrackedDeviceCount
+            self.openvr.TrackingUniverseStanding,
+            0,
+            self.openvr.k_unMaxTrackedDeviceCount,
         )
         return pose[self.index].mDeviceToAbsoluteTracking
 
     def get_velocities(self):
         pose = self.vr.getDeviceToAbsoluteTrackingPose(
-            openvr.TrackingUniverseStanding, 0, openvr.k_unMaxTrackedDeviceCount
+            self.openvr.TrackingUniverseStanding,
+            0,
+            self.openvr.k_unMaxTrackedDeviceCount,
         )
         [v_x, v_y, v_z] = pose[self.index].vVelocity
         [a_x, a_y, a_z] = pose[self.index].vAngularVelocity
@@ -232,7 +244,7 @@ class vr_tracking_reference(vr_tracked_device):
     def get_mode(self):
         return (
             self.vr.getStringTrackedDeviceProperty(
-                self.index, openvr.Prop_ModeLabel_String
+                self.index, self.openvr.Prop_ModeLabel_String
             )
             .encode("utf-8")
             .upper()
@@ -244,8 +256,11 @@ class vr_tracking_reference(vr_tracked_device):
 
 class triad_openvr:
     def __init__(self):
-        # Initialize OpenVR in the
-        self.vr = openvr.init(openvr.VRApplication_Other)
+        # Initialize OpenVR in the background
+        import openvr
+
+        self.openvr = openvr
+        self.vr = self.openvr.init(self.openvr.VRApplication_Other)
 
         # Initializing object to hold indexes for various tracked objects
         self.object_names = {
@@ -256,13 +271,15 @@ class triad_openvr:
         }
         self.devices = {}
         poses = self.vr.getDeviceToAbsoluteTrackingPose(
-            openvr.TrackingUniverseStanding, 0, openvr.k_unMaxTrackedDeviceCount
+            self.openvr.TrackingUniverseStanding,
+            0,
+            self.openvr.k_unMaxTrackedDeviceCount,
         )
         # Iterate through the pose list to find the active devices and determine their type
-        for i in range(openvr.k_unMaxTrackedDeviceCount):
+        for i in range(self.openvr.k_unMaxTrackedDeviceCount):
             if poses[i].bPoseIsValid:
                 device_class = self.vr.getTrackedDeviceClass(i)
-                if device_class == openvr.TrackedDeviceClass_Controller:
+                if device_class == self.openvr.TrackedDeviceClass_Controller:
                     device_name = "controller_" + str(
                         len(self.object_names["Controller"]) + 1
                     )
@@ -270,17 +287,17 @@ class triad_openvr:
                     self.devices[device_name] = vr_tracked_device(
                         self.vr, i, "Controller"
                     )
-                elif device_class == openvr.TrackedDeviceClass_HMD:
+                elif device_class == self.openvr.TrackedDeviceClass_HMD:
                     device_name = "hmd_" + str(len(self.object_names["HMD"]) + 1)
                     self.object_names["HMD"].append(device_name)
                     self.devices[device_name] = vr_tracked_device(self.vr, i, "HMD")
-                elif device_class == openvr.TrackedDeviceClass_GenericTracker:
+                elif device_class == self.openvr.TrackedDeviceClass_GenericTracker:
                     device_name = "tracker_" + str(
                         len(self.object_names["Tracker"]) + 1
                     )
                     self.object_names["Tracker"].append(device_name)
                     self.devices[device_name] = vr_tracked_device(self.vr, i, "Tracker")
-                elif device_class == openvr.TrackedDeviceClass_TrackingReference:
+                elif device_class == self.openvr.TrackedDeviceClass_TrackingReference:
                     device_name = "tracking_reference_" + str(
                         len(self.object_names["Tracking Reference"]) + 1
                     )

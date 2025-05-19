@@ -36,12 +36,12 @@ vive_trackers:
 
 ## For ARUCO 
 marker_size:
-  l_arm: 0.06
-  r_arm: 0.03
+  l_arm: 0.053
+  r_arm: 0.053
 
 marker_ids:
-  l_arm: [6, 7, 10, 9, 8, 11]
-  r_arm: [0, 1, 5, 4, 2, 3] # back, up, front, left, right, down
+  l_arm: [6, 7, 8, 9, 10, 11]
+  r_arm: [0, 1, 2, 3, 4, 5] # back, up, front, left, right, down
 
 camera:
   usb_mode: true

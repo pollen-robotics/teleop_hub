@@ -1,19 +1,11 @@
 import threading
 import time
 from collections import deque
-from typing import Deque, Optional
+from typing import Any, Deque, Optional
 
-import cv2  # type: ignore
 import numpy as np  # type: ignore
+
 from camera.camera import Camera  # type: ignore
-from pyorbbecsdk import (  # type: ignore
-    Config,
-    Frame,
-    OBAlignMode,
-    OBFormat,
-    OBSensorType,
-    Pipeline,
-)
 from utils import load_config  # type: ignore
 
 
@@ -32,9 +24,13 @@ class Orbbec(Camera):
         """
         super().__init__()
 
+        import pyorbbecsdk  # type: ignore
+
+        self.orbbecsdk = pyorbbecsdk
+
         # initialize the pipeline and config of the Orbbec camera
-        self.config = Config()
-        self.pipeline = Pipeline()
+        self.config = self.orbbecsdk.Config()
+        self.pipeline = self.orbbecsdk.Pipeline()
 
         self._set_pipeline()
 
@@ -58,11 +54,15 @@ class Orbbec(Camera):
 
     def _set_pipeline(self) -> None:
         """Set the pipeline for the Orbbec camera."""
-        color_profile_list = self.pipeline.get_stream_profile_list(OBSensorType.COLOR_SENSOR)
+        color_profile_list = self.pipeline.get_stream_profile_list(
+            self.orbbecsdk.OBSensorType.COLOR_SENSOR
+        )
         self.color_profile = color_profile_list.get_default_video_stream_profile()
         self.config.enable_stream(self.color_profile)
 
-        depth_profile_list = self.pipeline.get_stream_profile_list(OBSensorType.DEPTH_SENSOR)
+        depth_profile_list = self.pipeline.get_stream_profile_list(
+            self.orbbecsdk.OBSensorType.DEPTH_SENSOR
+        )
         self.depth_profile = depth_profile_list.get_default_video_stream_profile()
         self.config.enable_stream(self.depth_profile)
 
@@ -79,16 +79,16 @@ class Orbbec(Camera):
 
         if align_mode == "HW":
             if device_pid == 0x066B:
-                self.config.set_align_mode(OBAlignMode.SW_MODE)
+                self.config.set_align_mode(self.orbbecsdk.OBAlignMode.SW_MODE)
                 print("Alignment mode : Software (auto for Femto Mega)")
             else:
-                self.config.set_align_mode(OBAlignMode.HW_MODE)
+                self.config.set_align_mode(self.orbbecsdk.OBAlignMode.HW_MODE)
                 print("Alignment mode : Hardware")
         elif align_mode == "SW":
-            self.config.set_align_mode(OBAlignMode.SW_MODE)
+            self.config.set_align_mode(self.orbbecsdk.OBAlignMode.SW_MODE)
             print("Alignment mode : Software")
         else:
-            self.config.set_align_mode(OBAlignMode.DISABLE)
+            self.config.set_align_mode(self.orbbecsdk.OBAlignMode.DISABLE)
             print("Alignment deactivated")
 
         if enable_sync:
@@ -114,7 +114,9 @@ class Orbbec(Camera):
                             color_frame.get_width(),
                         ]
                     )
-                    self.image_shape = (self.original_image_shape * (self.scale_percent / 100)).astype(int)
+                    self.image_shape = (
+                        self.original_image_shape * (self.scale_percent / 100)
+                    ).astype(int)
                     self.color_format = color_frame.get_format()
 
                     focal_length = self.image_shape[1]
@@ -158,9 +160,9 @@ class Orbbec(Camera):
             np.ndarray: The resized frame.
         """
         new_dim = (self.image_shape[1], self.image_shape[0])
-        return cv2.resize(frame, new_dim, interpolation=cv2.INTER_AREA)
+        return self.cv2.resize(frame, new_dim, interpolation=self.cv2.INTER_AREA)
 
-    def _frame_to_bgr_image(self, frame: Frame) -> Optional[np.ndarray]:
+    def _frame_to_bgr_image(self, frame: Any) -> Optional[np.ndarray]:
         """Convert the color frame to a BGR image.
 
         Args:
@@ -171,18 +173,23 @@ class Orbbec(Camera):
         """
         data = np.asanyarray(frame.get_data())
 
-        if self.color_format in [OBFormat.RGB, OBFormat.BGR]:
-            image = data.reshape((self.original_image_shape[0], self.original_image_shape[1], 3))
-            if self.color_format == OBFormat.RGB:
-                image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
-        elif self.color_format == OBFormat.MJPG:
-            image = cv2.imdecode(data, cv2.IMREAD_COLOR)
+        if self.color_format in [
+            self.orbbecsdk.OBFormat.RGB,
+            self.orbbecsdk.OBFormat.BGR,
+        ]:
+            image = data.reshape(
+                (self.original_image_shape[0], self.original_image_shape[1], 3)
+            )
+            if self.color_format == self.orbbecsdk.OBFormat.RGB:
+                image = self.cv2.cvtColor(image, self.cv2.COLOR_RGB2BGR)
+        elif self.color_format == self.orbbecsdk.OBFormat.MJPG:
+            image = self.cv2.imdecode(data, self.cv2.IMREAD_COLOR)
         else:
             print(f"Unsupported color format: {self.color_format}")
             return None
         return image
 
-    def _get_depth_data(self, depth_frame: Frame) -> Optional[np.ndarray]:
+    def _get_depth_data(self, depth_frame: Any) -> Optional[np.ndarray]:
         """Convert and resize the depth frame to a numpy array.
 
         Args:
@@ -194,7 +201,9 @@ class Orbbec(Camera):
         if depth_frame and np.any(self.image_shape):
             depth_data = np.frombuffer(depth_frame.get_data(), dtype=np.uint16)
             depth_data = depth_data.reshape(self.original_image_shape)
-            depth_data_float = depth_data.astype(np.float32) * 10e-4  # convert to meters
+            depth_data_float = (
+                depth_data.astype(np.float32) * 10e-4
+            )  # convert to meters
             depth_data_resized = self._resize_frames(depth_data_float)
             return depth_data_resized
         return None
@@ -212,19 +221,25 @@ class Orbbec(Camera):
                 depth_data = self.depth_frame[0]
 
                 if show_color and color_data is not None:
-                    cv2.imshow("Color Viewer", color_data)
+                    self.cv2.imshow("Color Viewer", color_data)
 
                 if show_depth and depth_data is not None:
-                    print(f"depth data max: {depth_data.max()}, min : {depth_data.min()}")
+                    print(
+                        f"depth data max: {depth_data.max()}, min : {depth_data.min()}"
+                    )
                     depth_image = np.clip(
-                        (depth_data - self.MIN_DEPTH) / (self.MAX_DEPTH - self.MIN_DEPTH) * 255,
+                        (depth_data - self.MIN_DEPTH)
+                        / (self.MAX_DEPTH - self.MIN_DEPTH)
+                        * 255,
                         0,
                         255,
                     )
-                    depth_colormap = cv2.applyColorMap(depth_image.astype(np.uint8), cv2.COLORMAP_JET)
-                    cv2.imshow("Depth Viewer", depth_colormap)
+                    depth_colormap = self.cv2.applyColorMap(
+                        depth_image.astype(np.uint8), self.cv2.COLORMAP_JET
+                    )
+                    self.cv2.imshow("Depth Viewer", depth_colormap)
 
-                key = cv2.waitKey(1)
+                key = self.cv2.waitKey(1)
                 if key in [ord("q"), 27]:
                     break
             except KeyboardInterrupt:
@@ -232,7 +247,7 @@ class Orbbec(Camera):
 
     def stop(self) -> None:
         """Stop the camera and close all OpenCV windows."""
-        cv2.destroyAllWindows()
+        self.cv2.destroyAllWindows()
         self.pipeline.stop()
         print("Orbbec stopped.")
 

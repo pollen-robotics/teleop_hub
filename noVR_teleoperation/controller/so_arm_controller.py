@@ -1,17 +1,17 @@
 import time
 
 import numpy as np
-from scipy.spatial.transform import Rotation as R  # type: ignore
-
 from controller.controller import Controller  # type: ignore
 from controller.feetech_rustypot import FeetechSOArm  # type: ignore
+from scipy.spatial.transform import Rotation as R  # type: ignore
+from trackers.tracker import TrackerType  # type: ignore
 from utils import make_homogenous_matrix_from_rotation_matrix  # type: ignore
 
 
 class SoArmController(Controller):
     def __init__(self, port):
         super().__init__()
-        self.tracker_type = "SO_arm"
+        self.tracker_type = TrackerType.SO_ARM
         self.so_arm = FeetechSOArm(port, [1, 2, 3, 4, 5, 6])
 
         self.so_init_joints = {

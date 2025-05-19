@@ -1,8 +1,7 @@
 from teleoperation_mode.teleoperation import Teleoperation  # type: ignore
 from teleoperation_mode.teleoperation_rgbd import TeleoperationRGBD
 from teleoperation_mode.teleoperation_so_arm import SoArmTeleoperation
-from teleoperation_mode.teleoperation_with_joystick import \
-    JoystickTeleoperation
+from teleoperation_mode.teleoperation_with_joystick import JoystickTeleoperation
 from trackers.tracker import TrackerType  # type: ignore
 from utils import load_config  # type: ignore
 
@@ -26,6 +25,7 @@ if __name__ == "__main__":
         teleoperation.teleoperation()
 
     except KeyboardInterrupt:
+        print("Teleoperation stopped by user.")
         for controller in teleoperation.controllers.values():
             controller.stop()
         teleoperation.robot.stop()

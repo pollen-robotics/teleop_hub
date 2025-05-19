@@ -3,9 +3,8 @@ import time
 from typing import Optional
 
 import numpy as np
-from scipy.spatial.transform import Rotation as R  # type: ignore
-
 from camera.camera import Camera  # type: ignore
+from scipy.spatial.transform import Rotation as R  # type: ignore
 from utils import load_config  # type: ignore
 
 
@@ -53,9 +52,7 @@ class RGBCamera(Camera):
         """
         if with_calibration:
             camera_config = config.get("camera", {})
-            self.camera_matrix = np.array(
-                camera_config["camera_matrix"], dtype=np.float32
-            )
+            self.camera_matrix = np.array(camera_config["camera_matrix"], dtype=np.float32)
             self.dist_coeffs = np.array(camera_config["dist_coeffs"], dtype=np.float32)
 
         else:
@@ -101,17 +98,13 @@ class RGBCamera(Camera):
 
         kernel = np.ones((5, 5), np.uint8)
         edges_dilated = self.cv2.dilate(edges, kernel, iterations=1)
-        edges_weight = self.cv2.normalize(
-            edges_dilated, None, 0, 1, self.cv2.NORM_MINMAX
-        )
+        edges_weight = self.cv2.normalize(edges_dilated, None, 0, 1, self.cv2.NORM_MINMAX)
 
         non_edge_weight = 1 - edges_weight
         blurred_image = self.cv2.GaussianBlur(frame_gray, (9, 9), 3)
 
         enhanced_image = edges_weight * frame_gray + non_edge_weight * blurred_image
-        enhanced_image = self.cv2.normalize(
-            enhanced_image, None, 0, 255, self.cv2.NORM_MINMAX
-        )
+        enhanced_image = self.cv2.normalize(enhanced_image, None, 0, 255, self.cv2.NORM_MINMAX)
 
         return enhanced_image
 
@@ -137,9 +130,7 @@ class RGBCamera(Camera):
                 side = "right" if i == 1 else "left"
                 rvec = R.from_matrix(cube_pose[:3, :3]).as_rotvec()
                 tvec = cube_pose[:3, 3]
-                self.cv2.drawFrameAxes(
-                    frame, self.camera_matrix, self.dist_coeffs, rvec, tvec, 0.03
-                )
+                self.cv2.drawFrameAxes(frame, self.camera_matrix, self.dist_coeffs, rvec, tvec, 0.03)
 
                 self.cv2.putText(
                     frame,
@@ -151,9 +142,7 @@ class RGBCamera(Camera):
                     2,
                 )
 
-                roll, pitch, yaw = R.from_matrix(cube_pose[:3, :3]).as_euler(
-                    "xyz", degrees=True
-                )
+                roll, pitch, yaw = R.from_matrix(cube_pose[:3, :3]).as_euler("xyz", degrees=True)
 
                 self.cv2.putText(
                     frame,
@@ -205,3 +194,9 @@ class RGBCamera(Camera):
             )
         # self.cv2.aruco.drawDetectedMarkers(frame, [corners], np.array([[marker_id]]))
         return frame
+
+    def stop(self) -> None:
+        """Stop the camera stream."""
+        # self.frame_getter.join()
+        self.cap.release()
+        self.cv2.destroyAllWindows()

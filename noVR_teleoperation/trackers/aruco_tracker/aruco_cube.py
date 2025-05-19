@@ -2,8 +2,9 @@ import time
 from typing import Optional
 
 import numpy as np
-from camera.rgb_camera import RGBCamera  # type: ignore
 from scipy.spatial.transform import Rotation as R  # type: ignore
+
+from camera.rgb_camera import RGBCamera  # type: ignore
 from trackers.tracker import Tracker, TrackerType  # type: ignore
 from utils import load_config  # type: ignore
 
@@ -169,7 +170,9 @@ class ArucoCube(Tracker):
         marker_corners, marker_ids, _ = self.detector.detectMarkers(self.frame)
         return marker_corners, marker_ids
 
-    def _estimate_PoseSingleMarkers(self, corners: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+    def _estimate_PoseSingleMarkers(
+        self, corners: np.ndarray
+    ) -> tuple[np.ndarray, np.ndarray]:
         """Estimate the pose of single markers.
 
         Args:

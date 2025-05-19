@@ -1,6 +1,8 @@
 from teleoperation_mode.teleoperation import Teleoperation  # type: ignore
 from teleoperation_mode.teleoperation_rgbd import TeleoperationRGBD
-from teleoperation_mode.teleoperation_with_joystick import JoystickTeleoperation
+from teleoperation_mode.teleoperation_so_arm import SoArmTeleoperation
+from teleoperation_mode.teleoperation_with_joystick import \
+    JoystickTeleoperation
 from trackers.tracker import TrackerType  # type: ignore
 from utils import load_config  # type: ignore
 
@@ -15,6 +17,8 @@ if __name__ == "__main__":
         teleoperation = JoystickTeleoperation(tracker_type)
     elif tracker_type == TrackerType.RGBD:
         teleoperation = TeleoperationRGBD()
+    elif tracker_type == TrackerType.SO_ARM:
+        teleoperation = SoArmTeleoperation(config["port"])
     else:
         raise ValueError(f"Invalid tracker type: {tracker_type}")
 

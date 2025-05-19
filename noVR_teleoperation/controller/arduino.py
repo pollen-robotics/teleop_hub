@@ -25,7 +25,14 @@ class ArduinoController:
 
     def read(
         self,
-    ) -> tuple[Optional[int], Optional[int], Optional[int], Optional[int], Optional[int], Optional[int]]:
+    ) -> tuple[
+        Optional[int],
+        Optional[int],
+        Optional[int],
+        Optional[int],
+        Optional[int],
+        Optional[int],
+    ]:
         """Reads the joystick input and button states from the Arduino.
 
         Returns:
@@ -56,7 +63,9 @@ class ArduinoController:
 
 
 if __name__ == "__main__":
-    gripper_type = POTENTIOMETER_GRIPPER  # Change to FEETECH_GRIPPER for the other gripper
+    gripper_type = (
+        POTENTIOMETER_GRIPPER  # Change to FEETECH_GRIPPER for the other gripper
+    )
     # arduino = ArduinoController("/dev/noVR_right_arduino", gripper_type)
     arduino = ArduinoController("/dev/noVR_left_arduino", gripper_type)
 
@@ -67,7 +76,9 @@ if __name__ == "__main__":
             x, y, button_cmd, buttonA, buttonB, potentiometer = arduino.read()
         if x is not None:
             if gripper_type == FEETECH_GRIPPER:
-                print(f"x: {x}, y: {y}, button_cmd: {button_cmd}, buttonA: {buttonA}, buttonB: {buttonB}")
+                print(
+                    f"x: {x}, y: {y}, button_cmd: {button_cmd}, buttonA: {buttonA}, buttonB: {buttonB}"
+                )
             else:
                 print(
                     f"x: {x}, y: {y}, button_cmd: {button_cmd}, buttonA: {buttonA}, buttonB: {buttonB},"

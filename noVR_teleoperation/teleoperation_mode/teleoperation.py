@@ -2,6 +2,7 @@ import time
 from abc import ABC, abstractmethod
 
 import numpy as np
+
 from robots.reachy import Reachy2  # type: ignore
 from utils import load_config  # type: ignore
 

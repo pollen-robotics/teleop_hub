@@ -3,19 +3,18 @@ import time
 from typing import Optional
 
 import numpy as np
+from scipy.spatial.transform import Rotation as R  # type: ignore
+
 from camera.camera import Camera  # type: ignore
 from controller.arduino import ArduinoController  # type: ignore
 from controller.controller import Controller  # type: ignore
 from controller.feetech import Feetech  # type: ignore
 from filter.filters import PoseFilter  # type: ignore
-from scipy.spatial.transform import Rotation as R  # type: ignore
 from trackers.aruco_tracker.aruco_cube import ArucoCube  # type: ignore
 from trackers.tracker import TrackerType  # type: ignore
 from trackers.vive_tracker.vive_tracker import ViveTracker  # type: ignore
-from utils import (  # type: ignore
-    load_config,
-    make_homogenous_matrix_from_rotation_matrix,
-)
+from utils import (load_config,  # type: ignore
+                   make_homogenous_matrix_from_rotation_matrix)
 
 FEETECH_GRIPPER = "feetech"
 POTENTIOMETER_GRIPPER = "potentiometer"
@@ -55,9 +54,13 @@ class JoystickController(Controller):
         if self.gripper_type == FEETECH_GRIPPER:
             feetech_port = load_config("config.yaml")["feetech_ports"][arm]
             self.gripper = Feetech(feetech_port)
-            self.gripper_joints_limit = load_config("config.yaml")["feetech_gripper_joints_limit"][self.arm]
+            self.gripper_joints_limit = load_config("config.yaml")[
+                "feetech_gripper_joints_limit"
+            ][self.arm]
         elif self.gripper_type == POTENTIOMETER_GRIPPER:
-            self.gripper_joints_limit = load_config("config.yaml")["potentiometer_gripper_joints_limit"][self.arm]
+            self.gripper_joints_limit = load_config("config.yaml")[
+                "potentiometer_gripper_joints_limit"
+            ][self.arm]
         else:
             raise ValueError(f"Unknown gripper type: {self.gripper_type}")
 
@@ -175,7 +178,9 @@ class JoystickController(Controller):
             relative_pose = self.convert_for_vive_tracker(relative_pose)
 
         elif self.tracker_type == TrackerType.ARUCO:
-            T_cam_to_reachy = np.array([[0, 0, -1, 0], [1, 0, 0, 0], [0, -1, 0, 0], [0, 0, 0, 1]])
+            T_cam_to_reachy = np.array(
+                [[0, 0, -1, 0], [1, 0, 0, 0], [0, -1, 0, 0], [0, 0, 0, 1]]
+            )
             relative_pose = T_cam_to_reachy @ relative_pose
 
         return relative_pose

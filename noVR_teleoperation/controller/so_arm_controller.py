@@ -1,16 +1,14 @@
+import time
+
 import numpy as np
 from scipy.spatial.transform import Rotation as R  # type: ignore
-from utils import (  # type: ignore
-    load_config,
-    make_homogenous_matrix_from_rotation_matrix,
-)
-import time
+
 from controller.controller import Controller  # type: ignore
 from controller.feetech_rustypot import FeetechSOArm  # type: ignore
+from utils import make_homogenous_matrix_from_rotation_matrix  # type: ignore
 
 
 class SoArmController(Controller):
-
     def __init__(self, port):
         super().__init__()
         self.tracker_type = "SO_arm"
@@ -30,7 +28,6 @@ class SoArmController(Controller):
             "mobile_base": self.so_init_joints["mobile_base"],
         }
 
-
     def init_controller(self, part):
         self.so_arm.enable_torque()
         # self.so_arm.set_torque_limit(1000)
@@ -38,7 +35,7 @@ class SoArmController(Controller):
         time.sleep(2)
         self.so_arm.disable_torque()
 
-    def so_arm_fk(self, joints):   
+    def so_arm_fk(self, joints):
         # joints = np.deg2rad(joints)
 
         p1 = np.array([0, 0, 0])
@@ -83,18 +80,18 @@ class SoArmController(Controller):
         pose = make_homogenous_matrix_from_rotation_matrix(orientation, P5[:3])
 
         return pose
-    
+
     def get_head_joints(self):
         """Get the head joints."""
         joints = self.so_arm.get_joints()
         return [joints[0], joints[1], joints[4]]
-    
+
     def get_controller_pose(self):
         """Get the pose of the controller in the robot frame."""
         joints = self.so_arm.get_joints()
         pose = self.so_arm_fk(joints)
         return pose
-    
+
     def update_joints(self, part):
         """Update the joints of the robot."""
         joints = self.so_arm.get_joints()
@@ -109,11 +106,10 @@ class SoArmController(Controller):
         """Convert the pose of the tracker in the robot frame."""
         pass
 
-
     def lock_arm(self):
         """Lock the arm."""
         self.so_arm.enable_torque()
-    
+
     def unlock_arm(self):
         """Unlock the arm."""
         self.so_arm.disable_torque()

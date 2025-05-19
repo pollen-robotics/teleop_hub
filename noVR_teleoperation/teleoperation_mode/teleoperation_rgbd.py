@@ -1,14 +1,14 @@
 import time
 
 import numpy as np
+
 from camera.orbbec import Orbbec  # type: ignore
-from controller.rgbd_controller import (  # type: ignore
-    ArmRGBDController,
-    HeadRGBDController,
-)
+from controller.rgbd_controller import (ArmRGBDController,  # type: ignore
+                                        HeadRGBDController)
 from teleoperation_mode.teleoperation import Teleoperation  # type: ignore
 from teleoperation_mode.teleoperation import LEFT_ARM, RIGHT_ARM
-from trackers.rgbd_tracker.computer_vision import ComputerVision  # type: ignore
+from trackers.rgbd_tracker.computer_vision import \
+    ComputerVision  # type: ignore
 
 
 class TeleoperationRGBD(Teleoperation):
@@ -42,7 +42,9 @@ class TeleoperationRGBD(Teleoperation):
             self.computer_vision.update_landmarks_coordinates(True)
             l_pose = self.controllers[LEFT_ARM].get_controller_pose()
             r_pose = self.controllers[RIGHT_ARM].get_controller_pose()
-            if self.is_first_command_ok(l_pose, False) and self.is_first_command_ok(r_pose, True):
+            if self.is_first_command_ok(l_pose, False) and self.is_first_command_ok(
+                r_pose, True
+            ):
                 self.first_command_ok = True
             else:
                 print(f"l_pose: {l_pose[:3,3]}, r_pose: {r_pose[:3,3]}")

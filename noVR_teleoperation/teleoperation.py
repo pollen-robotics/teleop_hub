@@ -12,6 +12,7 @@ from controller.joystick_controller import JoystickController  # type: ignore
 
 # from controller.rgbd_controller import ArmRGBDController, HeadRGBDController
 from robots.reachy import Reachy2
+from robots.reachy_mini import ReachyMini  # type: ignore
 
 # from trackers.rgbd_tracker.computer_vision import ComputerVision  # type: ignore
 from trackers.tracker import TrackerType  # type: ignore
@@ -35,7 +36,9 @@ class Teleoperation(ABC):
         mirror_mode = config.get("mirror_mode", False)
         self.control_mode = config.get("control_mode", "dual_arm")
 
-        self.robot = Reachy2(robot_ip, mirror_mode)
+        # self.robot = Reachy2(robot_ip, mirror_mode)
+        self.robot = ReachyMini(robot_ip, mirror_mode)
+
         self.controllers: dict = {}
         self.controller_previous_pose = {LEFT_ARM: np.eye(4), RIGHT_ARM: np.eye(4)}
         self.robot_previous_pose = {LEFT_ARM: np.eye(4), RIGHT_ARM: np.eye(4)}

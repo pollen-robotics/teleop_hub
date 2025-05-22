@@ -1,7 +1,7 @@
 import math
 import time
 
-from pypot.feetech import FeetechSTS3215IO  # type: ignore
+# from pypot.feetech import FeetechSTS3215IO  # type: ignore
 
 # from lerobot.common.utils.kinematics import RobotKinematics
 

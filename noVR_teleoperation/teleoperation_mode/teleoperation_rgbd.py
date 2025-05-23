@@ -1,14 +1,15 @@
 import numpy as np
+
 from camera.orbbec import Orbbec  # type: ignore
-from controller.rgbd_controller import ArmRGBDController  # type: ignore
-from controller.rgbd_controller import HeadRGBDController
+from controller.rgbd_controller import (ArmRGBDController,  # type: ignore
+                                        HeadRGBDController)
 from teleoperation_mode.teleoperation import Teleoperation  # type: ignore
-from teleoperation_mode.teleoperation import LEFT_ARM, RIGHT_ARM
+from teleoperation_mode.teleoperation import LEFT_ARM, RIGHT_ARM  # type: ignore
 from trackers.rgbd_tracker.computer_vision import ComputerVision  # type: ignore
 
 
 class TeleoperationRGBD(Teleoperation):
-    """Teleoperation class with RGBD-type controller."""
+    """Teleoperation class with RGBD-type tracker."""
 
     def __init__(self) -> None:
         """Initialize the teleoperation class.
@@ -127,6 +128,5 @@ class TeleoperationRGBD(Teleoperation):
             rpy[2],
             text_on=True,
         )
-        self.cv2.imshow("Color Viewer", frame)
-        self.cv2.waitKey(1)
-        return True
+        self.camera.cv2.imshow("Color Viewer", frame)
+        self.camera.cv2.waitKey(1)

@@ -1,8 +1,6 @@
 import time
 from typing import Optional
 
-import cv2  # type: ignore
-import cv2.aruco as aruco  # type: ignore
 import numpy as np
 from camera.rgb_camera import RGBCamera  # type: ignore
 from filter.filters import KalmanFilter3D, PoseFilter, RotationSmoother  # type: ignore
@@ -22,10 +20,13 @@ class ArucoCube(Tracker):
             camera (Camera): Camera object to get the frame.
         """
         super().__init__()
+
         self.tracker_type = TrackerType.ARUCO
         self.arm = arm
         self.camera = camera
         self.frame: Optional[np.ndarray] = None
+
+        self.aruco = self.camera.cv2.aruco
 
         # get the marker parameters from the config file
         config = load_config("config.yaml")
@@ -33,9 +34,9 @@ class ArucoCube(Tracker):
         self.marker_ids = config.get("marker_ids", {}).get(self.arm, [0, 1, 2, 3, 4, 5])
 
         # instanciate the aruco detector
-        self.aruco_dict = aruco.getPredefinedDictionary(aruco.DICT_6X6_1000)
-        aruco_param = aruco.DetectorParameters()
-        self.detector = aruco.ArucoDetector(self.aruco_dict, aruco_param)
+        self.aruco_dict = self.aruco.getPredefinedDictionary(self.aruco.DICT_6X6_1000)
+        aruco_param = self.aruco.DetectorParameters()
+        self.detector = self.aruco.ArucoDetector(self.aruco_dict, aruco_param)
 
         # add a filter
         self.kf = KalmanFilter3D()
@@ -123,7 +124,7 @@ class ArucoCube(Tracker):
             ),  # down face
         ]
 
-        self.cube = aruco.Board(self.cube_corners, self.aruco_dict, self.cube_ids)
+        self.cube = self.aruco.Board(self.cube_corners, self.aruco_dict, self.cube_ids)
 
     def update_tracker_pose(self) -> Optional[np.ndarray]:
         """Update the cube pose using the camera frame.
@@ -145,7 +146,7 @@ class ArucoCube(Tracker):
         if markers_ids is not None and len(markers_ids) > 0:
             markers_ids = np.array(markers_ids, dtype=np.int32)
 
-            _, rvec, tvec = cv2.aruco.estimatePoseBoard(
+            _, rvec, tvec = self.aruco.estimatePoseBoard(
                 markers_corners,
                 markers_ids,
                 self.cube,
@@ -208,13 +209,13 @@ class ArucoCube(Tracker):
         rvecs = []
         tvecs = []
         for corner in corners:
-            _, R, t = cv2.solvePnP(
+            _, R, t = self.camera.cv2.solvePnP(
                 marker_points,
                 corner,
                 self.camera.camera_matrix,
                 self.camera.dist_coeffs,
                 False,
-                cv2.SOLVEPNP_ITERATIVE,
+                self.camera.cv2.SOLVEPNP_ITERATIVE,
             )
             rvecs.append(R)
             tvecs.append(t)
@@ -242,13 +243,13 @@ class ArucoCube(Tracker):
         self.markers_dict = markers_dict
 
     def stop(self) -> None:
-        """Stop the camera and close all windows."""
-        self.camera.cap.release()
-        cv2.destroyAllWindows()
-        self.camera.frame_getter.join()
+        """Stop the camera"""
+        self.camera.stop()
 
 
 if __name__ == "__main__":
+    import cv2  # type: ignore
+
     camera = RGBCamera()
     aruco_cube_left = ArucoCube(arm="l_arm", camera=camera)
     aruco_cube_right = ArucoCube(arm="r_arm", camera=camera)

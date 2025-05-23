@@ -1,14 +1,11 @@
 from typing import Optional
 
 import numpy as np
-from google.protobuf.wrappers_pb2 import FloatValue, Int32Value
-from robots.robot import Robot  # type: ignore
 from scipy.spatial.transform import Rotation as R  # type: ignore
-from utils import (  # type: ignore
-    limit_orbita3d_joints,
-    load_config,
-    make_homogenous_matrix_from_rotation_matrix,
-)
+
+from robots.robot import Robot  # type: ignore
+from utils import (limit_orbita3d_joints, load_config,  # type: ignore
+                   make_homogenous_matrix_from_rotation_matrix)
 
 
 class Reachy2(Robot):
@@ -26,6 +23,7 @@ class Reachy2(Robot):
             (e.g., left controller controls the right arm). Defaults to False.
         """
         super().__init__(robot_ip, mirror_mode)
+        self._make_imports()
         fake_only_parameter = load_config("config.yaml").get("fake_only", True)
         self.reachy = self.ReachySDK(self.robot_ip, fake_only=fake_only_parameter)
 
@@ -53,8 +51,6 @@ class Reachy2(Robot):
         This method turns on its components, resets the odometry and sets its initial pose.
         """
         self.reachy.turn_on()
-        # self.reachy.head.l_antenna.turn_on()
-        # self.reachy.head.r_antenna.turn_on()
 
         self.reachy.reset_default_limits()
         if self.reachy.mobile_base is not None:
@@ -73,16 +69,28 @@ class Reachy2(Robot):
         arm_position = [0.36, 0.2, -0.28]
 
         for arm in [self.reachy.l_arm, self.reachy.r_arm]:
-            arm_position[1] = -arm_position[1] if arm == self.reachy.r_arm else arm_position[1]
-            pose = make_homogenous_matrix_from_rotation_matrix(arm_orientation.as_matrix(), arm_position)
+            arm_position[1] = (
+                -arm_position[1] if arm == self.reachy.r_arm else arm_position[1]
+            )
+            pose = make_homogenous_matrix_from_rotation_matrix(
+                arm_orientation.as_matrix(), arm_position
+            )
             joints = arm.inverse_kinematics(pose)
-            arm.goto(joints, 3.0, degrees=True, interpolation_mode="minimum_jerk", wait=False)
+            arm.goto(
+                joints, 3.0, degrees=True, interpolation_mode="minimum_jerk", wait=False
+            )
 
         # Set initial pose for head and antennas
-        self.reachy.head.r_antenna.goto(0, 3.0, degrees=True, interpolation_mode="minimum_jerk", wait=False)
-        self.reachy.head.l_antenna.goto(0, 3.0, degrees=True, interpolation_mode="minimum_jerk", wait=False)
+        self.reachy.head.r_antenna.goto(
+            0, 3.0, degrees=True, interpolation_mode="minimum_jerk", wait=False
+        )
+        self.reachy.head.l_antenna.goto(
+            0, 3.0, degrees=True, interpolation_mode="minimum_jerk", wait=False
+        )
         head_joints = [0, 0, 0]
-        self.reachy.head.goto(head_joints, 3.0, degrees=True, interpolation_mode="minimum_jerk", wait=True)
+        self.reachy.head.goto(
+            head_joints, 3.0, degrees=True, interpolation_mode="minimum_jerk", wait=True
+        )
 
     def fk(self, arm) -> np.ndarray:
         """Compute the forward kinematics of the specified arm.
@@ -112,11 +120,11 @@ class Reachy2(Robot):
             goal_pose=self.Matrix4x4(data=pose.flatten().tolist()),
             continuous_mode=self.IKContinuousMode.UNFREEZE,
             constrained_mode=self.IKConstrainedMode.UNCONSTRAINED,
-            preferred_theta=FloatValue(
+            preferred_theta=self.FloatValue(
                 value=-4 * np.pi / 6,
             ),
-            d_theta_max=FloatValue(value=0.05),
-            order_id=Int32Value(value=5),
+            d_theta_max=self.FloatValue(value=0.05),
+            order_id=self.Int32Value(value=5),
         )
         robot_arm._stub.SendArmCartesianGoal(request)
 
@@ -145,15 +153,17 @@ class Reachy2(Robot):
             goal_pose=self.Matrix4x4(data=pose.flatten().tolist()),
             continuous_mode=self.IKContinuousMode.CONTINUOUS,
             constrained_mode=self.IKConstrainedMode.UNCONSTRAINED,
-            preferred_theta=FloatValue(
+            preferred_theta=self.FloatValue(
                 value=-4 * np.pi / 6,
             ),
-            d_theta_max=FloatValue(value=0.05),
-            order_id=Int32Value(value=5),
+            d_theta_max=self.FloatValue(value=0.05),
+            order_id=self.Int32Value(value=5),
         )
         robot_arm._stub.SendArmCartesianGoal(request)
 
-    def move_gripper(self, arm: str, with_joint_command: bool = True, command: Optional[float] = None) -> None:
+    def move_gripper(
+        self, arm: str, with_joint_command: bool = True, command: Optional[float] = None
+    ) -> None:
         """Send the command to move the gripper of the specified arm.
 
         Args:

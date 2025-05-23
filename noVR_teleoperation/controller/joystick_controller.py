@@ -6,7 +6,7 @@ import numpy as np
 from camera.camera import Camera  # type: ignore
 from controller.arduino import ArduinoController  # type: ignore
 from controller.controller import Controller  # type: ignore
-from controller.feetech import Feetech  # type: ignore
+from controller.feetech_rustypot import Feetech  # type: ignore
 from scipy.spatial.transform import Rotation as R  # type: ignore
 from trackers.aruco_tracker.aruco_cube import ArucoCube  # type: ignore
 from trackers.tracker import TrackerType  # type: ignore
@@ -51,7 +51,7 @@ class JoystickController(Controller):
 
         if self.gripper_type == FEETECH_GRIPPER:
             feetech_port = load_config("config.yaml")["feetech_ports"][arm]
-            self.gripper = Feetech(feetech_port)
+            self.gripper = Feetech(feetech_port, [1])
             self.gripper_joints_limit = load_config("config.yaml")[
                 "feetech_gripper_joints_limit"
             ][self.arm]
@@ -86,6 +86,7 @@ class JoystickController(Controller):
 
     def init_gripper(self, joint):
         self.gripper.enable_torque()
+        joint = np.deg2rad(joint)
         self.gripper.goto_joints([joint], 1)
         self.gripper.disable_torque()
 
@@ -130,6 +131,7 @@ class JoystickController(Controller):
     def get_gripper_joint(self):
         if self.gripper_type == FEETECH_GRIPPER:
             gripper_joint = self.gripper.get_joints()[0]
+            gripper_joint = np.rad2deg(gripper_joint)
         if self.gripper_type == POTENTIOMETER_GRIPPER:
             gripper_joint = self.potentiometer
         return gripper_joint

@@ -1,21 +1,19 @@
 import time
 
-from rustypot.servo import Sts3215SyncController  # type: ignore
-
-# from lerobot.common.utils.kinematics import RobotKinematics
-
 
 # Create Class feetech
-class FeetechSOArm:
+class Feetech:
     def __init__(self, port, ids):
-        # self.io = Sts3215SyncController(serial_port='/dev/ttyACM0', baudrate=100000, timeout=0.1)
+
+        from rustypot.servo import Sts3215SyncController  # type: ignore
 
         self.io = Sts3215SyncController(
-            serial_port="/dev/ttyACM0",
+            serial_port=port,
             baudrate=1000000,
             timeout=0.1,
         )
         self.ids = ids
+        print(self.ids)
 
         self.io.write_mode(self.ids, [0] * len(self.ids))
         self.io.write_torque_enable(self.ids, [True] * len(self.ids))
@@ -56,15 +54,14 @@ class FeetechSOArm:
 
 if __name__ == "__main__":
     try:
-        feetech = FeetechSOArm("/dev/ttyACM0", [1, 2, 3, 4, 5, 6])
+        feetech = FeetechSOArm("/dev/ttyACM1", [1])
 
+        feetech.enable_torque()
         while True:
             time.sleep(1)
-            # print(feetech.io.read_present_position([1]))*
-            feetech.goto_joints([0, 0, 0, 0, 0, 0], 1)
+            feetech.goto_joints([0.0], 1)
             time.sleep(1)
 
-        # feetech.get_positions()
     except KeyboardInterrupt:
         feetech.stop()
         print("Bye")

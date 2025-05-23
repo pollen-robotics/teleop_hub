@@ -19,6 +19,7 @@ class ArduinoController:
         """
         import serial  # type: ignore
 
+        print(port)
         self.ser = serial.Serial(port, 9600)
         self.ser.flushInput()
         self.gripper_type = gripper_type
@@ -66,8 +67,8 @@ if __name__ == "__main__":
     gripper_type = (
         POTENTIOMETER_GRIPPER  # Change to FEETECH_GRIPPER for the other gripper
     )
-    # arduino = ArduinoController("/dev/noVR_right_arduino", gripper_type)
-    arduino = ArduinoController("/dev/noVR_left_arduino", gripper_type)
+    arduino = ArduinoController("/dev/noVR_right_arduino", gripper_type)
+    # arduino = ArduinoController("/dev/noVR_left_arduino", gripper_type)
 
     while True:
         if gripper_type == FEETECH_GRIPPER:

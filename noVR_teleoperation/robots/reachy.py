@@ -1,11 +1,13 @@
 from typing import Optional
 
 import numpy as np
-from scipy.spatial.transform import Rotation as R  # type: ignore
-
 from robots.robot import Robot  # type: ignore
-from utils import (limit_orbita3d_joints, load_config,  # type: ignore
-                   make_homogenous_matrix_from_rotation_matrix)
+from scipy.spatial.transform import Rotation as R  # type: ignore
+from utils import (
+    limit_orbita3d_joints,
+    load_config,  # type: ignore
+    make_homogenous_matrix_from_rotation_matrix,
+)
 
 
 class Reachy2(Robot):
@@ -30,9 +32,11 @@ class Reachy2(Robot):
     def _make_imports(self) -> None:
         from google.protobuf.wrappers_pb2 import FloatValue, Int32Value
         from reachy2_sdk import ReachySDK  # type: ignore
-        from reachy2_sdk_api.arm_pb2 import (ArmCartesianGoal,  # type: ignore
-                                             IKConstrainedMode,
-                                             IKContinuousMode)
+        from reachy2_sdk_api.arm_pb2 import ArmCartesianGoal  # type: ignore
+        from reachy2_sdk_api.arm_pb2 import (
+            IKConstrainedMode,  # type: ignore
+            IKContinuousMode,
+        )
         from reachy2_sdk_api.kinematics_pb2 import Matrix4x4  # type: ignore
 
         self.ReachySDK = ReachySDK
@@ -187,9 +191,9 @@ class Reachy2(Robot):
             gripper.goal_position = command
             gripper.send_goal_positions()
         else:
-            if command == 0 and not gripper.is_moving() and gripper.opening > 50:
+            if command == 0 and not gripper.is_moving() and gripper.opening > 20:
                 gripper.close()
-            elif command == 1 and not gripper.is_moving() and gripper.opening < 50:
+            elif command == 1 and not gripper.is_moving() and gripper.opening < 90:
                 gripper.open()
 
     def move_mobile_base(self, x: float, y: float, theta: float) -> None:

@@ -1,12 +1,15 @@
 from typing import Optional
 
 import numpy as np
-
 from camera.camera import Camera  # type: ignore
 from camera.rgb_camera import RGBCamera  # type: ignore
 from controller.joystick_controller import JoystickController  # type: ignore
-from teleoperation_mode.teleoperation import Teleoperation  # type: ignore
-from teleoperation_mode.teleoperation import DUAL_ARM, LEFT_ARM, RIGHT_ARM
+from teleoperation_mode.teleoperation import (
+    DUAL_ARM,  # type: ignore
+    LEFT_ARM,
+    RIGHT_ARM,
+    Teleoperation,
+)
 from trackers.tracker import TrackerType  # type: ignore
 
 
@@ -23,17 +26,16 @@ class JoystickTeleoperation(Teleoperation):
         self.tracker_type = tracker_type
         self.mode = 0
         self.camera: Optional[Camera]
+        self.stop = True
 
         if tracker_type == TrackerType.ARUCO:
             import cv2  # type: ignore
 
             self.cv2 = cv2
             self.camera = RGBCamera()
-            self.stop = False
 
         elif tracker_type == TrackerType.VIVE:
             self.camera = None
-            self.stop = True
 
         self._init_controllers()
 

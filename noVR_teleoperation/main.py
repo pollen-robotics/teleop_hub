@@ -1,4 +1,5 @@
 from teleoperation_mode.teleoperation import Teleoperation  # type: ignore
+from teleoperation_mode.teleoperation_gamepad import GamepadTeleoperation
 from teleoperation_mode.teleoperation_rgbd import TeleoperationRGBD
 from teleoperation_mode.teleoperation_so_arm import SoArmTeleoperation
 from teleoperation_mode.teleoperation_with_joystick import JoystickTeleoperation
@@ -18,6 +19,10 @@ if __name__ == "__main__":
         teleoperation = TeleoperationRGBD()
     elif tracker_type == TrackerType.SO_ARM:
         teleoperation = SoArmTeleoperation(config["port"])
+    elif tracker_type == TrackerType.GAMEPAD:
+        teleoperation = GamepadTeleoperation(
+            config["angle_step"], config["x_y_joystick_ratio"], config["z_increment"]
+        )
     else:
         raise ValueError(f"Invalid tracker type: {tracker_type}")
 

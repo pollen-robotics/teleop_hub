@@ -4,14 +4,11 @@ from collections import deque
 from typing import Deque, Optional
 
 import numpy as np
-from scipy.spatial.transform import Rotation as R  # type: ignore
-
 from controller.controller import Controller  # type: ignore
-from trackers.rgbd_tracker.computer_vision import \
-    ComputerVision  # type: ignore
-from trackers.rgbd_tracker.rgbd_tracker import (ArmRGBDTracker,  # type: ignore
-                                                GripperRGBDTracker,
-                                                HeadRGBDTracker)
+from scipy.spatial.transform import Rotation as R  # type: ignore
+from trackers.rgbd_tracker.computer_vision import ComputerVision  # type: ignore
+from trackers.rgbd_tracker.rgbd_tracker import ArmRGBDTracker  # type: ignore
+from trackers.rgbd_tracker.rgbd_tracker import GripperRGBDTracker, HeadRGBDTracker
 from utils import make_homogenous_matrix_from_rotation_matrix  # type: ignore
 
 
@@ -248,12 +245,12 @@ class ArmRGBDController(RGBDController):
 
         # check if the first command is in the cube : x [0.2, O.4], y [0.2, 0.4], z [-0.4,-0.1]
         if (
-            command[0] < 0.4
-            and command[0] > 0.2
-            and command[1] < 0.4
-            and command[1] > 0.2
-            and command[2] < -0.15
-            and command[2] > -0.4
+            command[0] < 0.6
+            and command[0] > 0.1
+            and command[1] < 0.5
+            and command[1] > 0.1
+            and command[2] < 0
+            and command[2] > -0.5
         ):
             self.first_pose = pose
             self.former_pose = pose

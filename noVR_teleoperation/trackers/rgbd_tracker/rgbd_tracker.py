@@ -4,15 +4,16 @@ from typing import Optional
 
 # import cv2  # type: ignore
 import numpy as np
-
 from camera.orbbec import Orbbec  # type: ignore
-from filter.filters import (KalmanFilter3D, MedianFilter,  # type: ignore
-                            RotationSmoother)
-from trackers.rgbd_tracker.computer_vision import \
-    ComputerVision  # type: ignore
+from filter.filters import (
+    KalmanFilter3D,
+    MedianFilter,  # type: ignore
+    RotationSmoother,
+)
+from trackers.rgbd_tracker.computer_vision import ComputerVision  # type: ignore
 from trackers.tracker import Tracker, TrackerType  # type: ignore
-from utils import (make_homogenous_matrix_from_rotation_matrix,  # type: ignore
-                   rotation_matrix_from_vector)
+from utils import make_homogenous_matrix_from_rotation_matrix  # type: ignore
+from utils import rotation_matrix_from_vector
 
 
 class RGBDTracker(Tracker, ABC):

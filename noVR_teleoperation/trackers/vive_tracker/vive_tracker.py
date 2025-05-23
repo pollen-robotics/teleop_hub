@@ -1,9 +1,10 @@
 import sys
+from typing import Any
 
 import numpy as np
 import trackers.vive_tracker.triad_openvr as triad_openvr  # type: ignore
-from openvr import HmdMatrix34_t  # type: ignore
 from trackers.tracker import Tracker, TrackerType  # type: ignore
+from utils import load_config  # type: ignore
 
 # trackers = {
 #     "l_arm": "LHR-0D914CCE",
@@ -23,7 +24,7 @@ class ViveTracker(Tracker):
         super().__init__()
         self.tracker_name = tracker_id
         self.tracker_type = TrackerType.VIVE
-        config = self.load_config("config.yaml")
+        config = load_config("config.yaml")
         trackers = config["vive_trackers"]
 
         if self.tracker_name not in trackers:
@@ -66,7 +67,7 @@ class ViveTracker(Tracker):
         pose = self.tracker.get_pose_matrix()
         self.tracker_pose = self._convert_openvr_matrix(pose)
 
-    def _convert_openvr_matrix(self, hmd_matrix: HmdMatrix34_t) -> np.ndarray:
+    def _convert_openvr_matrix(self, hmd_matrix: Any) -> np.ndarray:
         """Converts an OpenVR 3x4 matrix (HmdMatrix34_t) to a 4x4 NumPy matrix.
 
         Args:

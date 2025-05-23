@@ -112,3 +112,26 @@ def load_config(path: str = "config.yaml") -> dict:
     with open(path, "r") as file:
         config = yaml.safe_load(file)
     return config
+
+
+def axis_cleaner(value: float, deadzone: float = 0.05) -> float:
+    """Clean the joystick value by applying a deadzone to ignore the small joystick noise.
+    Args:
+        value (float): The joystick axis value.
+        deadzone (float): The deadzone threshold.
+    Returns:
+        float: The cleaned value.
+    """
+    if abs(value) < deadzone:
+        return 0.0
+    return value
+
+
+def parse_hat(hat: tuple[int, int]) -> tuple[int, int]:
+    """Parse the D-pad hat value to a tuple of integers.
+    Args:
+        hat (tuple[int, int]): The D-pad hat value.
+    Returns:
+        tuple[int, int]: The parsed D-pad value.
+    """
+    return hat

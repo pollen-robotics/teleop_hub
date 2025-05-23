@@ -104,8 +104,114 @@ These two techniques use the [SOARM-100](https://github.com/TheRobotStudio/SO-AR
 - add of a **joystick** and **buttons**, so you can control several parts and switch modes with an **Arduino** system.
 - tuning of the trigger, so you can use either a Feetech **motor** or a **potentiometer**. 
 
-You can find all the CAO files and the tutorials on how to make your own custom controller there : [lien vers explications]
+<details>
+<summary><span style="font-size: 1.1em;"><strong>How to make a custom controller</strong></span></summary>
 
+There are two types of controllers depending on the gripper type you want to use:
+
+<details>
+<summary><span style="font-size: 1em;"><strong>Potentiometer controller (incomplete)</strong></span></summary>
+
+
+This is a DIY controller. Two variants are possible:
+- A version using a **Vive Tracker**
+- A **low-cost version** using an **ArUco** marker
+
+---
+
+### BOM
+
+### ArUco Controller (~25 €)
+
+| Component               | Quantity | Unit Price (€) | Total (€) |
+|------------------------|----------|----------------|-----------|
+| Arduino Nano Every     | 1        | 14.00          | 14.00     |
+| Potentiometer          | 1        | 1.00           | 1.00      |
+| Push Button            | 2        | 0.25           | 0.50      |
+| Joystick Module        | 1        | 3.00           | 3.00      |
+| Micro USB Cable        | 1        | 2.00           | 2.00      |
+| PLA Filament (~130g)   | ~130g    | —              | 4.00      |
+| **Estimated Total**    |          |                | **24.50** |
+
+---
+
+### Vive Controller (~266 €)
+
+| Component               | Quantity | Unit Price (€) | Total (€) |
+|------------------------|----------|----------------|-----------|
+| Vive Tracker           | 1        | 100.00         | 100.00    |
+| Vive Lighthouse        | 1        | 140.00         | 140.00    |
+| Arduino Nano Every     | 1        | 14.00          | 14.00     |
+| Push Button            | 2        | 0.25           | 0.50      |
+| Joystick Module        | 1        | 3.00           | 3.00      |
+| Micro USB Cable        | 1        | 2.00           | 2.00      |
+| PLA Filament (~80g)    | ~80g     | —              | 2.50      |
+| **Estimated Total**    |          |                | **266.00** |
+
+> 💡 One Lighthouse can track two Vive Trackers → ~432 € for two controllers.
+
+---
+
+## 3D Printed Parts
+
+For **each controller**, print the following:
+
+### Core parts:
+- `side`_potentiometer_controller1 ×1  
+- `side`_potentiometer_controller2 ×1  
+- `side`_potentiometer_controller3 ×1  
+- `side`_trigger ×1
+- button ×2  
+- support_button ×1  
+
+### Tracking-specific top:
+- **ArUco version:** `side`_aruco_controller
+- **Vive version:** `side`_vive_controller
+
+> Replace  `side` by `left`/`right` based on the controller side you want.
+
+---
+
+## Assembly Instructions
+
+### 1. Print the controller parts
+
+Use your preferred slicer and printer to produce the components listed above.
+
+### 2. Assemble the controller
+
+**This step currently requires some soldering.**
+
+- Assemble the push buttons  
+  ![buttons](images/assembly/buttons.jpg)
+
+- Attach the buttons to the controller handle  
+  ![fixed_buttons](images/assembly/fixed_buttons.jpg)
+
+- Mount the joystick
+![joystick](images/assembly/joystick.jpg)
+- Mount the potentiometer
+![potentiometer](images/assembly/potentiometer.jpg)
+
+- Connect the components according to the provided wiring diagram (see below)
+![schema](images/assembly/schema.png)
+- Mount the Arduino board
+- Close the handle
+![result](images/assembly/result.jpg)
+
+### 3. Upload the code
+
+- Open the PlatformIO project
+- Connect the Arduino Nano Every to your computer via USB
+- Upload the firmware to the board
+
+---
+</details>
+<details>
+<summary><span style="font-size: 1em;"><strong>Feetech controller (comming soon) </strong></span></summary>
+</details>
+
+</details>
 
 <details>
 <summary><span style="font-size: 1.1em;"><strong>Vive Tracker </strong></span></summary>
@@ -172,7 +278,7 @@ nano config.yaml
 
 In the *vive_trackers*, put the left tracker in *l_arm* and the right_tracker in *r_arm* and save it. 
 
-
+</details>
 <details>
 <summary><span style="font-size: 1.1em;"><strong>ArUco cube</strong></span></summary>
 
@@ -254,9 +360,15 @@ You need to modify the config file to adjust your controller settings:
 **To set up your environment :**
 Once your config file and your controller(s) are ready (with a Vive tracker or a ArUco cube), you can launch the main script. Take your controller(s), the pose during the initialization will be the reference pose for the arm to be bent at 90°. 
 
+To understand how to use the system once it’s running,, you can refer to the image below.
+
+For one tracker only :
+![one tracker](images/one_tracker_vive_tuto.png)
+For two trackers :
+![two trackers](images/two_trackers_vive_tuto.png)
 
 
-</details>
+
 </details>
 <details>
 <summary> <span style="font-size: 1.2em;"><strong> RGBD Camera </strong></span></summary>

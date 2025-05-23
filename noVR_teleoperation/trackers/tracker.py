@@ -11,6 +11,8 @@ class TrackerType(Enum):
     ARUCO = "aruco"
     VIVE = "vive"
     RGBD = "rgbd"
+    SO_ARM = "so_arm"
+    GAMEPAD = "gamepad"
 
 
 class Tracker(ABC):

@@ -2,18 +2,18 @@ import time
 from abc import ABC, abstractmethod
 from typing import Optional
 
-import cv2  # type: ignore
+# import cv2  # type: ignore
 import numpy as np
 from camera.orbbec import Orbbec  # type: ignore
-from filter.filters import (  # type: ignore
+from filter.filters import (
     KalmanFilter3D,
-    MedianFilter,
+    MedianFilter,  # type: ignore
     RotationSmoother,
 )
-from reachy2_sdk.utils.utils import recompose_matrix  # type: ignore
 from trackers.rgbd_tracker.computer_vision import ComputerVision  # type: ignore
 from trackers.tracker import Tracker, TrackerType  # type: ignore
-from utils import rotation_matrix_from_vector  # type: ignore
+from utils import make_homogenous_matrix_from_rotation_matrix  # type: ignore
+from utils import rotation_matrix_from_vector
 
 
 class RGBDTracker(Tracker, ABC):
@@ -31,6 +31,8 @@ class RGBDTracker(Tracker, ABC):
         """
         super().__init__()
         self.computer_vision = computer_vision
+        self.cv2 = self.computer_vision.cv2
+
         self.tracker_type = TrackerType.RGBD
         self.tracker_pose: Optional[np.ndarray]
 
@@ -77,10 +79,14 @@ class ArmRGBDTracker(RGBDTracker):
         wrist_position_filtered = self.kalman_filters[1].update(wrist_position)
 
         # get the rotation matrix from the vector elbow-wrist
-        wrist_rotation = rotation_matrix_from_vector(wrist_position_filtered - elbow_position_filtered)
+        wrist_rotation = rotation_matrix_from_vector(
+            wrist_position_filtered - elbow_position_filtered
+        )
         wrist_rotation_filtered = self.rotation_smoother.update(wrist_rotation)
 
-        self.tracker_pose = recompose_matrix(wrist_rotation_filtered, wrist_position_filtered)
+        self.tracker_pose = make_homogenous_matrix_from_rotation_matrix(
+            wrist_rotation_filtered, wrist_position_filtered
+        )
 
     def get_points(self) -> tuple[np.ndarray, np.ndarray]:
         """Get the 3D coordinates of the arm points (elbow, wrist) for the specified arm.
@@ -167,7 +173,10 @@ class GripperRGBDTracker(RGBDTracker):
         index_mcp = hand_points[2]
         index_tip = hand_points[3]
 
-        opening = float(np.linalg.norm(index_tip - thumb_tip) / np.linalg.norm(index_mcp - thumb_mcp))
+        opening = float(
+            np.linalg.norm(index_tip - thumb_tip)
+            / np.linalg.norm(index_mcp - thumb_mcp)
+        )
         opening_filtered = self.mf_gripper.update(opening)
         return opening_filtered
 
@@ -244,6 +253,8 @@ class HeadRGBDTracker(RGBDTracker):
 
 
 if __name__ == "__main__":
+    import cv2  # type: ignore
+
     camera = Orbbec()
     computer_vision = ComputerVision(camera)
     l_rgbd_tracker = ArmRGBDTracker("l_arm", computer_vision)

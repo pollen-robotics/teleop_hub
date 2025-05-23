@@ -7,18 +7,16 @@ from camera.camera import Camera  # type: ignore
 from controller.arduino import ArduinoController  # type: ignore
 from controller.controller import Controller  # type: ignore
 from controller.feetech import Feetech  # type: ignore
-from filter.filters import PoseFilter  # type: ignore
 from scipy.spatial.transform import Rotation as R  # type: ignore
 from trackers.aruco_tracker.aruco_cube import ArucoCube  # type: ignore
 from trackers.tracker import TrackerType  # type: ignore
 from trackers.vive_tracker.vive_tracker import ViveTracker  # type: ignore
-from utils import (  # type: ignore
-    load_config,
-    make_homogenous_matrix_from_rotation_matrix,
-)
+from utils import load_config  # type: ignore
+from utils import make_homogenous_matrix_from_rotation_matrix
 
 FEETECH_GRIPPER = "feetech"
 POTENTIOMETER_GRIPPER = "potentiometer"
+
 
 class JoystickController(Controller):
     """Joystick controller class.
@@ -50,17 +48,17 @@ class JoystickController(Controller):
 
         arduino_port = load_config("config.yaml")["arduino_ports"][arm]
         self.arduino = ArduinoController(arduino_port, self.gripper_type)
-        
+
         if self.gripper_type == FEETECH_GRIPPER:
             feetech_port = load_config("config.yaml")["feetech_ports"][arm]
             self.gripper = Feetech(feetech_port)
-            self.gripper_joints_limit = load_config("config.yaml")["feetech_gripper_joints_limit"][
-                self.arm
-            ]
+            self.gripper_joints_limit = load_config("config.yaml")[
+                "feetech_gripper_joints_limit"
+            ][self.arm]
         elif self.gripper_type == POTENTIOMETER_GRIPPER:
-            self.gripper_joints_limit = load_config("config.yaml")["potentiometer_gripper_joints_limit"][
-                self.arm
-            ]
+            self.gripper_joints_limit = load_config("config.yaml")[
+                "potentiometer_gripper_joints_limit"
+            ][self.arm]
         else:
             raise ValueError(f"Unknown gripper type: {self.gripper_type}")
 
@@ -70,12 +68,9 @@ class JoystickController(Controller):
                 raise ValueError("Camera is required for ArUco tracking.")
 
             self.tracker = ArucoCube(arm, self.camera)
-            self.pose_filter = PoseFilter(alpha=0.5)
-            self.is_filtered = True
 
         elif self.tracker_type == TrackerType.VIVE:
             self.tracker = ViveTracker(arm)
-            self.is_filtered = False
 
         self.joystick_x = None
         self.joystick_y = None
@@ -84,12 +79,10 @@ class JoystickController(Controller):
         self.buttonB = None
 
         self.stop_flag = False
-        
 
         thread = threading.Thread(target=self._update_arduino_data)
         thread.daemon = True
         thread.start()
-
 
     def init_gripper(self, joint):
         self.gripper.enable_torque()
@@ -115,7 +108,6 @@ class JoystickController(Controller):
         """
         while not self.stop_flag:
             arduino_values = self.arduino.read()
-            # x, y, button_cmd, buttonA, buttonB, potentiometer = self.arduino.read()
             if arduino_values[0] is not None:
                 self.joystick_button = arduino_values[2]
                 if self.arm == "r_arm":
@@ -153,9 +145,6 @@ class JoystickController(Controller):
         """
         self.tracker.update_tracker_pose()
         pose = self.tracker.tracker_pose
-
-        if self.is_filtered:
-            pose = self.pose_filter.update(pose)
         pose = self.convert_pose(pose)
         self.former_pose = pose
         return pose

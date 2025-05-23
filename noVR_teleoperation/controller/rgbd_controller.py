@@ -5,14 +5,11 @@ from typing import Deque, Optional
 
 import numpy as np
 from controller.controller import Controller  # type: ignore
-from reachy2_sdk.utils.utils import recompose_matrix  # type: ignore
 from scipy.spatial.transform import Rotation as R  # type: ignore
 from trackers.rgbd_tracker.computer_vision import ComputerVision  # type: ignore
-from trackers.rgbd_tracker.rgbd_tracker import (  # type: ignore
-    ArmRGBDTracker,
-    GripperRGBDTracker,
-    HeadRGBDTracker,
-)
+from trackers.rgbd_tracker.rgbd_tracker import ArmRGBDTracker  # type: ignore
+from trackers.rgbd_tracker.rgbd_tracker import GripperRGBDTracker, HeadRGBDTracker
+from utils import make_homogenous_matrix_from_rotation_matrix  # type: ignore
 
 
 class RGBDController(Controller, ABC):
@@ -41,7 +38,7 @@ class RGBDController(Controller, ABC):
         self.user_center = self.computer_vision.user_center
         self.normalization_factor = 1 / self.computer_vision.normalization_factor
 
-    def get_controller_pose(self) -> np.ndarray:
+    def get_controller_pose(self):
         """Get the pose of the RGBD tracker.
 
         This method updates the tracker pose and converts it from the image to the robot frame.
@@ -207,7 +204,9 @@ class ArmRGBDController(RGBDController):
             np.ndarray: The converted pose.
         """
         corrected_rotation = self.computer_vision.T_world_camera @ pose[:3, :3]
-        corrected_position = self.computer_vision.T_world_camera @ (pose[:3, 3] - self.user_center)
+        corrected_position = self.computer_vision.T_world_camera @ (
+            pose[:3, 3] - self.user_center
+        )
 
         normalized_position = corrected_position * self.normalization_factor
 
@@ -220,7 +219,9 @@ class ArmRGBDController(RGBDController):
         T_cam_to_reachy = np.array([[0, 0, -1], [1, 0, 0], [0, -1, 0]])
         new_rotation = T_cam_to_reachy @ corrected_rotation @ T_cam_to_reachy.T
 
-        new_pose = recompose_matrix(new_rotation, new_position)
+        new_pose = make_homogenous_matrix_from_rotation_matrix(
+            new_rotation, new_position
+        )
 
         return new_pose
 
@@ -244,12 +245,12 @@ class ArmRGBDController(RGBDController):
 
         # check if the first command is in the cube : x [0.2, O.4], y [0.2, 0.4], z [-0.4,-0.1]
         if (
-            command[0] < 0.4
-            and command[0] > 0.2
-            and command[1] < 0.4
-            and command[1] > 0.2
-            and command[2] < -0.15
-            and command[2] > -0.4
+            command[0] < 0.6
+            and command[0] > 0.1
+            and command[1] < 0.5
+            and command[1] > 0.1
+            and command[2] < 0
+            and command[2] > -0.5
         ):
             self.first_pose = pose
             self.former_pose = pose
@@ -271,7 +272,9 @@ class ArmRGBDController(RGBDController):
         """
         goal_position = goal_pose[:3, 3]
         former_position = self.former_pose[:3, 3]
-        return np.linalg.norm(goal_position - former_position) > distance_threshold
+        return bool(
+            np.linalg.norm(goal_position - former_position) > distance_threshold
+        )
 
     def is_command_reachable(self, goal_pose: np.ndarray) -> bool:
         """Check if the goal pose is reachable.

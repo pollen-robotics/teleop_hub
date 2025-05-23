@@ -1,10 +1,9 @@
 import time
 from typing import Optional
 
-import serial  # type: ignore
-
 FEETECH_GRIPPER = "feetech"
 POTENTIOMETER_GRIPPER = "potentiometer"
+
 
 class ArduinoController:
     """
@@ -18,6 +17,8 @@ class ArduinoController:
         Args :
             port (str): The serial port to which the Arduino is connected.
         """
+        import serial  # type: ignore
+
         self.ser = serial.Serial(port, 9600)
         self.ser.flushInput()
         self.gripper_type = gripper_type
@@ -25,7 +26,12 @@ class ArduinoController:
     def read(
         self,
     ) -> tuple[
-        Optional[int], Optional[int], Optional[int], Optional[int], Optional[int]
+        Optional[int],
+        Optional[int],
+        Optional[int],
+        Optional[int],
+        Optional[int],
+        Optional[int],
     ]:
         """Reads the joystick input and button states from the Arduino.
 
@@ -42,13 +48,13 @@ class ArduinoController:
             buttonA = int(values[3])
             buttonB = int(values[4])
             if self.gripper_type == FEETECH_GRIPPER:
-                return x_input, y_input, button_cmd, buttonA, buttonB, 
+                return x_input, y_input, button_cmd, buttonA, buttonB, None
             else:
                 potentiometer = int(values[5])
                 return x_input, y_input, button_cmd, buttonA, buttonB, potentiometer
 
         if self.gripper_type == FEETECH_GRIPPER:
-            return None, None, None, None, None
+            return None, None, None, None, None, None
         return None, None, None, None, None, None
 
     def close(self) -> None:
@@ -57,13 +63,15 @@ class ArduinoController:
 
 
 if __name__ == "__main__":
-    gripper_type = POTENTIOMETER_GRIPPER  # Change to FEETECH_GRIPPER for the other gripper
+    gripper_type = (
+        POTENTIOMETER_GRIPPER  # Change to FEETECH_GRIPPER for the other gripper
+    )
     # arduino = ArduinoController("/dev/noVR_right_arduino", gripper_type)
     arduino = ArduinoController("/dev/noVR_left_arduino", gripper_type)
 
     while True:
         if gripper_type == FEETECH_GRIPPER:
-            x, y, button_cmd, buttonA, buttonB = arduino.read()
+            x, y, button_cmd, buttonA, buttonB, _ = arduino.read()
         else:
             x, y, button_cmd, buttonA, buttonB, potentiometer = arduino.read()
         if x is not None:
@@ -73,7 +81,8 @@ if __name__ == "__main__":
                 )
             else:
                 print(
-                    f"x: {x}, y: {y}, button_cmd: {button_cmd}, buttonA: {buttonA}, buttonB: {buttonB}, potentiometer: {potentiometer}"
+                    f"x: {x}, y: {y}, button_cmd: {button_cmd}, buttonA: {buttonA}, buttonB: {buttonB},"
+                    + f"potentiometer: {potentiometer}",
                 )
         else:
             print("No data")

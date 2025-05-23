@@ -1,9 +1,7 @@
 import math
 import time
 
-from pypot.feetech import FeetechSTS3215IO  # type: ignore
-
-# from lerobot.common.utils.kinematics import RobotKinematics
+# from pypot.feetech import FeetechSTS3215IO  # type: ignore
 
 
 class Feetech:
@@ -18,6 +16,8 @@ class Feetech:
         Args:
             port (str): The port to which the Feetech servo motors are connected.
         """
+        from pypot.feetech import FeetechSTS3215IO  # type: ignore
+
         self.io = FeetechSTS3215IO(
             port,
             baudrate=1000000,

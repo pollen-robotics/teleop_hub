@@ -127,7 +127,7 @@ This modality requires 1 Vive tracker for each controller used (it is possible t
 
 <code>sudo ln -s /lib/x86_64-linux-gnu/libudev.so.1 /lib/x86_64-linux-gnu/libudev.so.0</code>
 
-5. Install pyopenvr :  <code>sudo pip install -U pip openvr</code>
+5. Install pyopenvr :  <code>python -m pip install openvr</code>
 
 6. Disable the headset requirement : 
 there are 2 files to modify using those commands on a terminal : 
@@ -330,11 +330,38 @@ To set-up your environment :
 <details>
 <summary> <span style="font-size: 1.2em;"><strong> SOARM-100 </strong></span></summary>
 
+It needs a leader SOARM-100 : you can either build it or buy it (all the infos are on [GitHub](https://github.com/TheRobotStudio/SO-ARM100)). 
+
+To launch the teleoperation, it needs :
+- the arm powered and plugged to the computer
+- the specified port on the config file (in the 'SO Arm’ section)
+    > You can find the port name by doing ```ls /dev``` in your terminal, and looking for the ttyACM[0-10] linked to it.
+
+When the teleoperation starts, the arm will spontaneously move into its initial position: accompany it without restraining it, because once it is in position, it will become compliant and fall. 
+
+You then have control of the **right arm**, which you can change using the **keyboard** commands shown in the image below. There are also **commands** for gripping from above, for increasing/decreasing the ratio between arm and robot movement in position and rotation, for pausing teleoperation and for changing reference points.
+
+Take a look at the **summary image**, but don't forget to try it out straight away - it'll be much easier to get the hang of!
+
+<p align = "center"> 
+    <img src="images/SO-arm-tuto.png" alt="so100 commands" style="width: 80%"/>
+</p>
+
+To **quit** teleoperation, you only have to ctrl + c the script. 
 
 </details>
 
 <details>
 <summary> <span style="font-size: 1.2em;"><strong> Gamepad </strong></span></summary>
 
+You only need a PS4 gamepad, plugged to your computer. 
+
+The left **joystick** is used for forward/backward and left/right **translation** of the *left arm*, **L1/L2** for up/down translation ; the right **joystick** and **R1/R2** for the *right arm*.
+
+**Orientation** is controlled using the **side buttons** (the **triangle** and **cross** allow upward and downward bending of the *left wrist*, the **square** and **round** allow inward and outward bending, and the **arrows** are for the *right wrist*): this means you can control the orientation and position of an end effector at the same time, although it does take a bit of practice.
+
+You can **tune the ratios** of movements on the various axes in position and rotation in the config file, in the “gamepad” section  - at the end of the file (lower the coefficient to slow down movement). 
+
+You can open and close the **grippers** with the 'share' and 'options' buttons. 
 
 </details>

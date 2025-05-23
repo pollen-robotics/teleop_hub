@@ -257,7 +257,7 @@ Once your config file and your controller(s) are ready (with a Vive tracker or a
 
 
 </details>
-
+</details>
 <details>
 <summary> <span style="font-size: 1.2em;"><strong> RGBD Camera </strong></span></summary>
 

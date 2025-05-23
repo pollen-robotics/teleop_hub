@@ -2,10 +2,9 @@ import time
 from typing import Any, Optional, Tuple
 
 import numpy as np
-from scipy.spatial.transform import Rotation as R  # type: ignore
-
 from camera.camera import Camera  # type: ignore
 from camera.orbbec import Orbbec  # type: ignore
+from scipy.spatial.transform import Rotation as R  # type: ignore
 
 # Constants for the landmark indices, based on the MediaPipe Holistic model
 # Face : Nose tip, Chin, Left eye left corner, Right eye right corner

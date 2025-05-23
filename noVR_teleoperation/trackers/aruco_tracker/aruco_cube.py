@@ -3,7 +3,7 @@ from typing import Optional
 
 import numpy as np
 from camera.rgb_camera import RGBCamera  # type: ignore
-from filter.filters import KalmanFilter3D, PoseFilter, RotationSmoother  # type: ignore
+from filter.filters import KalmanFilter3D, RotationSmoother  # type: ignore
 from scipy.spatial.transform import Rotation as R  # type: ignore
 from trackers.tracker import Tracker, TrackerType  # type: ignore
 from utils import load_config  # type: ignore

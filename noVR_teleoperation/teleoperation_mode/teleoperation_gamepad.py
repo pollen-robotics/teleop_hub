@@ -92,7 +92,9 @@ class GamepadTeleoperation(Teleoperation):
             if not self.continous_press[8]:
                 self.continous_press[8] = True
                 self.gripper_state[RIGHT_ARM] ^= 1
-                self.robot.move_gripper(RIGHT_ARM, True, 130 * self.gripper_state[RIGHT_ARM])
+                self.robot.move_gripper(
+                    RIGHT_ARM, True, 130 * self.gripper_state[RIGHT_ARM]
+                )
                 time.sleep(0.2)
             else:
                 pass
@@ -131,7 +133,9 @@ class GamepadTeleoperation(Teleoperation):
             if not self.continous_press[9]:
                 self.continous_press[9] = True
                 self.gripper_state[LEFT_ARM] ^= 1
-                self.robot.move_gripper(LEFT_ARM, True, 130 * self.gripper_state[LEFT_ARM])
+                self.robot.move_gripper(
+                    LEFT_ARM, True, 130 * self.gripper_state[LEFT_ARM]
+                )
                 time.sleep(0.2)
             else:
                 pass
@@ -149,7 +153,9 @@ class GamepadTeleoperation(Teleoperation):
             # translation
             new_pose[:3, 3] += np.array([delta["dx"], delta["dy"], delta["dz"]])
             # orientation
-            rot_delta = R.from_euler("xyz", [delta["roll"], delta["pitch"], delta["yaw"]], degrees=True).as_matrix()
+            rot_delta = R.from_euler(
+                "xyz", [delta["roll"], delta["pitch"], delta["yaw"]], degrees=True
+            ).as_matrix()
             new_pose[:3, :3] = rot_delta.dot(prev[:3, :3])
             # send command
             self.robot.go_to_pose(new_pose, arm)

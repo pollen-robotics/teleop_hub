@@ -20,7 +20,9 @@ if __name__ == "__main__":
     elif tracker_type == TrackerType.SO_ARM:
         teleoperation = SoArmTeleoperation(config["port"])
     elif tracker_type == TrackerType.GAMEPAD:
-        teleoperation = GamepadTeleoperation(config["angle_step"], config["x_y_joystick_ratio"], config["z_increment"])
+        teleoperation = GamepadTeleoperation(
+            config["angle_step"], config["x_y_joystick_ratio"], config["z_increment"]
+        )
     else:
         raise ValueError(f"Invalid tracker type: {tracker_type}")
 

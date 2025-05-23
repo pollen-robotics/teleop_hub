@@ -4,7 +4,12 @@ import numpy as np
 from camera.camera import Camera  # type: ignore
 from camera.rgb_camera import RGBCamera  # type: ignore
 from controller.joystick_controller import JoystickController  # type: ignore
-from teleoperation_mode.teleoperation import Teleoperation, DUAL_ARM, LEFT_ARM, RIGHT_ARM  # type: ignore
+from teleoperation_mode.teleoperation import (
+    DUAL_ARM,  # type: ignore
+    LEFT_ARM,
+    RIGHT_ARM,
+    Teleoperation,
+)
 from trackers.tracker import TrackerType  # type: ignore
 
 

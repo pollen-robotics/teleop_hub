@@ -1,11 +1,13 @@
 from typing import Optional
 
 import numpy as np
-from scipy.spatial.transform import Rotation as R  # type: ignore
-
 from robots.robot import Robot  # type: ignore
-from utils import (limit_orbita3d_joints, load_config,  # type: ignore
-                   make_homogenous_matrix_from_rotation_matrix)
+from scipy.spatial.transform import Rotation as R  # type: ignore
+from utils import (
+    limit_orbita3d_joints,
+    load_config,  # type: ignore
+    make_homogenous_matrix_from_rotation_matrix,
+)
 
 
 class Reachy2(Robot):
@@ -31,8 +33,8 @@ class Reachy2(Robot):
         from google.protobuf.wrappers_pb2 import FloatValue, Int32Value
         from reachy2_sdk import ReachySDK  # type: ignore
         from reachy2_sdk_api.arm_pb2 import ArmCartesianGoal  # type: ignore
-        from reachy2_sdk_api.arm_pb2 import (  # type: ignore
-            IKConstrainedMode,
+        from reachy2_sdk_api.arm_pb2 import (
+            IKConstrainedMode,  # type: ignore
             IKContinuousMode,
         )
         from reachy2_sdk_api.kinematics_pb2 import Matrix4x4  # type: ignore

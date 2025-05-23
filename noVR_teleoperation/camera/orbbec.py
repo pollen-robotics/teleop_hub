@@ -4,7 +4,6 @@ from collections import deque
 from typing import Any, Deque, Optional
 
 import numpy as np  # type: ignore
-
 from camera.camera import Camera  # type: ignore
 from utils import load_config  # type: ignore
 

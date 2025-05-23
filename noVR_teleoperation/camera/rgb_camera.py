@@ -134,7 +134,7 @@ class RGBCamera(Camera):
 
                 self.cv2.putText(
                     frame,
-                    f"{side} cube - x: {np.round(tvec[0],3)}, y: {np.round(tvec[1],3)}, z: {np.round(tvec[2],3)}",
+                    f"{side} cube - x: {np.round(tvec[0], 3)}, y: {np.round(tvec[1], 3)}, z: {np.round(tvec[2], 3)}",
                     (10, 20 + 40 * i),
                     self.cv2.FONT_HERSHEY_SIMPLEX,
                     0.75,
@@ -185,7 +185,7 @@ class RGBCamera(Camera):
             trans = tvec.flatten()
             self.cv2.putText(
                 frame,
-                f"{marker_id} - {np.round(trans,3)}",
+                f"{marker_id} - {np.round(trans, 3)}",
                 (10, 20 + 20 * marker_id),
                 self.cv2.FONT_HERSHEY_SIMPLEX,
                 0.75,

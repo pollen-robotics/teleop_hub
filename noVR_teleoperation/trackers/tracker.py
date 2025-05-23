@@ -12,7 +12,7 @@ class TrackerType(Enum):
     VIVE = "vive"
     RGBD = "rgbd"
     SO_ARM = "so_arm"
-    DUALSHOCK = "dualshock"
+    GAMEPAD = "gamepad"
 
 
 class Tracker(ABC):

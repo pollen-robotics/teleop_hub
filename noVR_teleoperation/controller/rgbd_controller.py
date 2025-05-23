@@ -4,13 +4,11 @@ from collections import deque
 from typing import Deque, Optional
 
 import numpy as np
-from scipy.spatial.transform import Rotation as R  # type: ignore
-
 from controller.controller import Controller  # type: ignore
+from scipy.spatial.transform import Rotation as R  # type: ignore
 from trackers.rgbd_tracker.computer_vision import ComputerVision  # type: ignore
-from trackers.rgbd_tracker.rgbd_tracker import (ArmRGBDTracker,  # type: ignore
-                                                GripperRGBDTracker,
-                                                HeadRGBDTracker)
+from trackers.rgbd_tracker.rgbd_tracker import ArmRGBDTracker  # type: ignore
+from trackers.rgbd_tracker.rgbd_tracker import GripperRGBDTracker, HeadRGBDTracker
 from utils import make_homogenous_matrix_from_rotation_matrix  # type: ignore
 
 

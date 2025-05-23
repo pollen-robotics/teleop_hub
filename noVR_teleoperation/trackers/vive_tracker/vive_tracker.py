@@ -2,7 +2,6 @@ import sys
 from typing import Any
 
 import numpy as np
-
 import trackers.vive_tracker.triad_openvr as triad_openvr  # type: ignore
 from trackers.tracker import Tracker, TrackerType  # type: ignore
 from utils import load_config  # type: ignore

@@ -1,8 +1,7 @@
 import numpy as np
-
 from camera.orbbec import Orbbec  # type: ignore
-from controller.rgbd_controller import (ArmRGBDController,  # type: ignore
-                                        HeadRGBDController)
+from controller.rgbd_controller import ArmRGBDController  # type: ignore
+from controller.rgbd_controller import HeadRGBDController
 from teleoperation_mode.teleoperation import Teleoperation  # type: ignore
 from teleoperation_mode.teleoperation import LEFT_ARM, RIGHT_ARM  # type: ignore
 from trackers.rgbd_tracker.computer_vision import ComputerVision  # type: ignore
@@ -49,10 +48,16 @@ class TeleoperationRGBD(Teleoperation):
             if all(is_pose_ok):
                 self.first_command_ok = True
                 self._set_user_offsets(
-                    [self.controllers[LEFT_ARM].first_pose, self.controllers[RIGHT_ARM].first_pose], robot_poses
+                    [
+                        self.controllers[LEFT_ARM].first_pose,
+                        self.controllers[RIGHT_ARM].first_pose,
+                    ],
+                    robot_poses,
                 )
 
-    def _set_user_offsets(self, user_poses: list[np.ndarray], robot_poses: list[np.ndarray]) -> None:
+    def _set_user_offsets(
+        self, user_poses: list[np.ndarray], robot_poses: list[np.ndarray]
+    ) -> None:
         """Set the user offsets based on the initial poses of the user and robot.
 
         The offsets are calculated as the difference between the robot and user positions in the x, y, and z axes,
@@ -68,9 +73,24 @@ class TeleoperationRGBD(Teleoperation):
         robot_r_position = robot_poses[1][:3, 3]
 
         # calculate the offsets between the robot and user positions (as the mean of the two arms)
-        x_offset = np.mean([robot_l_position[0] - user_l_position[0], robot_r_position[0] - user_r_position[0]])
-        y_offset = np.mean([robot_l_position[1] - user_l_position[1], robot_r_position[1] - user_r_position[1]])
-        z_offset = np.mean([robot_l_position[2] - user_l_position[2], robot_r_position[2] - user_r_position[2]])
+        x_offset = np.mean(
+            [
+                robot_l_position[0] - user_l_position[0],
+                robot_r_position[0] - user_r_position[0],
+            ]
+        )
+        y_offset = np.mean(
+            [
+                robot_l_position[1] - user_l_position[1],
+                robot_r_position[1] - user_r_position[1],
+            ]
+        )
+        z_offset = np.mean(
+            [
+                robot_l_position[2] - user_l_position[2],
+                robot_r_position[2] - user_r_position[2],
+            ]
+        )
 
         self.user_offsets = np.array([x_offset, y_offset, z_offset])
         print(f"User offsets: {self.user_offsets}")

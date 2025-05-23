@@ -2,11 +2,10 @@ import threading
 import time
 
 import numpy as np
+from controller.so_arm_controller import SoArmController  # type: ignore
 from pynput import keyboard  # type: ignore
 from scipy.spatial.transform import Rotation as R  # type: ignore
 from scipy.spatial.transform import Slerp
-
-from controller.so_arm_controller import SoArmController  # type: ignore
 from teleoperation_mode.teleoperation import Teleoperation  # type: ignore
 
 

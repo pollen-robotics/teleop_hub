@@ -1,6 +1,6 @@
 robot_ip: "localhost"
 fake_only: true # Security to avoid sending command to a real robot if not wanted
-tracker_type: "dualshock" # options: aruco, vive, rgbd, so_arm
+tracker_type: "gamepad" # options: aruco, vive, rgbd, so_arm, gamepad
 gripper_type: "potentiometer" # options: feetech, potentiometer
 control_mode: "dual_arm" # options: dual_arm, l_arm, r_arm
 mirror_mode: false
@@ -26,8 +26,8 @@ port: "/dev/ttyACM0"
 
 ## For Arduino commands
 arduino_ports:
-  l_arm: "/dev/noVR_left_arduino"
-  r_arm: "/dev/noVR_right_arduino"
+  l_arm: "/dev/ttyACM0"
+  r_arm: "/dev/ttyACM1"
 
 ## For VIVE
 vive_trackers:
@@ -44,8 +44,8 @@ marker_ids:
   r_arm: [0, 1, 5, 4, 2, 3] # back, up, front, left, right, down
 
 camera:
-  usb_mode: true
-  camera_id: "0"
+  usb_mode: false
+  camera_id: "172.16.0.56"
   with_calibration: false
 
   camera_matrix:
@@ -59,13 +59,14 @@ camera:
       - 0.0
       - 1.0
   dist_coeffs:
-    - - 0.008803296291899812
-      - 0.46398897016824797
-      - 0.02701695107028852
-      - -0.0416190770556984
-      - -0.6751017329030815
+    -   - 0.008803296291899812
+        - 0.46398897016824797
+        - 0.02701695107028852
+        - -0.0416190770556984
+        - -0.6751017329030815
 
-# dualshock 4
-angle_step: 3
-z_increment: 0.01
-x_y_joystick_ratio: 0.01
+
+# For gamepad
+angle_step: 2
+z_increment: 0.002
+x_y_joystick_ratio: 0.004

@@ -5,6 +5,7 @@ import cv2  # type: ignore
 import cv2.aruco as aruco  # type: ignore
 import numpy as np
 from camera.rgb_camera import RGBCamera  # type: ignore
+from filter.filters import KalmanFilter3D, PoseFilter, RotationSmoother  # type: ignore
 from scipy.spatial.transform import Rotation as R  # type: ignore
 from trackers.tracker import Tracker, TrackerType  # type: ignore
 from utils import load_config  # type: ignore
@@ -35,6 +36,11 @@ class ArucoCube(Tracker):
         self.aruco_dict = aruco.getPredefinedDictionary(aruco.DICT_6X6_1000)
         aruco_param = aruco.DetectorParameters()
         self.detector = aruco.ArucoDetector(self.aruco_dict, aruco_param)
+
+        # add a filter
+        self.kf = KalmanFilter3D()
+        self.rf = RotationSmoother()
+        # self.filter = PoseFilter(0.1)
 
         self._define_cube(self.marker_ids)
 
@@ -149,11 +155,23 @@ class ArucoCube(Tracker):
                 None,
             )
 
+            # if rvec is not None and tvec is not None:
+            #     tracker_pose = np.eye(4)
+            #     tracker_pose[:3, :3] = R.from_rotvec(rvec.reshape(1, 3)).as_matrix()
+
+            #     tracker_pose[:3, 3] = tvec.flatten()
+            #     tracker_pose_filtered = self.filter.update(tracker_pose)
+            #     self.tracker_pose = tracker_pose_filtered
             if rvec is not None and tvec is not None:
                 tracker_pose = np.eye(4)
-                tracker_pose[:3, :3] = R.from_rotvec(rvec.reshape(1, 3)).as_matrix()
+                rotation = R.from_rotvec(rvec.reshape(1, 3)).as_matrix()
+                rotation_filtered = self.rf.update(rotation)
+                tracker_pose[:3, :3] = rotation_filtered
 
-                tracker_pose[:3, 3] = tvec.flatten()
+                tvec_filtered = self.kf.update(tvec.flatten())
+
+                tracker_pose[:3, 3] = tvec_filtered
+
                 self.tracker_pose = tracker_pose
 
         return self.tracker_pose

@@ -2,13 +2,6 @@ from typing import Optional
 
 import numpy as np
 from google.protobuf.wrappers_pb2 import FloatValue, Int32Value
-from reachy2_sdk import ReachySDK  # type: ignore
-from reachy2_sdk_api.arm_pb2 import (  # type: ignore
-    ArmCartesianGoal,
-    IKConstrainedMode,
-    IKContinuousMode,
-)
-from reachy2_sdk_api.kinematics_pb2 import Matrix4x4  # type: ignore
 from robots.robot import Robot  # type: ignore
 from scipy.spatial.transform import Rotation as R  # type: ignore
 from utils import (  # type: ignore
@@ -34,8 +27,25 @@ class Reachy2(Robot):
         """
         super().__init__(robot_ip, mirror_mode)
         fake_only_parameter = load_config("config.yaml").get("fake_only", True)
-        # self.reachy = ReachySDK(self.robot_ip, fake_only=fake_only_parameter)
-        self.reachy = ReachySDK(self.robot_ip)
+        self.reachy = self.ReachySDK(self.robot_ip, fake_only=fake_only_parameter)
+
+    def _make_imports(self) -> None:
+        from google.protobuf.wrappers_pb2 import FloatValue, Int32Value
+        from reachy2_sdk import ReachySDK  # type: ignore
+        from reachy2_sdk_api.arm_pb2 import ArmCartesianGoal  # type: ignore
+        from reachy2_sdk_api.arm_pb2 import (  # type: ignore
+            IKConstrainedMode,
+            IKContinuousMode,
+        )
+        from reachy2_sdk_api.kinematics_pb2 import Matrix4x4  # type: ignore
+
+        self.ReachySDK = ReachySDK
+        self.ArmCartesianGoal = ArmCartesianGoal
+        self.IKConstrainedMode = IKConstrainedMode
+        self.IKContinuousMode = IKContinuousMode
+        self.Matrix4x4 = Matrix4x4
+        self.FloatValue = FloatValue
+        self.Int32Value = Int32Value
 
     def init_robot(self) -> None:
         """Initializes the robot.
@@ -63,28 +73,16 @@ class Reachy2(Robot):
         arm_position = [0.36, 0.2, -0.28]
 
         for arm in [self.reachy.l_arm, self.reachy.r_arm]:
-            arm_position[1] = (
-                -arm_position[1] if arm == self.reachy.r_arm else arm_position[1]
-            )
-            pose = make_homogenous_matrix_from_rotation_matrix(
-                arm_orientation.as_matrix(), arm_position
-            )
+            arm_position[1] = -arm_position[1] if arm == self.reachy.r_arm else arm_position[1]
+            pose = make_homogenous_matrix_from_rotation_matrix(arm_orientation.as_matrix(), arm_position)
             joints = arm.inverse_kinematics(pose)
-            arm.goto(
-                joints, 3.0, degrees=True, interpolation_mode="minimum_jerk", wait=False
-            )
+            arm.goto(joints, 3.0, degrees=True, interpolation_mode="minimum_jerk", wait=False)
 
-        # # # # # # # Set initial pose for head and antennas
-        # # # # # # self.reachy.head.r_antenna.goto(
-        # # # # # #     0, 3.0, degrees=True, interpolation_mode="minimum_jerk", wait=False
-        # # # # # # )
-        # # # # # # self.reachy.head.l_antenna.goto(
-        # # # # # #     0, 3.0, degrees=True, interpolation_mode="minimum_jerk", wait=False
-        # # # # # # )
+        # Set initial pose for head and antennas
+        self.reachy.head.r_antenna.goto(0, 3.0, degrees=True, interpolation_mode="minimum_jerk", wait=False)
+        self.reachy.head.l_antenna.goto(0, 3.0, degrees=True, interpolation_mode="minimum_jerk", wait=False)
         head_joints = [0, 0, 0]
-        self.reachy.head.goto(
-            head_joints, 3.0, degrees=True, interpolation_mode="minimum_jerk", wait=True
-        )
+        self.reachy.head.goto(head_joints, 3.0, degrees=True, interpolation_mode="minimum_jerk", wait=True)
 
     def fk(self, arm) -> np.ndarray:
         """Compute the forward kinematics of the specified arm.
@@ -109,11 +107,11 @@ class Reachy2(Robot):
         pose = self.fk(arm)
         robot_arm = self.reachy.r_arm if arm == "r_arm" else self.reachy.l_arm
 
-        request = ArmCartesianGoal(
+        request = self.ArmCartesianGoal(
             id=robot_arm._part_id,
-            goal_pose=Matrix4x4(data=pose.flatten().tolist()),
-            continuous_mode=IKContinuousMode.UNFREEZE,
-            constrained_mode=IKConstrainedMode.UNCONSTRAINED,
+            goal_pose=self.Matrix4x4(data=pose.flatten().tolist()),
+            continuous_mode=self.IKContinuousMode.UNFREEZE,
+            constrained_mode=self.IKConstrainedMode.UNCONSTRAINED,
             preferred_theta=FloatValue(
                 value=-4 * np.pi / 6,
             ),
@@ -142,11 +140,11 @@ class Reachy2(Robot):
             else:
                 robot_arm = self.reachy.r_arm
 
-        request = ArmCartesianGoal(
+        request = self.ArmCartesianGoal(
             id=robot_arm._part_id,
-            goal_pose=Matrix4x4(data=pose.flatten().tolist()),
-            continuous_mode=IKContinuousMode.CONTINUOUS,
-            constrained_mode=IKConstrainedMode.UNCONSTRAINED,
+            goal_pose=self.Matrix4x4(data=pose.flatten().tolist()),
+            continuous_mode=self.IKContinuousMode.CONTINUOUS,
+            constrained_mode=self.IKConstrainedMode.UNCONSTRAINED,
             preferred_theta=FloatValue(
                 value=-4 * np.pi / 6,
             ),
@@ -155,9 +153,7 @@ class Reachy2(Robot):
         )
         robot_arm._stub.SendArmCartesianGoal(request)
 
-    def move_gripper(
-        self, arm: str, with_joint_command: bool = True, command: Optional[float] = None
-    ) -> None:
+    def move_gripper(self, arm: str, with_joint_command: bool = True, command: Optional[float] = None) -> None:
         """Send the command to move the gripper of the specified arm.
 
         Args:
@@ -183,9 +179,9 @@ class Reachy2(Robot):
             gripper.goal_position = command
             gripper.send_goal_positions()
         else:
-            if command == 0 and not gripper.is_moving() and gripper.opening > 50:
+            if command == 0 and not gripper.is_moving() and gripper.opening > 20:
                 gripper.close()
-            elif command == 1 and not gripper.is_moving() and gripper.opening < 50:
+            elif command == 1 and not gripper.is_moving() and gripper.opening < 90:
                 gripper.open()
 
     def move_mobile_base(self, x: float, y: float, theta: float) -> None:

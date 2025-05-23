@@ -1,8 +1,8 @@
 robot_ip: "localhost"
 fake_only: true # Security to avoid sending command to a real robot if not wanted
-tracker_type: "gamepad" # options: aruco, vive, rgbd, so_arm, gamepad
+tracker_type: "vive" # options: aruco, vive, rgbd, so_arm, gamepad
 gripper_type: "potentiometer" # options: feetech, potentiometer
-control_mode: "dual_arm" # options: dual_arm, l_arm, r_arm
+control_mode: "dual_arm" # options: , l_arm, r_arm
 mirror_mode: false
 
 ## For RGBD
@@ -26,8 +26,8 @@ port: "/dev/ttyACM0"
 
 ## For Arduino commands
 arduino_ports:
-  l_arm: "/dev/ttyACM0"
-  r_arm: "/dev/ttyACM1"
+  l_arm: "/dev/noVR_left_arduino"
+  r_arm: "/dev/noVR_right_arduino"
 
 ## For VIVE
 vive_trackers:

@@ -60,8 +60,16 @@ all = [
     "pygame >= 2.6.1",
 ]
 
+[project.scripts]
+setup-udev = "setup.setup_dev_rules:install_udev_rules"
+
 [tool.setuptools]
-packages = "find:"
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["noVR_teleoperation", "setup"]
+
 
 [tool.isort]
 profile = "black"

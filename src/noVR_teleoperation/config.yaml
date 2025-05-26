@@ -1,0 +1,75 @@
+robot_ip: "localhost"
+fake_only: true # Security to avoid sending command to a real robot if not wanted
+tracker_type: "rgbd" # options: aruco, vive, rgbd, arm, gamepad
+control_mode: "dual_arm" # options: dual_arm, l_arm, r_arm
+mirror_mode: false
+
+## For custom controller (ARUCO and VIVE)
+gripper_type: "potentiometer" # options: feetech, potentiometer 
+arduino_ports:
+  l_arm: "/dev/noVR_left_arduino"
+  r_arm: "/dev/noVR_right_arduino"
+
+## For Potentiometer grippers
+potentiometer_gripper_joints_limit:
+  l_arm: [450, 570]
+  r_arm: [630, 790]
+
+## For Feetech grippers
+feetech_ports:
+  l_arm: "/dev/noVR_left_motor"
+  r_arm: "/dev/noVR_right_motor"
+
+feetech_gripper_joints_limit:
+  l_arm: [65, 20]
+  r_arm: [-65, -20]
+
+
+## For ARM
+port: "/dev/ttyACM0"
+
+## For VIVE
+vive_trackers:
+  l_arm: "LHR-0D914CCE"
+  r_arm: "LHR-D520271F"
+
+## For ARUCO
+marker_size:
+  l_arm: 0.053
+  r_arm: 0.053
+
+marker_ids:
+  l_arm: [6, 7, 8, 9, 10, 11]
+  r_arm: [0, 1, 2, 3, 4, 5] # back, up, front, left, right, down
+
+camera:
+  usb_mode: true
+  camera_id: "0"
+  with_calibration: false
+
+  camera_matrix:
+    -   - 688.1074404516721
+        - 0.0
+        - 330.6668108886455
+    -   - 0.0
+        - 687.3335404908161
+        - 254.77210442641422
+    -   - 0.0
+        - 0.0
+        - 1.0
+  dist_coeffs:
+    -   - 0.0481281315457366
+        - 0.5997297815021508
+        - 0.009464779244790163
+        - 0.0019294171307882469
+        - -2.274419389286074
+
+## For RGBD
+rgbd:
+  scale_percent: 50
+
+
+# For GAMEPAD
+angle_step: 2
+z_increment: 0.002
+x_y_joystick_ratio: 0.004

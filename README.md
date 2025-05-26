@@ -48,10 +48,31 @@ They all have their pros and cons, which you can read about in the article, or f
 
 3. Apply the dev rules: 
 
-        sudo cp 11-noVR.setup.rules /etc/udev/rules.d/
-        sudo udevadm control --reload-rules && sudo udevadm trigger
+        setup-udev
 
 > Be careful, if you're using the RGBD modality with the supplied Orbbec class, you need to manually install the library *pyorbbecsdk*. The instructions are below in the specific [RGBD Camera section](#how-to-set-up-each-modality). 
+
+## How is it organised ?
+
+The project is structured as follows:
+
+- `src` : The Python soruce code
+
+    - `noVR_teleoperation` : The main Python code for teleoperation.
+
+    - `camera_calibration` : The camera calibration script.
+
+    - `setup` : Contains script and configuration files for system setup (e.g., udev rules).
+
+- `project_resources`: All project resources, such as:
+
+    - PDFs of the ArUco markers
+
+    - STL files and the Arduino script for the custom controller (used for the Vive tracker and the ArUco cube)
+
+- `images`: Images for the documentation
+
+
 
 ## How to use it ?
 The project configuration file is used to select a particular **teleoperation mode**. 
@@ -60,7 +81,7 @@ You can therefore modify it according to **which modality** you want to use.
 To do this, go to the project's config.yaml file:
 
 ```
-cd noVR_teleoperation
+cd src/noVR_teleoperation
 nano config.yaml 
 ```
 
@@ -269,7 +290,7 @@ You need to find the name of your Vive Trackers to put them in the config file :
 3. Execute the **triad_openvr** script and get the names :
 
 ```
-cd noVR_teleoperation/trackers/vive_trackers
+cd src/noVR_teleoperation/trackers/vive_trackers
 python3 triad_openvr.py
 ``` 
 The names will be printed in your terminal.
@@ -326,7 +347,7 @@ We also provide the script to **perform your calibration** with a ChArUco board.
 <summary> Steps to calibrate your camera </summary>
 
 1. Go to the camera_calibration folder :
-<code> cd camera_calibration </code>
+<code> cd src/camera_calibration </code>
 
 2. Generate your ChArUco board : 
 <code> python3 charuco_generator.py </code>
@@ -444,7 +465,7 @@ To set-up your environment :
 
 - You can move your head and your two arms, keeping your torso static. You can open and close the grippers by moving your index finger and thumb towards or away from each other. The orientation of the robot's hand is defined by the orientation of the elbow-wrist vector.
 
-- To stop the teleoperation, you have to tilt the head downwards for a prolonged period of time, until the streaming window closes. 
+- To stop the teleoperation, you have to tilt the head downwards for a prolonged period of time, until the streaming window closes (*pitch needs to be > 25 for few seconds*). 
 
 
 </details>

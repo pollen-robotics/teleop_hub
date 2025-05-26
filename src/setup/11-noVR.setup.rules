@@ -1,0 +1,7 @@
+KERNEL=="ttyACM[0-9]", ATTRS{serial}=="1ADF43DB51514A4E43202020FF132A3E",  MODE="666", SYMLINK+="noVR_left_arduino"
+
+KERNEL=="ttyACM[0-9]", ATTRS{serial}=="9F8320B051544B5932202020FF10130C",  MODE="666", SYMLINK+="noVR_right_arduino"
+
+KERNEL=="ttyACM[0-9]", ATTRS{serial}=="58FA095653",  MODE="666", SYMLINK+="noVR_left_motor"
+
+KERNEL=="ttyACM[0-9]", ATTRS{serial}=="58FA095185",  MODE="666", SYMLINK+="noVR_right_motor"

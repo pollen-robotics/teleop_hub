@@ -2,9 +2,9 @@ import time
 from typing import Any, Optional, Tuple
 
 import numpy as np
-from camera.camera import Camera  # type: ignore
-from camera.orbbec import Orbbec  # type: ignore
 from scipy.spatial.transform import Rotation as R  # type: ignore
+from trackers.cameras.camera import Camera  # type: ignore
+from trackers.cameras.orbbec import Orbbec  # type: ignore
 
 # Constants for the landmark indices, based on the MediaPipe Holistic model
 # Face : Nose tip, Chin, Left eye left corner, Right eye right corner
@@ -81,9 +81,7 @@ class ComputerVision:
         Returns:
             Optional[mp.solutions.holistic.Holistic]: The results of the MediaPipe Holistic processing.
         """
-        return self.holistic.process(
-            self.cv2.cvtColor(color_frame, self.cv2.COLOR_BGR2RGB)
-        )
+        return self.holistic.process(self.cv2.cvtColor(color_frame, self.cv2.COLOR_BGR2RGB))
 
     def _get_user_parameters(self) -> None:
         """Get the user parameters (shoulder distance, normalization factor and user center)."""
@@ -106,10 +104,7 @@ class ComputerVision:
             body_landmarks = self._get_2D_landmarks(results.pose_landmarks)
             if body_landmarks is not None:
                 dist_intershoulder_list.append(
-                    np.linalg.norm(
-                        body_landmarks[SHOULDER_CST[0]]
-                        - body_landmarks[SHOULDER_CST[1]]
-                    )
+                    np.linalg.norm(body_landmarks[SHOULDER_CST[0]] - body_landmarks[SHOULDER_CST[1]])
                 )
 
         self.dist_intershoulder = np.median(dist_intershoulder_list)
@@ -160,15 +155,9 @@ class ComputerVision:
                 left_shoulder, right_shoulder = self._get_3D_landmarks_with_depth(
                     body_landmarks, depth_frame, SHOULDER_CST
                 )
-                forehead = self._get_3D_landmarks_with_depth(
-                    face_landmarks, depth_frame, [10]
-                )[0]
+                forehead = self._get_3D_landmarks_with_depth(face_landmarks, depth_frame, [10])[0]
 
-                if (
-                    left_shoulder is not None
-                    and right_shoulder is not None
-                    and forehead is not None
-                ):
+                if left_shoulder is not None and right_shoulder is not None and forehead is not None:
                     shoulders_tab[ite] = np.vstack((left_shoulder, right_shoulder))
                     forehead_tab[ite] = forehead
                     ite += 1
@@ -231,9 +220,7 @@ class ComputerVision:
         """
         if original_landmarks is None:
             return None
-        original_landmarks = np.array(
-            [(lm.x, lm.y) for lm in original_landmarks.landmark]
-        )
+        original_landmarks = np.array([(lm.x, lm.y) for lm in original_landmarks.landmark])
 
         # Convert the normalized coordinates to pixel coordinate
         x_init = (original_landmarks[:, 0] * self.image_shape[1]).astype(int)
@@ -256,9 +243,7 @@ class ComputerVision:
         if original_landmarks is None:
             return None
 
-        original_landmarks = np.array(
-            [(lm.x, lm.y, lm.z) for lm in original_landmarks.landmark]
-        )
+        original_landmarks = np.array([(lm.x, lm.y, lm.z) for lm in original_landmarks.landmark])
 
         # Convert the normalized coordinates to pixel coordinates
         x_init = (original_landmarks[:, 0] * self.image_shape[1]).astype(int)
@@ -286,9 +271,7 @@ class ComputerVision:
         for index in indices:
             landmark = landmarks[index]
             if landmark is not None:
-                landmark_3D = self._estimate_3D_landmark_with_depth(
-                    landmark, depth_frame
-                )
+                landmark_3D = self._estimate_3D_landmark_with_depth(landmark, depth_frame)
                 landmarks_3D.append(landmark_3D)
             else:
                 landmarks_3D.append(None)
@@ -313,20 +296,14 @@ class ComputerVision:
         if (radius + 1 < x < self.camera.image_shape[1] - radius - 1) and (
             radius + 1 < y < self.camera.image_shape[0] - radius - 1
         ):
-            z = np.median(
-                depth_frame[
-                    int(y - radius) : int(y + radius), int(x - radius) : int(x + radius)
-                ]
-            )
+            z = np.median(depth_frame[int(y - radius) : int(y + radius), int(x - radius) : int(x + radius)])
         else:
             z = depth_frame[int(y), int(x)]
 
         z *= self.normalization_factor
         return np.vstack((x, y, z)).T.astype(np.float32)
 
-    def _update_shoulders(
-        self, body_landmarks: np.ndarray, depth_frame: np.ndarray
-    ) -> None:
+    def _update_shoulders(self, body_landmarks: np.ndarray, depth_frame: np.ndarray) -> None:
         """Update the coordinates of the shoulders and the user_center.
 
         (Only used if not fixed_user mode, not available yet).
@@ -335,9 +312,7 @@ class ComputerVision:
             body_landmarks (np.ndarray): The 2D landmarks in the image coordinates.
             depth_frame (np.ndarray): The depth frame from the camera.
         """
-        left_shoulder, right_shoulder = self._get_3D_landmarks_with_depth(
-            body_landmarks, depth_frame, SHOULDER_CST
-        )
+        left_shoulder, right_shoulder = self._get_3D_landmarks_with_depth(body_landmarks, depth_frame, SHOULDER_CST)
         if left_shoulder is not None:
             self.shoulders[0] = left_shoulder
         if right_shoulder is not None:
@@ -345,13 +320,9 @@ class ComputerVision:
 
         if np.any(self.shoulders[0]) and np.any(self.shoulders[1]):
             self.user_center = (self.shoulders[0] + self.shoulders[1]) / 2.0
-            self.dist_intershoulder = float(
-                np.linalg.norm(self.shoulders[0] - self.shoulders[1])
-            )
+            self.dist_intershoulder = float(np.linalg.norm(self.shoulders[0] - self.shoulders[1]))
 
-    def _update_elbows_and_wrists(
-        self, body_landmarks: np.ndarray, depth_frame: np.ndarray
-    ) -> None:
+    def _update_elbows_and_wrists(self, body_landmarks: np.ndarray, depth_frame: np.ndarray) -> None:
         """Update the coordinates of the elbows and wrists.
 
         Args:
@@ -359,20 +330,14 @@ class ComputerVision:
             depth_frame (np.ndarray): The depth frame from the camera.
         """
         for i in range(2):
-            elbow = self._estimate_3D_landmark_with_depth(
-                body_landmarks[ELBOWS_CST[i]], depth_frame
-            )
+            elbow = self._estimate_3D_landmark_with_depth(body_landmarks[ELBOWS_CST[i]], depth_frame)
             if elbow is not None:
                 self.elbows[i] = elbow
-            wrist = self._estimate_3D_landmark_with_depth(
-                body_landmarks[WRISTS_CST[i]], depth_frame, radius=10
-            )
+            wrist = self._estimate_3D_landmark_with_depth(body_landmarks[WRISTS_CST[i]], depth_frame, radius=10)
             if wrist is not None:
                 self.wrists[i] = wrist
 
-    def _update_hand_landmarks(
-        self, left_hand_landmarks: np.ndarray, right_hand_landmarks: np.ndarray
-    ) -> None:
+    def _update_hand_landmarks(self, left_hand_landmarks: np.ndarray, right_hand_landmarks: np.ndarray) -> None:
         """Update the coordinates of the hand landmarks.
 
         Args:
@@ -519,8 +484,6 @@ if __name__ == "__main__":
             print("No landmarks available.")
         else:
             color_frame = computer_vision.camera.color_frame[0]
-            frame = computer_vision.visualization_landmarks(
-                color_frame, np.eye(4), np.eye(4), 0, 0, 0, text_on=False
-            )
+            frame = computer_vision.visualization_landmarks(color_frame, np.eye(4), np.eye(4), 0, 0, 0, text_on=False)
             cv2.imshow("Color Viewer", frame)
             cv2.waitKey(1)

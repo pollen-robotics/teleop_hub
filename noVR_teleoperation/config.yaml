@@ -1,11 +1,11 @@
 robot_ip: "localhost"
 fake_only: true # Security to avoid sending command to a real robot if not wanted
-tracker_type: "vive" # options: aruco, vive, rgbd, so_arm, gamepad
+tracker_type: "rgbd" # options: aruco, vive, rgbd, arm, gamepad
 gripper_type: "potentiometer" # options: feetech, potentiometer
-control_mode: "dual_arm" # options: , l_arm, r_arm
+control_mode: "dual_arm" # options: dual_arm, l_arm, r_arm
 mirror_mode: false
 
-## Fot custom controller (ARUCO and VIVE)
+## For custom controller (ARUCO and VIVE)
 gripper_type: "potentiometer" # options: feetech, potentiometer 
 arduino_ports:
   l_arm: "/dev/noVR_left_arduino"
@@ -26,7 +26,7 @@ potentiometer_gripper_joints_limit:
   l_arm: [450, 570]
   r_arm: [630, 790]
 
-## For SO Arm
+## For Arm
 port: "/dev/ttyACM0"
 
 ## For Arduino commands
@@ -49,8 +49,8 @@ marker_ids:
   r_arm: [0, 1, 2, 3, 4, 5] # back, up, front, left, right, down
 
 camera:
-  usb_mode: false
-  camera_id: "172.16.0.56"
+  usb_mode: true
+  camera_id: "0"
   with_calibration: false
 
   camera_matrix:

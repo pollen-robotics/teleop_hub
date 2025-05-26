@@ -4,7 +4,7 @@ from collections import deque
 from typing import Any, Deque, Optional
 
 import numpy as np  # type: ignore
-from camera.camera import Camera  # type: ignore
+from trackers.cameras.camera import Camera  # type: ignore
 from utils import load_config  # type: ignore
 
 
@@ -53,15 +53,11 @@ class Orbbec(Camera):
 
     def _set_pipeline(self) -> None:
         """Set the pipeline for the Orbbec camera."""
-        color_profile_list = self.pipeline.get_stream_profile_list(
-            self.orbbecsdk.OBSensorType.COLOR_SENSOR
-        )
+        color_profile_list = self.pipeline.get_stream_profile_list(self.orbbecsdk.OBSensorType.COLOR_SENSOR)
         self.color_profile = color_profile_list.get_default_video_stream_profile()
         self.config.enable_stream(self.color_profile)
 
-        depth_profile_list = self.pipeline.get_stream_profile_list(
-            self.orbbecsdk.OBSensorType.DEPTH_SENSOR
-        )
+        depth_profile_list = self.pipeline.get_stream_profile_list(self.orbbecsdk.OBSensorType.DEPTH_SENSOR)
         self.depth_profile = depth_profile_list.get_default_video_stream_profile()
         self.config.enable_stream(self.depth_profile)
 
@@ -113,9 +109,7 @@ class Orbbec(Camera):
                             color_frame.get_width(),
                         ]
                     )
-                    self.image_shape = (
-                        self.original_image_shape * (self.scale_percent / 100)
-                    ).astype(int)
+                    self.image_shape = (self.original_image_shape * (self.scale_percent / 100)).astype(int)
                     self.color_format = color_frame.get_format()
 
                     focal_length = self.image_shape[1]
@@ -176,9 +170,7 @@ class Orbbec(Camera):
             self.orbbecsdk.OBFormat.RGB,
             self.orbbecsdk.OBFormat.BGR,
         ]:
-            image = data.reshape(
-                (self.original_image_shape[0], self.original_image_shape[1], 3)
-            )
+            image = data.reshape((self.original_image_shape[0], self.original_image_shape[1], 3))
             if self.color_format == self.orbbecsdk.OBFormat.RGB:
                 image = self.cv2.cvtColor(image, self.cv2.COLOR_RGB2BGR)
         elif self.color_format == self.orbbecsdk.OBFormat.MJPG:
@@ -200,9 +192,7 @@ class Orbbec(Camera):
         if depth_frame and np.any(self.image_shape):
             depth_data = np.frombuffer(depth_frame.get_data(), dtype=np.uint16)
             depth_data = depth_data.reshape(self.original_image_shape)
-            depth_data_float = (
-                depth_data.astype(np.float32) * 10e-4
-            )  # convert to meters
+            depth_data_float = depth_data.astype(np.float32) * 10e-4  # convert to meters
             depth_data_resized = self._resize_frames(depth_data_float)
             return depth_data_resized
         return None
@@ -223,19 +213,13 @@ class Orbbec(Camera):
                     self.cv2.imshow("Color Viewer", color_data)
 
                 if show_depth and depth_data is not None:
-                    print(
-                        f"depth data max: {depth_data.max()}, min : {depth_data.min()}"
-                    )
+                    print(f"depth data max: {depth_data.max()}, min : {depth_data.min()}")
                     depth_image = np.clip(
-                        (depth_data - self.MIN_DEPTH)
-                        / (self.MAX_DEPTH - self.MIN_DEPTH)
-                        * 255,
+                        (depth_data - self.MIN_DEPTH) / (self.MAX_DEPTH - self.MIN_DEPTH) * 255,
                         0,
                         255,
                     )
-                    depth_colormap = self.cv2.applyColorMap(
-                        depth_image.astype(np.uint8), self.cv2.COLORMAP_JET
-                    )
+                    depth_colormap = self.cv2.applyColorMap(depth_image.astype(np.uint8), self.cv2.COLORMAP_JET)
                     self.cv2.imshow("Depth Viewer", depth_colormap)
 
                 key = self.cv2.waitKey(1)

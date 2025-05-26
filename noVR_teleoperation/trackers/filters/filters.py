@@ -34,9 +34,7 @@ class KalmanFilter3D:
         """
         import cv2  # type: ignore
 
-        self.kf = cv2.KalmanFilter(
-            9, 3
-        )  # 9 states : position (x,y,z) + velocity (vx,vy,vz) + acceleration (ax,ay,az)
+        self.kf = cv2.KalmanFilter(9, 3)  # 9 states : position (x,y,z) + velocity (vx,vy,vz) + acceleration (ax,ay,az)
 
         # Measurement matrix : only position (x,y,z)
         self.kf.measurementMatrix = np.zeros((3, 9), dtype=np.float32)
@@ -75,9 +73,7 @@ class KalmanFilter3D:
         if measurement is None:
             return self.kf.statePost[:3].flatten() if self.initialized else None
 
-        measurement = np.array(
-            [[measurement[0]], [measurement[1]], [measurement[2]]], dtype=np.float32
-        )
+        measurement = np.array([[measurement[0]], [measurement[1]], [measurement[2]]], dtype=np.float32)
 
         if not self.initialized:
             self.kf.statePre[:3] = measurement
@@ -155,9 +151,7 @@ class RotationSmoother:
             return current_rotation_matrix
 
         # Exponential Moving Average on the rotation matrix
-        smoothed_rotation_matrix = (
-            1 - self.alpha
-        ) * self.last_rotation_matrix + self.alpha * current_rotation_matrix
+        smoothed_rotation_matrix = (1 - self.alpha) * self.last_rotation_matrix + self.alpha * current_rotation_matrix
 
         # Orthogonalization of the rotation matrix
         U, _, Vt = np.linalg.svd(smoothed_rotation_matrix)
@@ -205,9 +199,7 @@ class PoseFilter:
         if self.filtered_position is None:
             self.filtered_position = position.copy()
         else:
-            self.filtered_position = (
-                self.alpha * position + (1 - self.alpha) * self.filtered_position
-            )
+            self.filtered_position = self.alpha * position + (1 - self.alpha) * self.filtered_position
 
         # --- Rotation ---
         r = R.from_matrix(rotation_matrix)
@@ -215,9 +207,7 @@ class PoseFilter:
         if self.filtered_rotation_quat is None:
             self.filtered_rotation_quat = quat.copy()
         else:
-            self.filtered_rotation_quat = (
-                self.alpha * quat + (1 - self.alpha) * self.filtered_rotation_quat
-            )
+            self.filtered_rotation_quat = self.alpha * quat + (1 - self.alpha) * self.filtered_rotation_quat
             self.filtered_rotation_quat /= np.linalg.norm(self.filtered_rotation_quat)
 
         new_pose = np.eye(4)

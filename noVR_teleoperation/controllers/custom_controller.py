@@ -3,12 +3,12 @@ import time
 from typing import Optional
 
 import numpy as np
-from camera.camera import Camera  # type: ignore
-from controller.arduino import ArduinoController  # type: ignore
-from controller.controller import Controller  # type: ignore
-from controller.feetech_rustypot import Feetech  # type: ignore
+from controllers.arduino import ArduinoController  # type: ignore
+from controllers.controller import Controller  # type: ignore
+from controllers.feetech_rustypot import Feetech  # type: ignore
 from scipy.spatial.transform import Rotation as R  # type: ignore
-from trackers.aruco_tracker.aruco_cube import ArucoCube  # type: ignore
+from trackers.aruco_tracker.aruco_tracker import ArucoTracker  # type: ignore
+from trackers.cameras.camera import Camera  # type: ignore
 from trackers.tracker import TrackerType  # type: ignore
 from trackers.vive_tracker.vive_tracker import ViveTracker  # type: ignore
 from utils import load_config  # type: ignore
@@ -18,10 +18,10 @@ FEETECH_GRIPPER = "feetech"
 POTENTIOMETER_GRIPPER = "potentiometer"
 
 
-class JoystickController(Controller):
-    """Joystick controller class.
+class CustomController(Controller):
+    """Custom controller class.
 
-    This class is responsible for controlling a joystick-type controller, thanks to a tracker object (Vive or ArUco),
+    This class defines the interface for a custom controller, using either the Vive or ArUco tracker,
     a Arduino object for the joystick and the buttons, and a Feetech object for the gripper.
 
     It is a subclass of the Controller class.
@@ -33,7 +33,7 @@ class JoystickController(Controller):
         arm: str,
         camera: Optional[Camera],
     ) -> None:
-        """Initialize the joystick controller.
+        """Initialize the custom controller.
 
         Args:
             tracker_type (TrackerType): The type of tracker to use (Vive or ArUco).
@@ -52,13 +52,9 @@ class JoystickController(Controller):
         if self.gripper_type == FEETECH_GRIPPER:
             feetech_port = load_config("config.yaml")["feetech_ports"][arm]
             self.gripper = Feetech(feetech_port, [1])
-            self.gripper_joints_limit = load_config("config.yaml")[
-                "feetech_gripper_joints_limit"
-            ][self.arm]
+            self.gripper_joints_limit = load_config("config.yaml")["feetech_gripper_joints_limit"][self.arm]
         elif self.gripper_type == POTENTIOMETER_GRIPPER:
-            self.gripper_joints_limit = load_config("config.yaml")[
-                "potentiometer_gripper_joints_limit"
-            ][self.arm]
+            self.gripper_joints_limit = load_config("config.yaml")["potentiometer_gripper_joints_limit"][self.arm]
         else:
             raise ValueError(f"Unknown gripper type: {self.gripper_type}")
 
@@ -66,8 +62,7 @@ class JoystickController(Controller):
             self.camera = camera
             if self.camera is None:
                 raise ValueError("Camera is required for ArUco tracking.")
-
-            self.tracker = ArucoCube(arm, self.camera)
+            self.tracker = ArucoTracker(arm, self.camera)
 
         elif self.tracker_type == TrackerType.VIVE:
             self.tracker = ViveTracker(arm)
@@ -172,9 +167,7 @@ class JoystickController(Controller):
             relative_pose = self.convert_for_vive_tracker(relative_pose)
 
         elif self.tracker_type == TrackerType.ARUCO:
-            T_cam_to_reachy = np.array(
-                [[0, 0, -1, 0], [1, 0, 0, 0], [0, -1, 0, 0], [0, 0, 0, 1]]
-            )
+            T_cam_to_reachy = np.array([[0, 0, -1, 0], [1, 0, 0, 0], [0, -1, 0, 0], [0, 0, 0, 1]])
             relative_pose = T_cam_to_reachy @ relative_pose
 
         return relative_pose

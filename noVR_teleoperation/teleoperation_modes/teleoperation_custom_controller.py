@@ -1,24 +1,26 @@
 from typing import Optional
 
 import numpy as np
-from camera.camera import Camera  # type: ignore
-from camera.rgb_camera import RGBCamera  # type: ignore
-from controller.joystick_controller import JoystickController  # type: ignore
-from teleoperation_mode.teleoperation import (
-    DUAL_ARM,  # type: ignore
+from controllers.custom_controller import CustomController  # type: ignore
+from teleoperation_modes.teleoperation_base import (  # type: ignore
+    DUAL_ARM,
     LEFT_ARM,
     RIGHT_ARM,
     Teleoperation,
 )
+from trackers.cameras.camera import Camera  # type: ignore
+from trackers.cameras.rgb_camera import RGBCamera  # type: ignore
 from trackers.tracker import TrackerType  # type: ignore
 
 
-class JoystickTeleoperation(Teleoperation):
+class CustomControllerTeleoperation(Teleoperation):
     """Teleoperation class with Joystick-type Tracker."""
 
     def __init__(self, tracker_type: TrackerType) -> None:
         """Initialize the teleoperation class.
+
         Loads the configuration from a YAML file and initializes the robot and controllers.
+
         Args:
             tracker_type (TrackerType): The type of tracker to use (ARUCO or VIVE).
         """
@@ -55,16 +57,12 @@ class JoystickTeleoperation(Teleoperation):
         """
         if self.control_mode == DUAL_ARM:
             self.controllers = {
-                LEFT_ARM: JoystickController(self.tracker_type, LEFT_ARM, self.camera),
-                RIGHT_ARM: JoystickController(
-                    self.tracker_type, RIGHT_ARM, self.camera
-                ),
+                LEFT_ARM: CustomController(self.tracker_type, LEFT_ARM, self.camera),
+                RIGHT_ARM: CustomController(self.tracker_type, RIGHT_ARM, self.camera),
             }
         else:
             self.controllers = {
-                self.control_mode: JoystickController(
-                    self.tracker_type, self.control_mode, self.camera
-                ),
+                self.control_mode: CustomController(self.tracker_type, self.control_mode, self.camera),
             }
 
     def init_teleoperation(self) -> None:
@@ -76,17 +74,13 @@ class JoystickTeleoperation(Teleoperation):
         self.robot.init_robot()
         for controller in self.controllers.values():
             controller.init_controller()
-            self.controller_previous_pose[
-                controller.arm
-            ] = controller.get_controller_pose()
+            self.controller_previous_pose[controller.arm] = controller.get_controller_pose()
             self.antenna_previous_position = {RIGHT_ARM: 0, LEFT_ARM: 0}
             self.robot_previous_pose[controller.arm] = self.robot.fk(controller.arm)
             self.mode = 0
             self.head_previous_pose = np.eye(3)
 
-    def controller_pose_to_robot_pose(
-        self, controller_pose: np.ndarray, arm: str
-    ) -> np.ndarray:
+    def controller_pose_to_robot_pose(self, controller_pose: np.ndarray, arm: str) -> np.ndarray:
         """Convert a controller pose to a robot pose.
 
         Args:
@@ -96,19 +90,13 @@ class JoystickTeleoperation(Teleoperation):
             np.ndarray: The corresponding robot pose.
         """
         robot_pose = self.robot_previous_pose[arm].copy()
-        diff_position = (
-            controller_pose[:3, 3] - self.controller_previous_pose[arm][:3, 3]
-        )
+        diff_position = controller_pose[:3, 3] - self.controller_previous_pose[arm][:3, 3]
         robot_pose[:3, 3] += diff_position
-        diff_orientation = (
-            controller_pose[:3, :3] @ self.controller_previous_pose[arm][:3, :3].T
-        )
+        diff_orientation = controller_pose[:3, :3] @ self.controller_previous_pose[arm][:3, :3].T
         robot_pose[:3, :3] = diff_orientation @ self.robot_previous_pose[arm][:3, :3]
         return robot_pose
 
-    def controller_to_head_orientation(
-        self, controller_pose: np.ndarray, arm: str
-    ) -> np.ndarray:
+    def controller_to_head_orientation(self, controller_pose: np.ndarray, arm: str) -> np.ndarray:
         """Convert a controller pose to a head orientation.
         Args:
             controller_pose (np.ndarray): The pose of the controller.
@@ -116,15 +104,11 @@ class JoystickTeleoperation(Teleoperation):
         Returns:
             np.ndarray: The corresponding head orientation.
         """
-        diff_orientation = (
-            controller_pose[:3, :3] @ self.controller_previous_pose[arm][:3, :3].T
-        )
+        diff_orientation = controller_pose[:3, :3] @ self.controller_previous_pose[arm][:3, :3].T
         head_orientation = diff_orientation @ self.head_previous_pose
         return head_orientation
 
-    def joystick_to_mobile_base(
-        self, x_input: float, y_input: float
-    ) -> tuple[float, float]:
+    def joystick_to_mobile_base(self, x_input: float, y_input: float) -> tuple[float, float]:
         """Convert joystick input to mobile base movement.
 
         Args:
@@ -154,9 +138,7 @@ class JoystickTeleoperation(Teleoperation):
         """
         min_joint, max_joint = self.controllers[arm].gripper_joints_limit
         min_gripper, max_gripper = 0, 130
-        gripper_opening = ((joint - min_joint) / (max_joint - min_joint)) * (
-            max_gripper - min_gripper
-        ) + min_gripper
+        gripper_opening = ((joint - min_joint) / (max_joint - min_joint)) * (max_gripper - min_gripper) + min_gripper
         return int(gripper_opening)
 
     def joystick_to_antenna(self, input: int, arm: str) -> int:
@@ -201,11 +183,11 @@ class JoystickTeleoperation(Teleoperation):
             self._handle_joystick_toggle(controller, single_arm=True)
             self._update_previous_buttons(controller)
 
-    def _handle_stop_button(self, controller: JoystickController) -> None:
+    def _handle_stop_button(self, controller: CustomController) -> None:
         """Handle the stop button for the teleoperation.
         If the stop button is pressed for a certain duration, toggle the stop state of the teleoperation.
         Args:
-            controller (JoystickController): The controller to check for the stop button.
+            controller (CustomController): The controller to check for the stop button.
         """
         if controller.buttonB == 0:
             self.stop_count += 1
@@ -220,60 +202,52 @@ class JoystickTeleoperation(Teleoperation):
             else:
                 self.robot.stop()
 
-    def _handle_mode_toggle(self, controller: JoystickController) -> None:
+    def _handle_mode_toggle(self, controller: CustomController) -> None:
         """Handle the mode toggle button for the teleoperation.
 
         If the mode toggle button is pressed, switch between the two modes (0 and 1).
         Args:
-            controller (JoystickController): The controller to check for the mode toggle button.
+            controller (CustomController): The controller to check for the mode toggle button.
         """
-        if (
-            controller.buttonA == 0
-            and controller.buttonA != self.controller_previous_button[controller.arm][1]
-        ):
+        if controller.buttonA == 0 and controller.buttonA != self.controller_previous_button[controller.arm][1]:
             print("Change mode")
             self.mode = 0 if self.mode == 1 else 1
 
-    def _handle_mode_set(self, controller: JoystickController) -> None:
+    def _handle_mode_set(self, controller: CustomController) -> None:
         """Set the mode (switched by a press of the buttonA).
         Args:
-            controller (JoystickController): The controller to check for the buttonA state.
+            controller (CustomController): The controller to check for the buttonA state.
         """
         if controller.buttonA == 0:
             self.mode = 2
         elif self.mode != 1:
             self.mode = 0
 
-    def _handle_joystick_toggle(
-        self, controller: JoystickController, single_arm: bool = False
-    ) -> None:
+    def _handle_joystick_toggle(self, controller: CustomController, single_arm: bool = False) -> None:
         """Handle the joystick toggle button for the teleoperation.
 
         If the joystick toggle button is pressed, switch between the two joystick modes (0 and 1).
         Args:
-            controller (JoystickController): The controller to check for the joystick toggle button.
+            controller (CustomController): The controller to check for the joystick toggle button.
             single_arm (bool): True if the teleoperation is in single-arm mode, False otherwise.
               This is used to avoid changing the mode when the joystick button is pressed in single-arm mode.
         """
         if (
             controller.joystick_button == 0
-            and controller.joystick_button
-            != self.controller_previous_button[controller.arm][0]
+            and controller.joystick_button != self.controller_previous_button[controller.arm][0]
         ):
             print("Change joystick mode")
             if single_arm:
                 self.robot.unfreeze(controller.arm)
                 self.robot_previous_pose[controller.arm] = self.robot.fk(controller.arm)
 
-            self.joystick_mode[controller.arm] = (
-                0 if self.joystick_mode[controller.arm] == 1 else 1
-            )
+            self.joystick_mode[controller.arm] = 0 if self.joystick_mode[controller.arm] == 1 else 1
 
-    def _update_previous_buttons(self, controller: JoystickController) -> None:
+    def _update_previous_buttons(self, controller: CustomController) -> None:
         """Update the previous button states for the controller.
 
         Args:
-            controller (JoystickController): The controller to update the previous button states for.
+            controller (CustomController): The controller to update the previous button states for.
         """
         self.controller_previous_button[controller.arm] = [
             controller.joystick_button,
@@ -286,9 +260,7 @@ class JoystickTeleoperation(Teleoperation):
         self.manage_mode()
         if not self.stop:
             self.update_robot_state()
-            if self.tracker_type == TrackerType.ARUCO and isinstance(
-                self.camera, RGBCamera
-            ):
+            if self.tracker_type == TrackerType.ARUCO and isinstance(self.camera, RGBCamera):
                 frame = self.get_video_streaming()
                 self.cv2.imshow("Color Viewer", frame)
                 self.cv2.waitKey(1)
@@ -318,21 +290,15 @@ class JoystickTeleoperation(Teleoperation):
             for controller in self.controllers.values():
                 pose = controller.get_controller_pose()
                 if controller.arm == RIGHT_ARM and self.mode == 1:
-                    head_orientation = self.controller_to_head_orientation(
-                        pose, controller.arm
-                    )
+                    head_orientation = self.controller_to_head_orientation(pose, controller.arm)
                     self.robot.move_head(head_orientation)
                     self.head_previous_pose = head_orientation
                 else:
-                    robot_pose = self.controller_pose_to_robot_pose(
-                        pose, controller.arm
-                    )
+                    robot_pose = self.controller_pose_to_robot_pose(pose, controller.arm)
                     self.robot.go_to_pose(robot_pose, controller.arm)
                     self.robot_previous_pose[controller.arm] = robot_pose
                     gripper_joint = controller.get_gripper_joint()
-                    gripper_joint = self.trigger_joint_to_gripper_joint(
-                        gripper_joint, controller.arm
-                    )
+                    gripper_joint = self.trigger_joint_to_gripper_joint(gripper_joint, controller.arm)
                     self.robot.move_gripper(controller.arm, True, gripper_joint)
                 self.controller_previous_pose[controller.arm] = pose
 
@@ -345,9 +311,7 @@ class JoystickTeleoperation(Teleoperation):
                 theta = r_y * 100
 
             else:
-                antenna = self.joystick_to_antenna(
-                    self.controllers[RIGHT_ARM].joystick_x, RIGHT_ARM
-                )
+                antenna = self.joystick_to_antenna(self.controllers[RIGHT_ARM].joystick_x, RIGHT_ARM)
                 self.robot.move_antenna(antenna, RIGHT_ARM)
                 self.antenna_previous_position[RIGHT_ARM] = antenna
             if self.joystick_mode[LEFT_ARM] == 0:
@@ -356,9 +320,7 @@ class JoystickTeleoperation(Teleoperation):
                     self.controllers[LEFT_ARM].joystick_y,
                 )
             else:
-                antenna = self.joystick_to_antenna(
-                    self.controllers[LEFT_ARM].joystick_x, LEFT_ARM
-                )
+                antenna = self.joystick_to_antenna(self.controllers[LEFT_ARM].joystick_x, LEFT_ARM)
                 self.robot.move_antenna(antenna, LEFT_ARM)
                 self.antenna_previous_position[LEFT_ARM] = antenna
             self.robot.move_mobile_base(x, y, theta)
@@ -373,9 +335,7 @@ class JoystickTeleoperation(Teleoperation):
             self.robot.go_to_pose(robot_pose, controller.arm)
             self.robot_previous_pose[controller.arm] = robot_pose
             x, y, theta = 0, 0, 0
-            joystick_x, joystick_y = self.joystick_to_mobile_base(
-                controller.joystick_x, controller.joystick_y
-            )
+            joystick_x, joystick_y = self.joystick_to_mobile_base(controller.joystick_x, controller.joystick_y)
             if self.joystick_mode[self.control_mode] == 0:
                 x, y = joystick_x, joystick_y
             else:
@@ -383,9 +343,7 @@ class JoystickTeleoperation(Teleoperation):
                 theta = joystick_y * 100
             self.robot.move_mobile_base(x, y, theta)
             gripper_joint = controller.get_gripper_joint()
-            gripper_joint = self.trigger_joint_to_gripper_joint(
-                gripper_joint, controller.arm
-            )
+            gripper_joint = self.trigger_joint_to_gripper_joint(gripper_joint, controller.arm)
             self.robot.move_gripper(controller.arm, True, gripper_joint)
 
         elif self.mode == 1:
@@ -416,6 +374,4 @@ class JoystickTeleoperation(Teleoperation):
             frame = self.camera.get_frame_with_cube_pose([l_pose, r_pose])
             return frame
         else:
-            raise AttributeError(
-                "Camera is not initialized or does not support 'get_frame_with_cube_pose'"
-            )
+            raise AttributeError("Camera is not initialized or does not support 'get_frame_with_cube_pose'")

@@ -4,7 +4,6 @@ import time
 # Create Class feetech
 class Feetech:
     def __init__(self, port, ids):
-
         from rustypot.servo import Sts3215SyncController  # type: ignore
 
         self.io = Sts3215SyncController(
@@ -43,25 +42,6 @@ class Feetech:
         current_positions = self.get_joints()
         for i in range(steps):
             self.set_joints(
-                [
-                    current_positions[j]
-                    + (joints[j] - current_positions[j]) * i / steps
-                    for j in range(len(joints))
-                ]
+                [current_positions[j] + (joints[j] - current_positions[j]) * i / steps for j in range(len(joints))]
             )
             time.sleep(1 / freq)
-
-
-if __name__ == "__main__":
-    try:
-        feetech = FeetechSOArm("/dev/ttyACM1", [1])
-
-        feetech.enable_torque()
-        while True:
-            time.sleep(1)
-            feetech.goto_joints([0.0], 1)
-            time.sleep(1)
-
-    except KeyboardInterrupt:
-        feetech.stop()
-        print("Bye")

@@ -2,7 +2,7 @@ import time
 
 import numpy as np
 from scipy.spatial.transform import Rotation as R  # type: ignore
-from teleoperation_mode.teleoperation import LEFT_ARM, RIGHT_ARM, Teleoperation
+from teleoperation_modes.teleoperation_base import LEFT_ARM, RIGHT_ARM, Teleoperation
 from utils import axis_cleaner, parse_hat
 
 

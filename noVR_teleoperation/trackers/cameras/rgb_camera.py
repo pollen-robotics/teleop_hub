@@ -3,8 +3,8 @@ import time
 from typing import Optional
 
 import numpy as np
-from camera.camera import Camera  # type: ignore
 from scipy.spatial.transform import Rotation as R  # type: ignore
+from trackers.cameras.camera import Camera  # type: ignore
 from utils import load_config  # type: ignore
 
 

@@ -2,11 +2,11 @@ import threading
 import time
 
 import numpy as np
-from controller.so_arm_controller import SoArmController  # type: ignore
+from controllers.so_arm_controller import SoArmController  # type: ignore
 from pynput import keyboard  # type: ignore
 from scipy.spatial.transform import Rotation as R  # type: ignore
 from scipy.spatial.transform import Slerp
-from teleoperation_mode.teleoperation import Teleoperation  # type: ignore
+from teleoperation_modes.teleoperation_base import Teleoperation  # type: ignore
 
 
 class SoArmTeleoperation(Teleoperation):
@@ -29,18 +29,10 @@ class SoArmTeleoperation(Teleoperation):
         self.mirror = False
 
         self.so_previous_pose = {
-            "r_arm": self.so_arm_controller.so_arm_fk(
-                self.so_arm_controller.so_previous_joints["r_arm"]
-            ),
-            "l_arm": self.so_arm_controller.so_arm_fk(
-                self.so_arm_controller.so_previous_joints["l_arm"]
-            ),
-            "head": self.so_arm_controller.so_arm_fk(
-                self.so_arm_controller.so_previous_joints["head"]
-            ),
-            "mobile_base": self.so_arm_controller.so_arm_fk(
-                self.so_arm_controller.so_previous_joints["mobile_base"]
-            ),
+            "r_arm": self.so_arm_controller.so_arm_fk(self.so_arm_controller.so_previous_joints["r_arm"]),
+            "l_arm": self.so_arm_controller.so_arm_fk(self.so_arm_controller.so_previous_joints["l_arm"]),
+            "head": self.so_arm_controller.so_arm_fk(self.so_arm_controller.so_previous_joints["head"]),
+            "mobile_base": self.so_arm_controller.so_arm_fk(self.so_arm_controller.so_previous_joints["mobile_base"]),
         }
 
     def init_teleoperation(self):
@@ -107,14 +99,10 @@ class SoArmTeleoperation(Teleoperation):
     def init_top_grasp(self):
         self.so_arm_controller.lock_arm()
         print(self.top_grasp[self.robot_part])
-        start_orientation = R.from_matrix(
-            self.robot_previous_pose[self.robot_part][:3, :3]
-        )
+        start_orientation = R.from_matrix(self.robot_previous_pose[self.robot_part][:3, :3])
         so_pose = self.so_arm_controller.get_controller_pose()
 
-        pose = self.find_robot_pose(
-            so_pose, self.robot_part, self.top_grasp[self.robot_part]
-        )
+        pose = self.find_robot_pose(so_pose, self.robot_part, self.top_grasp[self.robot_part])
         self.robot_previous_pose[self.robot_part] = pose
         end_orientation = R.from_matrix(pose[:3, :3])
 
@@ -173,24 +161,12 @@ class SoArmTeleoperation(Teleoperation):
 
             elif key.char == "t":
                 print(self.init, self.pause, self.init_tg, self.mouse)
-                if (
-                    not self.init
-                    and not self.pause
-                    and not self.init_tg
-                    and not self.mouse
-                ):
+                if not self.init and not self.pause and not self.init_tg and not self.mouse:
                     self.init_tg = True
-                    self.top_grasp[self.robot_part] = not self.top_grasp[
-                        self.robot_part
-                    ]
+                    self.top_grasp[self.robot_part] = not self.top_grasp[self.robot_part]
 
             elif key.char == "h":
-                if (
-                    not self.init
-                    and not self.pause
-                    and not self.init_tg
-                    and not self.mouse
-                ):
+                if not self.init and not self.pause and not self.init_tg and not self.mouse:
                     self.init = True
                     self.robot_part = "head"
 
@@ -211,12 +187,7 @@ class SoArmTeleoperation(Teleoperation):
                 print(f"Orientation coeff: {self.orientation_coeff}")
 
             elif key.char == "m":
-                if (
-                    not self.init
-                    and not self.pause
-                    and not self.init_tg
-                    and not self.mouse
-                ):
+                if not self.init and not self.pause and not self.init_tg and not self.mouse:
                     self.init = True
                     self.robot_part = "mobile_base"
 
@@ -235,9 +206,7 @@ class SoArmTeleoperation(Teleoperation):
         if top_grasp:
             orientation = so_pose[:3, :3]
             if arm == "r_arm":
-                rot1 = R.from_euler(
-                    "xyz", [0, 0, -np.pi / 4], degrees=False
-                ).as_matrix()
+                rot1 = R.from_euler("xyz", [0, 0, -np.pi / 4], degrees=False).as_matrix()
             else:
                 rot1 = R.from_euler("xyz", [0, 0, np.pi / 4], degrees=False).as_matrix()
             rot2 = R.from_euler("xyz", [0, np.pi / 2, 0], degrees=False).as_matrix()
@@ -253,16 +222,12 @@ class SoArmTeleoperation(Teleoperation):
         robot_pose[:3, 3] += diff_position
 
         diff_orientation = so_pose[:3, :3] @ self.so_previous_pose[arm][:3, :3].T
-        diff_orientation = R.from_matrix(diff_orientation).as_euler(
-            "xyz", degrees=False
-        )
+        diff_orientation = R.from_matrix(diff_orientation).as_euler("xyz", degrees=False)
         diff_orientation *= self.orientation_coeff
         if self.mirror:
             diff_orientation[0] = -diff_orientation[0]
             diff_orientation[2] = -diff_orientation[2]
-        diff_orientation = R.from_euler(
-            "xyz", diff_orientation, degrees=False
-        ).as_matrix()
+        diff_orientation = R.from_euler("xyz", diff_orientation, degrees=False).as_matrix()
         robot_pose[:3, :3] = diff_orientation @ self.robot_previous_pose[arm][:3, :3]
 
         self.so_previous_pose[arm] = so_pose
@@ -273,9 +238,7 @@ class SoArmTeleoperation(Teleoperation):
         joint = np.rad2deg(joint)
         min_joint, max_joint = -60, -15
         min_gripper, max_gripper = 0, 130
-        gripper_opening = ((joint - min_joint) / (max_joint - min_joint)) * (
-            max_gripper - min_gripper
-        ) + min_gripper
+        gripper_opening = ((joint - min_joint) / (max_joint - min_joint)) * (max_gripper - min_gripper) + min_gripper
 
         return int(gripper_opening)
 
@@ -286,9 +249,7 @@ class SoArmTeleoperation(Teleoperation):
             joint = -60
         if joint > -0:
             joint = -0
-        antenna_opening = ((joint - min_joint) / (max_joint - min_joint)) * (
-            max_antenna - min_antenna
-        ) + min_antenna
+        antenna_opening = ((joint - min_joint) / (max_joint - min_joint)) * (max_antenna - min_antenna) + min_antenna
 
         return int(antenna_opening)
 
@@ -303,9 +264,7 @@ class SoArmTeleoperation(Teleoperation):
         head_pitch = np.interp(joints[1], so_pitch_range, robot_pitch_range)
         head_yaw = joints[2] + 65
 
-        orientation_matrix = R.from_euler(
-            "xyz", [head_roll, head_pitch, head_yaw], degrees=True
-        ).as_matrix()
+        orientation_matrix = R.from_euler("xyz", [head_roll, head_pitch, head_yaw], degrees=True).as_matrix()
 
         return orientation_matrix
 
@@ -314,12 +273,8 @@ class SoArmTeleoperation(Teleoperation):
 
         x = diff_position[0] * 5
         y = diff_position[1] * 5
-        diff_orientation = (
-            so_pose[:3, :3] @ self.so_previous_pose["mobile_base"][:3, :3].T
-        )
-        diff_orientation = R.from_matrix(diff_orientation).as_euler(
-            "xyz", degrees=False
-        )
+        diff_orientation = so_pose[:3, :3] @ self.so_previous_pose["mobile_base"][:3, :3].T
+        diff_orientation = R.from_matrix(diff_orientation).as_euler("xyz", degrees=False)
 
         theta = diff_orientation[2]
         theta = np.rad2deg(theta)

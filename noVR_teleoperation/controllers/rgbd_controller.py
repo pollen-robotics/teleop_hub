@@ -4,7 +4,7 @@ from collections import deque
 from typing import Deque, Optional
 
 import numpy as np
-from controller.controller import Controller  # type: ignore
+from controllers.controller import Controller  # type: ignore
 from scipy.spatial.transform import Rotation as R  # type: ignore
 from trackers.rgbd_tracker.computer_vision import ComputerVision  # type: ignore
 from trackers.rgbd_tracker.rgbd_tracker import ArmRGBDTracker  # type: ignore
@@ -183,7 +183,7 @@ class ArmRGBDController(RGBDController):
             print("Pose unreachable, using former pose.")
 
         # Check if the pose is too far from the previous one
-        distance_threshold = 0.2
+        distance_threshold = 0.3
         if self.former_pose is not None:
             if self.is_too_far(pose, distance_threshold):
                 pose = self.former_pose
@@ -204,9 +204,7 @@ class ArmRGBDController(RGBDController):
             np.ndarray: The converted pose.
         """
         corrected_rotation = self.computer_vision.T_world_camera @ pose[:3, :3]
-        corrected_position = self.computer_vision.T_world_camera @ (
-            pose[:3, 3] - self.user_center
-        )
+        corrected_position = self.computer_vision.T_world_camera @ (pose[:3, 3] - self.user_center)
 
         normalized_position = corrected_position * self.normalization_factor
 
@@ -219,9 +217,7 @@ class ArmRGBDController(RGBDController):
         T_cam_to_reachy = np.array([[0, 0, -1], [1, 0, 0], [0, -1, 0]])
         new_rotation = T_cam_to_reachy @ corrected_rotation @ T_cam_to_reachy.T
 
-        new_pose = make_homogenous_matrix_from_rotation_matrix(
-            new_rotation, new_position
-        )
+        new_pose = make_homogenous_matrix_from_rotation_matrix(new_rotation, new_position)
 
         return new_pose
 
@@ -272,9 +268,7 @@ class ArmRGBDController(RGBDController):
         """
         goal_position = goal_pose[:3, 3]
         former_position = self.former_pose[:3, 3]
-        return bool(
-            np.linalg.norm(goal_position - former_position) > distance_threshold
-        )
+        return bool(np.linalg.norm(goal_position - former_position) > distance_threshold)
 
     def is_command_reachable(self, goal_pose: np.ndarray) -> bool:
         """Check if the goal pose is reachable.

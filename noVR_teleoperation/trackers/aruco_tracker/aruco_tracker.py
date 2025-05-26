@@ -2,14 +2,18 @@ import time
 from typing import Optional
 
 import numpy as np
-from camera.rgb_camera import RGBCamera  # type: ignore
-from filter.filters import KalmanFilter3D, RotationSmoother  # type: ignore
 from scipy.spatial.transform import Rotation as R  # type: ignore
+from trackers.cameras.rgb_camera import RGBCamera  # type: ignore
+from trackers.filters.filters import (  # type: ignore
+    KalmanFilter3D,
+    PoseFilter,
+    RotationSmoother,
+)
 from trackers.tracker import Tracker, TrackerType  # type: ignore
 from utils import load_config  # type: ignore
 
 
-class ArucoCube(Tracker):
+class ArucoTracker(Tracker):
     """Class to detect and track an ArUco cube."""
 
     def __init__(self, arm: str, camera: RGBCamera) -> None:
@@ -42,6 +46,9 @@ class ArucoCube(Tracker):
         self.kf = KalmanFilter3D()
         self.rf = RotationSmoother()
         # self.filter = PoseFilter(0.1)
+
+        # use a filter to smooth the pose
+        self.pose_filter = PoseFilter(alpha=0.5)
 
         self._define_cube(self.marker_ids)
 
@@ -130,6 +137,7 @@ class ArucoCube(Tracker):
         """Update the cube pose using the camera frame.
 
         This function detects the markers in the frame and estimates the pose of the cube.
+        It applies a filter to the pose and returns the filtered pose.
 
         Returns:
             tracker_pose (np.ndarray): The pose of the cube in the camera frame.
@@ -173,7 +181,9 @@ class ArucoCube(Tracker):
 
                 tracker_pose[:3, 3] = tvec_filtered
 
-                self.tracker_pose = tracker_pose
+                tracker_pose[:3, 3] = tvec.flatten()
+                filtered_pose = self.pose_filter.update(tracker_pose)
+                self.tracker_pose = filtered_pose
 
         return self.tracker_pose
 
@@ -251,8 +261,8 @@ if __name__ == "__main__":
     import cv2  # type: ignore
 
     camera = RGBCamera()
-    aruco_cube_left = ArucoCube(arm="l_arm", camera=camera)
-    aruco_cube_right = ArucoCube(arm="r_arm", camera=camera)
+    aruco_cube_left = ArucoTracker(arm="l_arm", camera=camera)
+    aruco_cube_right = ArucoTracker(arm="r_arm", camera=camera)
 
     while True:
         left_pose = aruco_cube_left.update_tracker_pose()

@@ -47,9 +47,7 @@ class Robot(ABC):
         pass
 
     @abstractmethod
-    def move_gripper(
-        self, arm: str, with_joint_command: bool = True, command: Optional[float] = None
-    ) -> None:
+    def move_gripper(self, arm: str, with_joint_command: bool = True, command: Optional[float] = None) -> None:
         """Send the command to move the gripper of the specified arm.
 
         Args:

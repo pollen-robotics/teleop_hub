@@ -3,11 +3,8 @@ from typing import Optional
 import numpy as np
 from robots.robot import Robot  # type: ignore
 from scipy.spatial.transform import Rotation as R  # type: ignore
-from utils import (
-    limit_orbita3d_joints,
-    load_config,  # type: ignore
-    make_homogenous_matrix_from_rotation_matrix,
-)
+from utils import load_config  # type: ignore
+from utils import limit_orbita3d_joints, make_homogenous_matrix_from_rotation_matrix
 
 
 class Reachy2(Robot):
@@ -33,10 +30,8 @@ class Reachy2(Robot):
         from google.protobuf.wrappers_pb2 import FloatValue, Int32Value
         from reachy2_sdk import ReachySDK  # type: ignore
         from reachy2_sdk_api.arm_pb2 import ArmCartesianGoal  # type: ignore
-        from reachy2_sdk_api.arm_pb2 import (
-            IKConstrainedMode,  # type: ignore
-            IKContinuousMode,
-        )
+        from reachy2_sdk_api.arm_pb2 import IKConstrainedMode  # type: ignore
+        from reachy2_sdk_api.arm_pb2 import IKContinuousMode
         from reachy2_sdk_api.kinematics_pb2 import Matrix4x4  # type: ignore
 
         self.ReachySDK = ReachySDK
@@ -71,28 +66,16 @@ class Reachy2(Robot):
         arm_position = [0.36, 0.2, -0.28]
 
         for arm in [self.reachy.l_arm, self.reachy.r_arm]:
-            arm_position[1] = (
-                -arm_position[1] if arm == self.reachy.r_arm else arm_position[1]
-            )
-            pose = make_homogenous_matrix_from_rotation_matrix(
-                arm_orientation.as_matrix(), arm_position
-            )
+            arm_position[1] = -arm_position[1] if arm == self.reachy.r_arm else arm_position[1]
+            pose = make_homogenous_matrix_from_rotation_matrix(arm_orientation.as_matrix(), arm_position)
             joints = arm.inverse_kinematics(pose)
-            arm.goto(
-                joints, 3.0, degrees=True, interpolation_mode="minimum_jerk", wait=False
-            )
+            arm.goto(joints, 3.0, degrees=True, interpolation_mode="minimum_jerk", wait=False)
 
         # Set initial pose for head and antennas
-        self.reachy.head.r_antenna.goto(
-            0, 3.0, degrees=True, interpolation_mode="minimum_jerk", wait=False
-        )
-        self.reachy.head.l_antenna.goto(
-            0, 3.0, degrees=True, interpolation_mode="minimum_jerk", wait=False
-        )
+        self.reachy.head.r_antenna.goto(0, 3.0, degrees=True, interpolation_mode="minimum_jerk", wait=False)
+        self.reachy.head.l_antenna.goto(0, 3.0, degrees=True, interpolation_mode="minimum_jerk", wait=False)
         head_joints = [0, 0, 0]
-        self.reachy.head.goto(
-            head_joints, 3.0, degrees=True, interpolation_mode="minimum_jerk", wait=True
-        )
+        self.reachy.head.goto(head_joints, 3.0, degrees=True, interpolation_mode="minimum_jerk", wait=True)
 
     def fk(self, arm) -> np.ndarray:
         """Compute the forward kinematics of the specified arm.
@@ -163,9 +146,7 @@ class Reachy2(Robot):
         )
         robot_arm._stub.SendArmCartesianGoal(request)
 
-    def move_gripper(
-        self, arm: str, with_joint_command: bool = True, command: Optional[float] = None
-    ) -> None:
+    def move_gripper(self, arm: str, with_joint_command: bool = True, command: Optional[float] = None) -> None:
         """Send the command to move the gripper of the specified arm.
 
         Args:

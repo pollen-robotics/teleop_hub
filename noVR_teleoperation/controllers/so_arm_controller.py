@@ -1,8 +1,8 @@
 import time
 
 import numpy as np
-from controller.controller import Controller  # type: ignore
-from controller.feetech_rustypot import Feetech  # type: ignore
+from controllers.controller import Controller  # type: ignore
+from controllers.feetech_rustypot import Feetech  # type: ignore
 from scipy.spatial.transform import Rotation as R  # type: ignore
 from trackers.tracker import TrackerType  # type: ignore
 from utils import make_homogenous_matrix_from_rotation_matrix  # type: ignore
@@ -45,24 +45,19 @@ class SoArmController(Controller):
         d4_bis = np.array([0.06, 0, 0])
         d5 = np.array([0.07, 0.0, 0.0])
 
-        P1 = p1
         M1 = R.from_euler("xyz", [0, 0, -joints[0]], degrees=False).as_matrix()
         T1 = make_homogenous_matrix_from_rotation_matrix(M1, p1)
         T = T1
-        P2 = T @ np.append(p2, 1)
         M2 = R.from_euler("xyz", [0, joints[1], 0], degrees=False).as_matrix()
         T2 = make_homogenous_matrix_from_rotation_matrix(M2, p2)
         T = T @ T2
-        P3 = T @ np.append(d3, 1)
         M3 = R.from_euler("xyz", [0, joints[2], 0], degrees=False).as_matrix()
         T3 = make_homogenous_matrix_from_rotation_matrix(M3, d3)
         T = T @ T3
-        P4 = T @ np.append(d4, 1)
         M4 = R.from_euler("xyz", [0, joints[3], 0], degrees=False).as_matrix()
         T4 = make_homogenous_matrix_from_rotation_matrix(M4, d4)
         T = T @ T4
         if len(joints) == 7:
-            P4_bis = T @ np.append(d4_bis, 1)
             M4_bis = R.from_euler("xyz", [0, 0, joints[6]], degrees=False).as_matrix()
             T4_bis = make_homogenous_matrix_from_rotation_matrix(M4_bis, d4_bis)
             T = T @ T4_bis
@@ -70,13 +65,7 @@ class SoArmController(Controller):
         M5 = R.from_euler("xyz", [-joints[4], 0, 0], degrees=False).as_matrix()
         T5 = make_homogenous_matrix_from_rotation_matrix(M5, d5)
         T = T @ T5
-        points = np.array([P1, P2[:3], P3[:3], P4[:3], P5[:3]])
         orientation = T[:3, :3]
-        # rot1 = R.from_euler('xyz', [0, 0, -np.pi/4], degrees=False).as_matrix()
-        # rot2 = R.from_euler('xyz', [0, np.pi/2, 0], degrees=False).as_matrix()
-        # if top_grasp:
-        #     orientation = orientation @ rot2 @ rot1
-
         pose = make_homogenous_matrix_from_rotation_matrix(orientation, P5[:3])
 
         return pose

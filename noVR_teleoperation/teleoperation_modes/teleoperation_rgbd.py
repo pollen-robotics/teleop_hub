@@ -1,9 +1,9 @@
 import numpy as np
-from camera.orbbec import Orbbec  # type: ignore
-from controller.rgbd_controller import ArmRGBDController  # type: ignore
-from controller.rgbd_controller import HeadRGBDController
-from teleoperation_mode.teleoperation import Teleoperation  # type: ignore
-from teleoperation_mode.teleoperation import LEFT_ARM, RIGHT_ARM  # type: ignore
+from controllers.rgbd_controller import ArmRGBDController  # type: ignore
+from controllers.rgbd_controller import HeadRGBDController
+from teleoperation_modes.teleoperation_base import Teleoperation  # type: ignore
+from teleoperation_modes.teleoperation_base import LEFT_ARM, RIGHT_ARM  # type: ignore
+from trackers.cameras.orbbec import Orbbec  # type: ignore
 from trackers.rgbd_tracker.computer_vision import ComputerVision  # type: ignore
 
 
@@ -55,9 +55,7 @@ class TeleoperationRGBD(Teleoperation):
                     robot_poses,
                 )
 
-    def _set_user_offsets(
-        self, user_poses: list[np.ndarray], robot_poses: list[np.ndarray]
-    ) -> None:
+    def _set_user_offsets(self, user_poses: list[np.ndarray], robot_poses: list[np.ndarray]) -> None:
         """Set the user offsets based on the initial poses of the user and robot.
 
         The offsets are calculated as the difference between the robot and user positions in the x, y, and z axes,

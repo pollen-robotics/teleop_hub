@@ -26,7 +26,7 @@ MOVEMENT_THRESHOLD = 100  # Threshold for significant movement
 
 
 # Path to the teleoperation configuration file
-CONFIG_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "project_tracker", "config.yaml"))
+CONFIG_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "noVR_teleoperation", "config.yaml"))
 
 
 def get_camera_capture(usb_cam: bool, cam_id: str) -> cv2.VideoCapture:

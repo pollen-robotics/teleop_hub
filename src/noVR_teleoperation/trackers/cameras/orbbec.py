@@ -39,7 +39,7 @@ class Orbbec(Camera):
         self.depth_frame: Deque = deque(maxlen=1)
 
         # get the scale_percent from the config.yaml file
-        self.scale_percent = load_config("config.yaml").get("scale_percent", 50)
+        self.scale_percent = load_config("config.yaml").get("rgbd", {}).get("scale_percent", 50)
 
         # parameters for colorizing depth image
         self.MIN_DEPTH = 0.05

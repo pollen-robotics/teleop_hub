@@ -8,7 +8,8 @@ POTENTIOMETER_GRIPPER = "potentiometer"
 class ArduinoController:
     """
     This class handles the communication with the Arduino board.
-    It reads the joystick input and button states from the Arduino.
+    It reads the joystick input and button states from the Arduino,
+    and the gripper value if it is a potentiometer.
     """
 
     def __init__(self, port: str, gripper_type: str) -> None:
@@ -26,13 +27,20 @@ class ArduinoController:
 
     def read(
         self,
-    ) -> tuple[Optional[int], Optional[int], Optional[int], Optional[int], Optional[int], Optional[int],]:
+    ) -> tuple[
+        Optional[int],
+        Optional[int],
+        Optional[int],
+        Optional[int],
+        Optional[int],
+        Optional[int],
+    ]:
         """Reads the joystick input and button states from the Arduino.
 
         Returns:
             tuple: A tuple containing the x and y coordinates of the joystick,
-                   the button command, and the states of button A and button B.
-        """
+                   the button command, the states of button A and button B
+                   and the potentiometer value if applicable."""
         if self.ser.in_waiting > 0:
             data = self.ser.readline().decode("utf-8", errors="ignore").strip()
             values = data.split(",")
@@ -57,9 +65,8 @@ class ArduinoController:
 
 
 if __name__ == "__main__":
-    gripper_type = POTENTIOMETER_GRIPPER  # Change to FEETECH_GRIPPER for the other gripper
+    gripper_type = POTENTIOMETER_GRIPPER
     arduino = ArduinoController("/dev/noVR_right_arduino", gripper_type)
-    # arduino = ArduinoController("/dev/noVR_left_arduino", gripper_type)
 
     while True:
         if gripper_type == FEETECH_GRIPPER:

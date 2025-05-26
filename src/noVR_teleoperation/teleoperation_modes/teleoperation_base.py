@@ -37,12 +37,16 @@ class Teleoperation(ABC):
 
         Initializes the teleoperation and enters a loop that calls the `step()` method at a fixed frequency.
         """
-        self.init_teleoperation()
-        frequency = 100
-        while True:
-            t = time.time()
-            self.step()
-            time.sleep(max(0, 1 / frequency - (time.time() - t)))
+        try:
+            self.init_teleoperation()
+            frequency = 100
+            while True:
+                t = time.time()
+                self.step()
+                time.sleep(max(0, 1 / frequency - (time.time() - t)))
+        except KeyboardInterrupt:
+            print("Teleoperation stopped by user.")
+            self.robot.stop()
 
     @abstractmethod
     def step(self):

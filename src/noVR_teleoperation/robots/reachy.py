@@ -31,7 +31,7 @@ class Reachy2(Robot):
         from reachy2_sdk import ReachySDK  # type: ignore
         from reachy2_sdk_api.arm_pb2 import ArmCartesianGoal  # type: ignore
         from reachy2_sdk_api.arm_pb2 import IKConstrainedMode  # type: ignore
-        from reachy2_sdk_api.arm_pb2 import IKContinuousMode
+        from reachy2_sdk_api.arm_pb2 import IKContinuousMode  # type: ignore
         from reachy2_sdk_api.kinematics_pb2 import Matrix4x4  # type: ignore
 
         self.ReachySDK = ReachySDK

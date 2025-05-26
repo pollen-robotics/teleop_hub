@@ -17,15 +17,18 @@ def update_config(path: str, updates: dict) -> None:
 
     def recursive_update(d, u):
         for k, v in u.items():
-            if isinstance(v, dict):
-                d[k] = recursive_update(d.get(k, {}), v)
+            if isinstance(v, dict) and isinstance(d.get(k), dict):
+                recursive_update(d[k], v)
+            elif isinstance(v, list) and isinstance(d.get(k), list):
+                d[k].clear()
+                d[k].extend(v)
             else:
                 d[k] = v
         return d
 
-    updated_config = recursive_update(config, updates)
+    recursive_update(config, updates)
 
     with open(path, "w") as file:
-        yaml.dump(updated_config, file)
+        yaml.dump(config, file)
 
     print(f"Config updated at {path}")

@@ -1,7 +1,6 @@
 import time
 
 import numpy as np
-import pygame  # type: ignore
 from scipy.spatial.transform import Rotation as R  # type: ignore
 from teleoperation_mode.teleoperation import LEFT_ARM, RIGHT_ARM, Teleoperation
 from utils import axis_cleaner, parse_hat
@@ -12,12 +11,16 @@ class GamepadTeleoperation(Teleoperation):
 
     def __init__(self, angle_step, x_y_joystick_ratio, z_increment) -> None:
         super().__init__()
+        import pygame  # type: ignore
+
+        self.pygame = pygame
+
         # Initialize pygame joystick
-        pygame.init()
-        pygame.joystick.init()
-        if pygame.joystick.get_count() == 0:
+        self.pygame.init()
+        self.pygame.joystick.init()
+        if self.pygame.joystick.get_count() == 0:
             raise RuntimeError("No Gamepad controller found")
-        self.joystick = pygame.joystick.Joystick(0)
+        self.joystick = self.pygame.joystick.Joystick(0)
         self.joystick.init()
 
         self.ANGLE_STEP = angle_step
@@ -51,7 +54,7 @@ class GamepadTeleoperation(Teleoperation):
 
     def step(self) -> None:
         """Read Gamepad inputs, update robot target poses, grippers, and send commands."""
-        pygame.event.pump()
+        self.pygame.event.pump()
 
         # reset deltas
         for arm in (LEFT_ARM, RIGHT_ARM):
@@ -92,9 +95,7 @@ class GamepadTeleoperation(Teleoperation):
             if not self.continous_press[8]:
                 self.continous_press[8] = True
                 self.gripper_state[RIGHT_ARM] ^= 1
-                self.robot.move_gripper(
-                    RIGHT_ARM, True, 130 * self.gripper_state[RIGHT_ARM]
-                )
+                self.robot.move_gripper(RIGHT_ARM, True, 130 * self.gripper_state[RIGHT_ARM])
                 time.sleep(0.2)
             else:
                 pass
@@ -133,9 +134,7 @@ class GamepadTeleoperation(Teleoperation):
             if not self.continous_press[9]:
                 self.continous_press[9] = True
                 self.gripper_state[LEFT_ARM] ^= 1
-                self.robot.move_gripper(
-                    LEFT_ARM, True, 130 * self.gripper_state[LEFT_ARM]
-                )
+                self.robot.move_gripper(LEFT_ARM, True, 130 * self.gripper_state[LEFT_ARM])
                 time.sleep(0.2)
             else:
                 pass
@@ -153,9 +152,7 @@ class GamepadTeleoperation(Teleoperation):
             # translation
             new_pose[:3, 3] += np.array([delta["dx"], delta["dy"], delta["dz"]])
             # orientation
-            rot_delta = R.from_euler(
-                "xyz", [delta["roll"], delta["pitch"], delta["yaw"]], degrees=True
-            ).as_matrix()
+            rot_delta = R.from_euler("xyz", [delta["roll"], delta["pitch"], delta["yaw"]], degrees=True).as_matrix()
             new_pose[:3, :3] = rot_delta.dot(prev[:3, :3])
             # send command
             self.robot.go_to_pose(new_pose, arm)

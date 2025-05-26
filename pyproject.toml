@@ -1,0 +1,69 @@
+[build-system]
+requires = ["setuptools>=42", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "noVR_teleoperation"
+version = "0.1.0"
+readme = "README.md"
+description = "Teleoperation with several techniques without VR"
+authors = [
+    { name = "Pollen Robotics", email = "contact@pollen-robotics.com" }
+]
+
+requires-python = ">= 3.10, <= 3.12"
+
+dependencies = [
+    "numpy >= 1.24.0, <= 1.26.4",
+    "scipy >= 1.8.0, < 2.0.0",
+    "pyyaml ~= 6.0.2",
+]
+
+[project.optional-dependencies]
+reachy2 = [
+    "protobuf >= 4.25.0, <= 5.30.0",
+    "reachy2-sdk ~= 1.0.10",
+    "reachy2-sdk-api >= 1.0.18, < 1.1.0",
+]
+vive = [
+    "rustypot >= 0.1.0",
+    "pyserial ~= 3.5",
+    "openvr ~= 2.5.1",
+]
+aruco = [
+    "rustypot >= 0.1.0",
+    "pyserial ~= 3.5",
+    "opencv-python >= 4.8.0, < 5.0.0",
+]
+so100 = [
+    "pynput ~= 1.8.1",
+    "rustypot >= 0.1.0",
+]
+rgbd = [
+    "mediapipe ~= 0.10.20",
+    "opencv-python >= 4.8.0, < 5.0.0",
+]
+gamepad = [
+    "pygame >= 2.6.1"
+]
+
+all = [
+    "protobuf >= 4.25.0, <= 5.30.0",
+    "reachy2-sdk ~= 1.0.10",
+    "reachy2-sdk-api >= 1.0.18, < 1.1.0",
+    "rustypot >= 0.1.0",
+    "pyserial ~= 3.5",
+    "openvr ~= 2.5.1",
+    "opencv-python >= 4.8.0, < 5.0.0",
+    "mediapipe ~= 0.10.20",
+    "pynput ~= 1.8.1",
+    "pygame >= 2.6.1",
+]
+
+[tool.setuptools]
+packages = "find:"
+
+[tool.isort]
+profile = "black"
+[tool.black]
+line-length = 128

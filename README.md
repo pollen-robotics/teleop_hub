@@ -83,7 +83,7 @@ The rest of the parameters are specific to each teleoperation technique, and we 
 > *Don't forget to CTRL+X then Y to save the config.yaml and exit*
 
 Then you can launch the teleoperation program :
-<code>python -m main </code>
+<code>python -m teleoperation </code>
 
 > Be careful that the robot will **bent its arms** to 90° when the teleoperation is launched. So make sure there are **no obstacles** in its path (if it is too close to a table, for example). 
 
@@ -97,25 +97,27 @@ Feel free to test it and to suggest your additions!
 ## How to set-up each modality
 
 <details>
-<summary> <span style="font-size: 1.2em;"><strong> Vive Tracker & ArUco cube </strong></span></summary>
+<summary> <span style="font-size: 1.3em;"><strong> Vive Tracker & ArUco cube </strong></span></summary>
 
 These two techniques use the [SOARM-100](https://github.com/TheRobotStudio/SO-ARM100/tree/main) leader joystick, that we have slightly tuned : 
 - add of a **support** on top to be able to switch easily from **Vive tracker** (screwed onto it) to the **ArUco cube**.
 - add of a **joystick** and **buttons**, so you can control several parts and switch modes with an **Arduino** system.
-- tuning of the trigger, so you can use either a Feetech **motor** or a **potentiometer**. 
+- tuning of the **trigger**, so you can use either a Feetech **motor** or a **potentiometer**. 
+
+You can find the tutorial for creating the controller yourself below.
 
 <details>
-<summary><span style="font-size: 1.1em;"><strong>How to make a custom controller</strong></span></summary>
+<summary><span style="font-size: 1.15em;"><strong>How to make the custom controller</strong></span></summary>
 
 There are two types of controllers depending on the gripper type you want to use:
 
 <details>
-<summary><span style="font-size: 1em;"><strong>Potentiometer controller (incomplete)</strong></span></summary>
+<summary><span style="font-size: 1em;"><strong>Potentiometer controller (work in progress)</strong></span></summary>
 
 
 This is a DIY controller. Two variants are possible:
 - A version using a **Vive Tracker**
-- A **low-cost version** using an **ArUco** marker
+- A **low-cost version** using an **ArUco** cube
 
 ---
 
@@ -208,13 +210,16 @@ Use your preferred slicer and printer to produce the components listed above.
 ---
 </details>
 <details>
-<summary><span style="font-size: 1em;"><strong>Feetech controller (comming soon) </strong></span></summary>
+<summary><span style="font-size: 1em;"><strong>Feetech controller (coming soon) </strong></span></summary>
+
+*Work in progress.*
+
 </details>
 
 </details>
 
 <details>
-<summary><span style="font-size: 1.1em;"><strong>Vive Tracker </strong></span></summary>
+<summary><span style="font-size: 1.15em;"><strong>Vive Tracker </strong></span></summary>
 
 This modality requires 1 Vive tracker for each controller used (it is possible to teleoperate one or both arms), a Vive base station for it to be detected and SteamVR to get data. 
 
@@ -276,17 +281,17 @@ cd ../..
 nano config.yaml 
 ```
 
-In the *vive_trackers*, put the left tracker in *l_arm* and the right_tracker in *r_arm* and save it. 
+In the *vive_trackers*, put the left tracker in *l_arm* and the right_tracker in *r_arm* and save it.
 
 </details>
 <details>
-<summary><span style="font-size: 1.1em;"><strong>ArUco cube</strong></span></summary>
+<summary><span style="font-size: 1.15em;"><strong>ArUco cube</strong></span></summary>
 
 What you need is :
-- an ArUco cube 
+- an ArUco cube
 - a camera
 
-1. **The cube**
+**1. The cube**
 
 You need to print the provided cube (lien à ajouter), in white for a better detection. Then, you have to print the ArUco markers : the PDFs for the markers are in the *controller_design_utils* folder. They are arranged so that the middle face is placed on the top face of the cube, when the joystick handle is facing you, and the other faces must be folded to either side of the top face. The first is for the right hand and the second is for the left hand. 
 
@@ -298,9 +303,9 @@ If you want to customise your ArUco cubes yourself, you can.
     <img src="images/cube_front.png" alt="cube front" style="width: 25.5%; margin-right: 10px;"/>
 </p>
 
-You can adjust the markers id (order is back, up, front, left, right, down) and size directly in the config file, in the ARUCO section. 
+You can adjust the markers id (order is : back, up, front, left, right, down) and size directly in the config file, in the ARUCO section. 
 
-2. **The camera**
+**2. The camera**
 
 You can use a camera or your smartphone. To select it, you need to change the config file in the ARUCO section. 
 
@@ -340,9 +345,11 @@ Then, it saves the parameters in the camera_parameters folder, but also by updat
 
 </details>
 
-#### Both
+### Both
 
-You need to modify the config file to adjust your controller settings:
+**1. To setup your config file :**
+
+You need to modify the config file to adjust your controller settings, according to the custom controller you made. 
 
 <ins>For all :</ins>
 - gripper_type: set to 'feetech' or 'potentiometer' depending on what you have chosen for the joystick trigger
@@ -357,21 +364,24 @@ You need to modify the config file to adjust your controller settings:
 - potentiometer_gripper_joints_limit: you can adapt the range of gripper values to your own trigger movement amplitude if required.
 
 
-**To set up your environment :**
+**2. To set up your environment :**
+
 Once your config file and your controller(s) are ready (with a Vive tracker or a ArUco cube), you can launch the main script. Take your controller(s), the pose during the initialization will be the reference pose for the arm to be bent at 90°. 
 
-To understand how to use the system once it’s running,, you can refer to the image below.
+To understand how to use the system once it’s running, you can refer to the image below.
 
-For one tracker only :
+**For one tracker only :**
 ![one tracker](images/one_tracker_vive_tuto.png)
-For two trackers :
+
+
+**For two trackers :**
 ![two trackers](images/two_trackers_vive_tuto.png)
 
 
 
 </details>
 <details>
-<summary> <span style="font-size: 1.2em;"><strong> RGBD Camera </strong></span></summary>
+<summary> <span style="font-size: 1.3em;"><strong> RGBD Camera </strong></span></summary>
 
 The posture detection model is [Mediapipe](https://chuoling.github.io/mediapipe/solutions/holistic.html). 
 
@@ -440,13 +450,13 @@ To set-up your environment :
 </details>
 
 <details>
-<summary> <span style="font-size: 1.2em;"><strong> SOARM-100 </strong></span></summary>
+<summary> <span style="font-size: 1.3em;"><strong> SOARM-100 </strong></span></summary>
 
 It needs a leader SOARM-100 : you can either build it or buy it (all the infos are on [GitHub](https://github.com/TheRobotStudio/SO-ARM100)). 
 
 To launch the teleoperation, it needs :
 - the arm powered and plugged to the computer
-- the specified port on the config file (in the 'SO Arm’ section)
+- the specified port on the config file (in the 'Arm’ section)
     > You can find the port name by doing ```ls /dev``` in your terminal, and looking for the ttyACM[0-10] linked to it.
 
 When the teleoperation starts, the arm will spontaneously move into its initial position: accompany it without restraining it, because once it is in position, it will become compliant and fall. 
@@ -464,16 +474,22 @@ To **quit** teleoperation, you only have to ctrl + c the script.
 </details>
 
 <details>
-<summary> <span style="font-size: 1.2em;"><strong> Gamepad </strong></span></summary>
+<summary> <span style="font-size: 1.3em;"><strong> Gamepad </strong></span></summary>
 
 You only need a PS4 gamepad, plugged to your computer. 
 
-The left **joystick** is used for forward/backward and left/right **translation** of the *left arm*, **L1/L2** for up/down translation ; the right **joystick** and **R1/R2** for the *right arm*.
+<p align = "center"> 
+    <img src="images/gamepad_tuto.png" alt="so100 commands" style="width: 60%"/>
+</p>
 
-**Orientation** is controlled using the **side buttons** (the **triangle** and **cross** allow upward and downward bending of the *left wrist*, the **square** and **round** allow inward and outward bending, and the **arrows** are for the *right wrist*): this means you can control the orientation and position of an end effector at the same time, although it does take a bit of practice.
+> The left **joystick** is used for forward/backward and left/right **translation** of the *left arm*, **L1/L2** for up/down translation ; the right **joystick** and **R1/R2** for the *right arm*.
+
+> **Orientation** is controlled using the **side buttons** (the **triangle** and **cross** allow upward and downward bending of the *left wrist*, the **square** and **round** allow inward and outward bending, and the **arrows** are for the *right wrist*): this means you can control the orientation and position of an end effector at the same time, although it does take a bit of practice.
+
+> You can open and close the **grippers** with the 'share' and 'options' buttons. 
 
 You can **tune the ratios** of movements on the various axes in position and rotation in the config file, in the “gamepad” section  - at the end of the file (lower the coefficient to slow down movement). 
 
-You can open and close the **grippers** with the 'share' and 'options' buttons. 
+
 
 </details>

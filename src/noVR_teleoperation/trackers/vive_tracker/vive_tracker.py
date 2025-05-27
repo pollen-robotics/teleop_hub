@@ -32,13 +32,13 @@ class ViveTracker(Tracker):
         self.vive = triad_openvr.triad_openvr()
 
         serial_number = trackers[self.tracker_name]
-        print(f"Looking for tracker: {self.tracker_name} (Serial: {serial_number})")
+        # print(f"Looking for tracker: {self.tracker_name} (Serial: {serial_number})")
 
         # Find corresponding tracker device in SteamVR
         matched_tracker = None
         for dev in self.vive.devices:
             dev_serial = self.vive.devices[dev].get_serial().decode("utf-8").strip()
-            print(f"Found device: {dev} (Serial: {dev_serial})")
+            # print(f"Found device: {dev} (Serial: {dev_serial})")
             if dev_serial == serial_number:
                 matched_tracker = dev
                 break
@@ -49,7 +49,7 @@ class ViveTracker(Tracker):
 
         self.tracker_name = matched_tracker
 
-        print(f"Tracker '{tracker_id}' found as '{self.tracker_name}' in SteamVR.")
+        print(f"Tracker '{tracker_id}' found as '{self.tracker_name}' with serial '{serial_number}' in SteamVR.")
 
         self.tracker = self.vive.devices[self.tracker_name]
         self.tracker_euler_angles = np.zeros(3)

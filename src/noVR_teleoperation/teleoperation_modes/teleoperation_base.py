@@ -47,6 +47,9 @@ class Teleoperation(ABC):
         except KeyboardInterrupt:
             print("Teleoperation stopped by user.")
             self.robot.stop()
+            first_controller = next(iter(self.controllers.values()), None)
+            if first_controller:
+                first_controller.stop()
 
     @abstractmethod
     def step(self):

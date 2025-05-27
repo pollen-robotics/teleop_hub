@@ -185,8 +185,22 @@ class Reachy2(Robot):
             - y (float): The target y position.
             - theta (float): The target orientation in degrees.
         """
+        if self.mirror_mode:
+            x, y, theta = self.get_mirror_mobile_base_command(x, y, theta)
         self.reachy.mobile_base.set_goal_speed(vx=x, vy=y, vtheta=theta)
         self.reachy.mobile_base.send_speed_command()
+
+    def get_mirror_mobile_base_command(self, x: float, y: float, theta: float) -> tuple[float, float, float]:
+        """Returns the mirrored command for the mobile base.
+
+        Args:
+            - x (float): The target x position.
+            - y (float): The target y position.
+            - theta (float): The target orientation in degrees.
+        Returns:
+            tuple: The mirrored command as a tuple (x, y, theta).
+        """
+        return x, -y, -theta
 
     def move_antenna(self, position: float, arm=None) -> None:
         """Send the command to move the antenna, according to the controller mode.
@@ -199,10 +213,20 @@ class Reachy2(Robot):
         if arm is None:
             self.reachy.head.r_antenna.goal_position = position
             self.reachy.head.l_antenna.goal_position = -position
-        elif arm == "r_arm":
-            self.reachy.head.r_antenna.goal_position = position
         else:
-            self.reachy.head.l_antenna.goal_position = position
+            if arm == "l_arm":
+                if not self.mirror_mode:
+                    antenna = self.reachy.head.l_antenna
+                else:
+                    antenna = self.reachy.head.r_antenna
+                    position = -position
+            else:
+                if not self.mirror_mode:
+                    antenna = self.reachy.head.r_antenna
+                else:
+                    antenna = self.reachy.head.l_antenna
+                    position = -position
+            antenna.goal_position = position
         self.reachy.send_goal_positions()
 
     def move_head(self, orientation_matrix: np.ndarray) -> None:

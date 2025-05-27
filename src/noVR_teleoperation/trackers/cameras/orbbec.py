@@ -231,6 +231,7 @@ class Orbbec(Camera):
     def stop(self) -> None:
         """Stop the camera and close all OpenCV windows."""
         self.cv2.destroyAllWindows()
+        self.frame_getter.join(timeout=3)
         self.pipeline.stop()
         print("Orbbec stopped.")
 

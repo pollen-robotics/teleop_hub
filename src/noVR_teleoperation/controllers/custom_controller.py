@@ -119,8 +119,8 @@ class CustomController(Controller):
                 if self.gripper_type == POTENTIOMETER_GRIPPER:
                     self.potentiometer = arduino_values[5]
 
-            else:
-                print("No data")
+            # else:
+            #     print("No data")
             time.sleep(0.1)
 
     def get_gripper_joint(self):

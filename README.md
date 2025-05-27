@@ -56,7 +56,7 @@ They all have their pros and cons, which you can read about in the article, or f
 
 The project is structured as follows:
 
-- `src` : The Python soruce code
+- `src` : The Python source code
 
     - `noVR_teleoperation` : The main Python code for teleoperation.
 
@@ -206,21 +206,36 @@ Use your preferred slicer and printer to produce the components listed above.
 **This step currently requires some soldering.**
 
 - Assemble the push buttons  
-  ![buttons](images/assembly/buttons.jpg)
+  <p align="center">
+    <img src="images/assembly/buttons.jpg" width="50%">
+  </p>
 
 - Attach the buttons to the controller handle  
-  ![fixed_buttons](images/assembly/fixed_buttons.jpg)
+  <p align="center">
+    <img src="images/assembly/fixed_buttons.jpg" width="40%">
+  </p>
 
-- Mount the joystick
-![joystick](images/assembly/joystick.jpg)
-- Mount the potentiometer
-![potentiometer](images/assembly/potentiometer.jpg)
+- Mount the joystick  
+  <p align="center">
+    <img src="images/assembly/joystick.jpg" width="40%">
+  </p>
 
-- Connect the components according to the provided wiring diagram (see below)
-![schema](images/assembly/schema.png)
-- Mount the Arduino board
-- Close the handle
-![result](images/assembly/result.jpg)
+- Mount the potentiometer  
+  <p align="center">
+    <img src="images/assembly/potentiometer.jpg" width="40%">
+  </p>
+
+- Connect the components according to the provided wiring diagram (see below)  
+  <p align="center">
+    <img src="images/assembly/schema.png" width="40%">
+  </p>
+
+- Mount the Arduino board  
+- Close the handle  
+  <p align="center">
+    <img src="images/assembly/result.jpg" width="40%">
+  </p>
+
 
 ### 3. Upload the code
 
@@ -320,8 +335,8 @@ If you want to customise your ArUco cubes yourself, you can.
  Use [this site](https://fodi.github.io/arucosheetgen/) to generate the sheet with the markers (we use ArUco 6x6 dictionary).  Then, paste them at the center of each face, as shown in the diagram below, with the cross representing the top left corner of the marker. 
 
 <p align = "center"> 
-    <img src="images/cube_back.png" alt="cube back" style="width: 27.5%; margin-right: 10px;"/>
-    <img src="images/cube_front.png" alt="cube front" style="width: 25.5%; margin-right: 10px;"/>
+    <img src="images/cube_back.png" alt="cube back" style="width: 15%; margin-right: 10px;"/>
+    <img src="images/cube_front.png" alt="cube front" style="width: 14%;"/>
 </p>
 
 You can adjust the markers id (order is : back, up, front, left, right, down) and size directly in the config file, in the ARUCO section. 

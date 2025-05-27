@@ -94,11 +94,6 @@ class ArmRGBDTracker(RGBDTracker):
             np.array(self.computer_vision.wrists[side_int]),
         )
 
-    def stop(self) -> None:
-        """Stop the RGBD tracker."""
-        self.computer_vision.stop()
-        print("RGBD Tracker stopped.")
-
 
 class GripperRGBDTracker(RGBDTracker):
     """RGBD tracker for gripper tracking.
@@ -237,11 +232,6 @@ class HeadRGBDTracker(RGBDTracker):
 
         return rot
 
-    def stop(self) -> None:
-        """Stop the RGBD tracker."""
-        self.computer_vision.stop()
-        print("RGBD Tracker stopped.")
-
 
 if __name__ == "__main__":
     import cv2  # type: ignore
@@ -264,5 +254,4 @@ if __name__ == "__main__":
         if cv2.waitKey(1) & 0xFF == ord("q"):
             break
 
-    for tracker in [l_rgbd_tracker, r_rgbd_tracker]:
-        tracker.stop()
+    computer_vision.stop()

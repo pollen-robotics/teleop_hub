@@ -27,6 +27,7 @@ class TeleoperationRGBD(Teleoperation):
         self.head_controller = HeadRGBDController(self.computer_vision)
         self.first_command_ok = False
         self.user_offsets = np.zeros(3)
+        self.stop = False
 
     def init_teleoperation(self) -> None:
         """Initialize the teleoperation.
@@ -109,42 +110,44 @@ class TeleoperationRGBD(Teleoperation):
 
         Update the robot's state (arms, grippers, head), check for stop flag, and visualize the landmarks.
         """
-        # Check if the stop flag is raised
-        if self.head_controller.stop_flag:
-            print("Stop flag raised, stopping teleoperation.")
-            self.robot.stop()
-            self.stop_flag = True
+        if not self.stop:
+            # Check if the stop flag is raised
+            if self.head_controller.stop_flag:
+                print("Stop flag raised, stopping teleoperation.")
+                # self.robot.stop()
+                self.stop = True
+                return
 
-        self.computer_vision.update_landmarks_coordinates(True)
+            self.computer_vision.update_landmarks_coordinates(True)
 
-        for controller in self.controllers.values():
-            # Get the wrist command
-            pose = controller.get_controller_pose()
-            pose = self.recalibrate_goal_position(pose)
-            self.robot.go_to_pose(pose, controller.arm)
-            self.controller_previous_pose[controller.arm] = pose
+            for controller in self.controllers.values():
+                # Get the wrist command
+                pose = controller.get_controller_pose()
+                pose = self.recalibrate_goal_position(pose)
+                self.robot.go_to_pose(pose, controller.arm)
+                self.controller_previous_pose[controller.arm] = pose
 
-            # Get the gripper command
-            gripper_command = controller.get_gripper_command()
-            if gripper_command is not None:
-                self.robot.move_gripper(controller.arm, False, gripper_command)
+                # Get the gripper command
+                gripper_command = controller.get_gripper_command()
+                if gripper_command is not None:
+                    self.robot.move_gripper(controller.arm, False, gripper_command)
 
-        # Get the head command
-        head_pose = self.head_controller.get_controller_pose()
-        self.robot.move_head(head_pose)
+            # Get the head command
+            head_pose = self.head_controller.get_controller_pose()
+            self.robot.move_head(head_pose)
 
-        rpy = self.head_controller.former_rpy[-1]
+            rpy = self.head_controller.former_rpy[-1]
 
-        # Show the landmarks on the frame
-        color_frame = self.computer_vision.camera.color_frame[0]
-        frame = self.computer_vision.visualization_landmarks(
-            color_frame,
-            self.controller_previous_pose[LEFT_ARM],
-            self.controller_previous_pose[RIGHT_ARM],
-            rpy[0],
-            rpy[1],
-            rpy[2],
-            text_on=True,
-        )
-        self.camera.cv2.imshow("Color Viewer", frame)
-        self.camera.cv2.waitKey(1)
+            # Show the landmarks on the frame
+            color_frame = self.computer_vision.camera.color_frame[0]
+            frame = self.computer_vision.visualization_landmarks(
+                color_frame,
+                self.controller_previous_pose[LEFT_ARM],
+                self.controller_previous_pose[RIGHT_ARM],
+                rpy[0],
+                rpy[1],
+                rpy[2],
+                text_on=True,
+            )
+            self.camera.cv2.imshow("Color Viewer", frame)
+            self.camera.cv2.waitKey(1)

@@ -20,7 +20,6 @@ class ArduinoController:
         """
         import serial  # type: ignore
 
-        print(port)
         self.ser = serial.Serial(port, 9600)
         self.ser.flushInput()
         self.gripper_type = gripper_type

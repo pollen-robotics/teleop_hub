@@ -35,9 +35,11 @@ class CustomControllerTeleoperation(Teleoperation):
 
             self.cv2 = cv2
             self.camera = RGBCamera()
+            self.video_stream = True
 
         elif tracker_type == TrackerType.VIVE:
             self.camera = None
+            self.video_stream = False
 
         self._init_controllers()
 
@@ -242,6 +244,7 @@ class CustomControllerTeleoperation(Teleoperation):
                 self.robot_previous_pose[controller.arm] = self.robot.fk(controller.arm)
 
             self.joystick_mode[controller.arm] = 0 if self.joystick_mode[controller.arm] == 1 else 1
+            print(f"Joystick mode for {controller.arm} is now {self.joystick_mode[controller.arm]}")
 
     def _update_previous_buttons(self, controller: CustomController) -> None:
         """Update the previous button states for the controller.
@@ -260,7 +263,8 @@ class CustomControllerTeleoperation(Teleoperation):
         self.manage_mode()
         if not self.stop:
             self.update_robot_state()
-            if self.tracker_type == TrackerType.ARUCO and isinstance(self.camera, RGBCamera):
+            if self.video_stream:
+                # Display the video stream with the poses of the left and right ArUco cubes.
                 frame = self.get_video_streaming()
                 self.cv2.imshow("Color Viewer", frame)
                 self.cv2.waitKey(1)
@@ -314,6 +318,7 @@ class CustomControllerTeleoperation(Teleoperation):
                 antenna = self.joystick_to_antenna(self.controllers[RIGHT_ARM].joystick_x, RIGHT_ARM)
                 self.robot.move_antenna(antenna, RIGHT_ARM)
                 self.antenna_previous_position[RIGHT_ARM] = antenna
+
             if self.joystick_mode[LEFT_ARM] == 0:
                 x, y = self.joystick_to_mobile_base(
                     self.controllers[LEFT_ARM].joystick_x,

@@ -115,8 +115,8 @@ class HeadRGBDController(RGBDController):
         self.former_rpy.append(rpy)
         if self.raise_flag_to_stop():
             print("Command to stop")
+
             self.stop_flag = True
-            self.tracker.stop()
 
     def raise_flag_to_stop(self) -> bool:
         """Check if the user wants to stop the teleoperation.
@@ -136,7 +136,6 @@ class HeadRGBDController(RGBDController):
                 and np.all(np.abs(roll_values) < 10)
                 and np.all(np.abs(yaw_values) < 10)
             ):
-                print("Command to stop")
                 return True
         return False
 
@@ -314,3 +313,8 @@ class ArmRGBDController(RGBDController):
             command = None
 
         return command
+
+    def stop(self) -> None:
+        """Stop the arm RGBD controller."""
+        if self.computer_vision is not None:
+            self.computer_vision.stop()

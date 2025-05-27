@@ -177,6 +177,8 @@ This is a DIY controller. Two variants are possible:
 
 ## 3D Printed Parts
 
+You can find all the STL files in the [`project_resources` folder](./project_resources/)
+
 For **each controller**, print the following:
 
 ### Core parts:
@@ -185,7 +187,7 @@ For **each controller**, print the following:
 - `side`_potentiometer_controller3 ×1  
 - `side`_trigger ×1
 - button ×2  
-- support_button ×1  
+- button_support ×1  
 
 ### Tracking-specific top:
 - **ArUco version:** `side`_aruco_controller
@@ -231,7 +233,8 @@ Use your preferred slicer and printer to produce the components listed above.
   </p>
 
 - Mount the Arduino board  
-- Close the handle  
+
+- Close the handle & add the trigger 
   <p align="center">
     <img src="images/assembly/result.jpg" width="40%">
   </p>
@@ -329,9 +332,9 @@ What you need is :
 
 **1. The cube**
 
-You need to print the provided cube (lien à ajouter), in white for a better detection. Then, you have to print the ArUco markers : the PDFs for the markers are in the *controller_design_utils* folder. They are arranged so that the middle face is placed on the top face of the cube, when the joystick handle is facing you, and the other faces must be folded to either side of the top face. The first is for the right hand and the second is for the left hand. 
+You need to print the provided cube (*left* or *right_aruco_controller* in the [`project_resources` folder](./project_resources/STL_files)), in **white** for a better detection. Then, you have to **print the ArUco markers** : the PDFs for the markers are in the [`project_resources` folder](./project_resources/ArUco_cubes) too. They are arranged so that the middle face is placed on the top face of the cube, when the joystick handle is facing you, and the other faces must be folded to either side of the top face. 
 
-If you want to customise your ArUco cubes yourself, you can. 
+You can **customise** your ArUco cubes yourself.
  Use [this site](https://fodi.github.io/arucosheetgen/) to generate the sheet with the markers (we use ArUco 6x6 dictionary).  Then, paste them at the center of each face, as shown in the diagram below, with the cross representing the top left corner of the marker. 
 
 <p align = "center"> 
@@ -339,7 +342,7 @@ If you want to customise your ArUco cubes yourself, you can.
     <img src="images/cube_front.png" alt="cube front" style="width: 14%;"/>
 </p>
 
-You can adjust the markers id (order is : back, up, front, left, right, down) and size directly in the config file, in the ARUCO section. 
+You can adjust the markers id (order is : back, up, front, left, right, down) and size directly in the **config file**, in the ARUCO section. 
 
 **2. The camera**
 
@@ -352,7 +355,7 @@ You can use a camera or your smartphone. To select it, you need to change the co
 <ins>If you're using your smartphone :</ins>
 - install the app "IP webcam" on your phone, then click on the 3 dots and "Start the server"
 - set the usb_mode to *false*
-- set the camera_id : use the IPv4 address written on the app (between http:// and :8080, not included - *it should be something like '172.16.0.56'*) 
+- set the camera_id : use the IPv4 address written on the app (between http:// and :8080, not included - *it should be something like '172.16.0.10'*) 
 - make sure your phone and computer are on the same network, and that your phone stays unlocked. 
 
 By default, *with_calibration* parameter is set to *false* in the config file. That means that the intrinsic camera parameters used are estimated **manually** (which is sufficient for cameras with little distortion such as integrated computer cameras). But you have the possibility to use **specific camera matrix and distorsion coefficients**, by setting *with_calibration* to true and replacing the *camera_matrix* and *dist_coeffs* with your own values. 
@@ -371,7 +374,7 @@ We also provide the script to **perform your calibration** with a ChArUco board.
 
 4. Launch the calibration script : <code>python3 camera_calibration.py</code>
 
-By default, the camera taken into account is the one built into the computer, but you can select the one you want to calibrate by adding the --usb_mode (true or false) and -- camera_id (index or IP address) arguments: for example by executing <code> python3 camera_calibration.py --usb-mode false --camera_id "172.16.0.56"</code>. 
+By default, the camera taken into account is the one built into the computer, but you can select the one you want to calibrate by adding the --usb_mode (true or false) and -- camera_id (index or IP address) arguments: for example by executing <code> python3 camera_calibration.py --usb-mode false --camera_id "172.16.0.10"</code>. 
 
 Move the board in all directions, the important thing is to have different orientations, close-up shots, distant shots and angled shots. This takes 20 images, in which the board must be placed quite a distance from the previous image. 
 

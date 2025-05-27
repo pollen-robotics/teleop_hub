@@ -2,7 +2,7 @@
 
 A general project combining different methods for teleoperating Reachy2 without virtual reality. 
 
-You can find the article on the development of the project and the technical details at this [link](AJOUT DU Medium link). 
+You can find the article on the development of the project and the technical details on [Medium](https://medium.com/pollen-robotics/can-reachy2-be-teleoperated-without-vr-a-6-week-challenge-66ef2b7f1348). 
 
 ## Methods available
 

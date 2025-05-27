@@ -52,27 +52,6 @@ They all have their pros and cons, which you can read about in the article, or f
 
 > Be careful, if you're using the RGBD modality with the supplied Orbbec class, you need to manually install the library *pyorbbecsdk*. The instructions are below in the specific [RGBD Camera section](#how-to-set-up-each-modality). 
 
-## How is it organised ?
-
-The project is structured as follows:
-
-- `src` : The Python source code
-
-    - `noVR_teleoperation` : The main Python code for teleoperation.
-
-    - `camera_calibration` : The camera calibration script.
-
-    - `setup` : Contains script and configuration files for system setup (e.g., udev rules).
-
-- `project_resources`: All project resources, such as:
-
-    - PDFs of the ArUco markers
-
-    - STL files and the Arduino script for the custom controller (used for the Vive tracker and the ArUco cube)
-
-- `images`: Images for the documentation
-
-
 
 ## How to use it ?
 The project configuration file is used to select a particular **teleoperation mode**. 
@@ -85,14 +64,12 @@ cd src/noVR_teleoperation
 nano config.yaml 
 ```
 
-The first 5 lines are essential to set-up the project : 
+The first 4 lines are essential to set-up the project : 
 
-- **robot_ip & fake_only**: 
+- **robot_ip**: 
 	
     You can change *localhost* for the ip address of your robot  - *if you don't know how to find your Reachy2's IP address, go [there](https://pollen-robotics.github.io/reachy2-docs/developing-with-reachy-2/getting-started-sdk/connect-reachy2/)*. 
 
-	The *fake_only* parameter is a security that ensures that you only connect to a robot in simulation mode. 
-    > If you enter an IP address that corresponds to a robot in real mode (i.e. it is the physical robot that is supposed to be moving), the connection will not be made. If you want to connect to a robot in normal mode, you need to disable this security by changing the *fake_only* parameter to 'false'.
 
 - **tracker_type**: the modality you want to use (among 'aruco', 'vive', 'rgbd', 'arm', 'gamepad')
 
@@ -530,5 +507,29 @@ You only need a PS4 gamepad, plugged to your computer.
 You can **tune the ratios** of movements on the various axes in position and rotation in the config file, in the “gamepad” section  - at the end of the file (lower the coefficient to slow down movement). 
 
 
+</details>
+
+
+## How is it organised ? (*under construction*)
+<details>
+<summary> If you want to find out more about the project and contribute :</summary>
+
+The project is structured as follows:
+
+- `src` : The Python source code
+
+    - `noVR_teleoperation` : The main Python code for teleoperation.
+
+    - `camera_calibration` : The camera calibration script.
+
+    - `setup` : Contains script and configuration files for system setup (e.g., udev rules).
+
+- `project_resources`: All project resources, such as:
+
+    - PDFs of the ArUco markers
+
+    - STL files and the Arduino script for the custom controller (used for the Vive tracker and the ArUco cube)
+
+- `images`: Images for the documentation
 
 </details>

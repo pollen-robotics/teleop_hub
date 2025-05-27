@@ -1,5 +1,4 @@
 robot_ip: "localhost"
-fake_only: true # Security to avoid sending command to a real robot if not wanted
 tracker_type: "rgbd" # options: aruco, vive, rgbd, arm, gamepad
 control_mode: "dual_arm" # options: dual_arm, l_arm, r_arm
 mirror_mode: false

@@ -23,8 +23,7 @@ class Reachy2(Robot):
         """
         super().__init__(robot_ip, mirror_mode)
         self._make_imports()
-        fake_only_parameter = load_config("config.yaml").get("fake_only", True)
-        self.reachy = self.ReachySDK(self.robot_ip, fake_only=fake_only_parameter)
+        self.reachy = self.ReachySDK(self.robot_ip)
 
     def _make_imports(self) -> None:
         from google.protobuf.wrappers_pb2 import FloatValue, Int32Value

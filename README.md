@@ -1,6 +1,6 @@
-# Teleoperation without VR
+# Teleoperation Hub
 
-A general project combining different methods for teleoperating Reachy2 without virtual reality. 
+A general project combining different methods for teleoperating Reachy2. 
 
 You can find the article on the development of the project and the technical details on [Medium](https://medium.com/pollen-robotics/can-reachy2-be-teleoperated-without-vr-a-6-week-challenge-66ef2b7f1348). 
 
@@ -29,7 +29,7 @@ They all have their pros and cons, which you can read about in the article, or f
 
 1. Clone the repository 
 
-        git clone https://github.com/pollen-robotics/reachy2_noVR_teleoperation.git
+        git clone https://github.com/pollen-robotics/teleop_hub.git
 
 2. Install the dependencies, according to which modalities and robot you want to use (we recommand to do it in a virtual environment): 
 

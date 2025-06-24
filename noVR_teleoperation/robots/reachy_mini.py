@@ -3,14 +3,14 @@ from typing import Optional
 import numpy as np
 # robots.robot import Robot  # type: ignore
 from robots.robot import Robot  # type: ignore
+from reachy_mini import ReachyMini
 
-
-from stewart_little_control import Client
+# from stewart_little_control import Client
 from scipy.spatial.transform import Rotation as R  # type: ignore
 
 
 
-class ReachyMini(Robot):
+class ReachyMiniTeleoperation(Robot):
     """Class for controlling Reachy2.
 
     This class inherits from the Robot class.
@@ -25,9 +25,10 @@ class ReachyMini(Robot):
             (e.g., left controller controls the right arm). Defaults to False.
         """
         super().__init__(robot_ip, mirror_mode)
-        self.client = Client(robot_ip)
+        self.reachy_mini = ReachyMini(spawn_daemon=True, use_sim=True)
+        # self.client = Client(robot_ip)
         self.target_pose = np.eye(4)
-        self.target_antennas = [0, 0]
+        self.target_antennas = np.array([0., 0.])
 
 
     def fk(self, arm) -> np.ndarray:
@@ -55,7 +56,6 @@ class ReachyMini(Robot):
             self.target_pose[:3, :3] = pose[:3, :3]
         if arm == "l_arm":
             # self.client.send_pose(pose, offset_zero = True)
-            print(pose [:3, 3])
             self.target_pose[:3, 3] = pose[:3, 3]
             pass
 
@@ -101,14 +101,16 @@ class ReachyMini(Robot):
             - arm (Optional[str]): The side of the controller that controls the antenna.
                 Can be "r_arm" or "l_arm". If None, both antennas are moved.
         """
+        print(position)
         if arm == "r_arm":
             self.target_antennas[0] = np.deg2rad(position)
         if arm == "l_arm":
             self.target_antennas[1] = np.deg2rad(position)
             self.limit_pose(self.target_pose)
 
-            self.client.send_pose(self.target_pose, antennas = self.target_antennas, offset_zero = True)
-
+            # self.client.send_pose(self.target_pose, antennas = self.target_antennas, offset_zero = True)
+            print(self.target_antennas)
+            self.reachy_mini.set_position(head=self.target_pose, antennas=self.target_antennas)
             # self.limit_pose(self.target_pose)
             # print(self.target_pose)
 

@@ -12,11 +12,13 @@ from controller.joystick_controller import JoystickController  # type: ignore
 
 # from controller.rgbd_controller import ArmRGBDController, HeadRGBDController
 from robots.reachy import Reachy2
-from robots.reachy_mini import ReachyMini  # type: ignore
+from robots.reachy_mini import ReachyMiniTeleoperation  # type: ignore
 
 # from trackers.rgbd_tracker.computer_vision import ComputerVision  # type: ignore
 from trackers.tracker import TrackerType  # type: ignore
 from utils import load_config
+
+import pygame
 
 DUAL_ARM = "dual_arm"
 LEFT_ARM = "l_arm"
@@ -37,12 +39,25 @@ class Teleoperation(ABC):
         self.control_mode = config.get("control_mode", "dual_arm")
 
         # self.robot = Reachy2(robot_ip, mirror_mode)
-        self.robot = ReachyMini(robot_ip, mirror_mode)
+        self.robot = ReachyMiniTeleoperation(robot_ip, mirror_mode)
 
         self.controllers: dict = {}
         self.controller_previous_pose = {LEFT_ARM: np.eye(4), RIGHT_ARM: np.eye(4)}
         self.robot_previous_pose = {LEFT_ARM: np.eye(4), RIGHT_ARM: np.eye(4)}
         self.stop_flag = False
+
+        pygame.init()
+        pygame.joystick.init()
+
+        # Vérifie s'il y a une manette connectée
+        if pygame.joystick.get_count() == 0:
+            print("Aucune manette détectée.")
+            exit()
+
+        # Connexion à la première manette
+        self.joystick = pygame.joystick.Joystick(0)
+        self.joystick.init()
+        print(f"Manette connectée : {self.joystick.get_name()}")
 
     @abstractmethod
     def init_teleoperation(self) -> None:
@@ -477,27 +492,54 @@ class JoystickTeleoperation(Teleoperation):
                 self.controller_previous_pose[controller.arm] = pose
 
             x, y, theta = 0, 0, 0
-            if self.joystick_mode[RIGHT_ARM] == 0:
-                _, r_y = self.joystick_to_mobile_base(
-                    self.controllers[RIGHT_ARM].joystick_x,
-                    self.controllers[RIGHT_ARM].joystick_y,
-                )
-                theta = r_y * 100
+            # if self.joystick_mode[RIGHT_ARM] == 0:
+            #     _, r_y = self.joystick_to_mobile_base(
+            #         self.controllers[RIGHT_ARM].joystick_x,
+            #         self.controllers[RIGHT_ARM].joystick_y,
+            #     )
+            #     theta = r_y * 100
+
+            # else:
+            #     antenna = self.joystick_to_antenna(self.controllers[RIGHT_ARM].joystick_x, RIGHT_ARM)
+            #     self.robot.move_antenna(antenna, RIGHT_ARM)
+            #     self.antenna_previous_position[RIGHT_ARM] = antenna
+            # if self.joystick_mode[LEFT_ARM] == 0:
+            #     x, y = self.joystick_to_mobile_base(
+            #         self.controllers[LEFT_ARM].joystick_x,
+            #         self.controllers[LEFT_ARM].joystick_y,
+            #     )
+            # else:
+            #     antenna = self.joystick_to_antenna(self.controllers[LEFT_ARM].joystick_x, LEFT_ARM)
+            #     self.robot.move_antenna(antenna, LEFT_ARM)
+            #     self.antenna_previous_position[LEFT_ARM] = antenna
+            # self.robot.move_mobile_base(x, y, theta)
+
+            pygame.event.pump()
+
+            # Lecture des axes
+
+            ratio = 2
+            left_stick_x = self.joystick.get_axis(0)  # Axe horizontal du joystick gauche
+            left_stick_y = self.joystick.get_axis(1)  # Axe vertical du joystick gauche
+            right_stick_x = self.joystick.get_axis(3) # Axe horizontal du joystick droit
+            right_stick_y = self.joystick.get_axis(4)
+
+
+            if left_stick_x > 0.1 or left_stick_x < -0.1:
+                left_antenna_position = self.antenna_previous_position[LEFT_ARM]+  left_stick_x * ratio
 
             else:
-                antenna = self.joystick_to_antenna(self.controllers[RIGHT_ARM].joystick_x, RIGHT_ARM)
-                self.robot.move_antenna(antenna, RIGHT_ARM)
-                self.antenna_previous_position[RIGHT_ARM] = antenna
-            if self.joystick_mode[LEFT_ARM] == 0:
-                x, y = self.joystick_to_mobile_base(
-                    self.controllers[LEFT_ARM].joystick_x,
-                    self.controllers[LEFT_ARM].joystick_y,
-                )
+                left_antenna_position = self.antenna_previous_position[LEFT_ARM]
+            self.robot.move_antenna(left_antenna_position, LEFT_ARM)
+            self.antenna_previous_position[LEFT_ARM] = left_antenna_position
+
+            if right_stick_x >0.1 or right_stick_x < -0.1:
+                right_antenna_position = self.antenna_previous_position[RIGHT_ARM] + right_stick_x * ratio
             else:
-                antenna = self.joystick_to_antenna(self.controllers[LEFT_ARM].joystick_x, LEFT_ARM)
-                self.robot.move_antenna(antenna, LEFT_ARM)
-                self.antenna_previous_position[LEFT_ARM] = antenna
-            self.robot.move_mobile_base(x, y, theta)
+                right_antenna_position = self.antenna_previous_position[RIGHT_ARM]
+            self.robot.move_antenna(right_antenna_position, RIGHT_ARM)
+            self.antenna_previous_position[RIGHT_ARM]= right_antenna_position
+
 
     def update_single_arm_state(self) -> None:
         """Update the robot state for single-arm teleoperation."""

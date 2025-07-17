@@ -234,6 +234,16 @@ class JoystickTeleoperation(Teleoperation):
         self.joystick_mode = {LEFT_ARM: 0, RIGHT_ARM: 0}
         self.controller_previous_button = {RIGHT_ARM: [1, 1, 1], LEFT_ARM: [1, 1, 1]}
 
+        self.left_waving = False
+        self.right_waving = False
+        self.antenna_amplitude = 8
+        self.antenna_waving_speed = 10
+        self.antenna_speed = 3.0
+        self.left_antenna_starting_time = 0
+        self.right_antenna_starting_time = 0
+        self.button_states = [False, False, False, False, False, False, False, False, False, False]
+
+
     def _init_controllers(self) -> None:
         """Initialize the controllers based on the control mode.
 
@@ -518,7 +528,7 @@ class JoystickTeleoperation(Teleoperation):
 
             # Lecture des axes
 
-            ratio = 2
+            ratio = 4
             left_stick_x = self.joystick.get_axis(0)  # Axe horizontal du joystick gauche
             left_stick_y = self.joystick.get_axis(1)  # Axe vertical du joystick gauche
             right_stick_x = self.joystick.get_axis(3) # Axe horizontal du joystick droit
@@ -541,6 +551,100 @@ class JoystickTeleoperation(Teleoperation):
             self.antenna_previous_position[RIGHT_ARM]= right_antenna_position
 
 
+    def update_antenna_status(self):
+        for event in pygame.event.get():
+            if event.type == pygame.JOYBUTTONDOWN:
+                if event.button == 0 and not self.button_states[0]:
+                    self.button_states[0] = True
+                    self.right_waving = not(self.right_waving)
+                    self.left_waving = not(self.left_waving)
+                    
+                    if not self.left_waving:
+                        self.antenna_previous_position[LEFT_ARM] = self.antenna_previous_position[LEFT_ARM] + self.antenna_amplitude * np.sin(self.antenna_waving_speed * (time.time() - self.left_antenna_starting_time))
+                    if not self.right_waving:
+                        self.antenna_previous_position[RIGHT_ARM] = self.antenna_previous_position[RIGHT_ARM] - self.antenna_amplitude * np.sin(self.antenna_waving_speed * (time.time() - self.right_antenna_starting_time))
+                    self.right_antenna_starting_time = time.time()
+                    self.left_antenna_starting_time = time.time()
+                if event.button == 1 and not self.button_states[1]:
+                    self.button_states[1] = True
+                    self.left_waving = not(self.left_waving)
+                    if not self.left_waving:
+                        self.antenna_previous_position[LEFT_ARM] = self.antenna_previous_position[LEFT_ARM] + self.antenna_amplitude * np.sin(self.antenna_waving_speed * (time.time() - self.left_antenna_starting_time))
+                    self.left_antenna_starting_time = time.time()
+                if event.button == 3 and not self.button_states[3]:
+                    self.button_states[3] = True
+                    self.right_waving = not(self.right_waving)
+                    if not self.right_waving:
+                        self.antenna_previous_position[RIGHT_ARM] = self.antenna_previous_position[RIGHT_ARM] - self.antenna_amplitude * np.sin(self.antenna_waving_speed * (time.time() - self.right_antenna_starting_time))
+                    self.right_antenna_starting_time = time.time()
+                if event.button == 4 and not self.button_states[4]:
+                    self.button_states[4] = True
+                    self.antenna_speed -= 0.5
+                    print("Antenna speed decreased to", self.antenna_speed)
+                if event.button == 5 and not self.button_states[5]:
+                    self.button_states[5] = True
+                    self.antenna_speed += 0.5
+                    print("Antenna speed increased to", self.antenna_speed)
+            
+            # Relâchement bouton
+            elif event.type == pygame.JOYBUTTONUP:
+                if event.button == 0:
+                    self.button_states[0] = False
+                if event.button == 1:
+                    self.button_states[1] = False
+                if event.button == 3:
+                    self.button_states[3] = False
+                if event.button == 4:
+                    self.button_states[4] = False
+                if event.button == 5:
+                    self.button_states[5] = False
+
+            elif event.type == pygame.JOYHATMOTION:
+                x, y = event.value
+
+                # Flèche Haut
+                if y == 1 and not self.button_states[8]:
+                    self.button_states[8] = True
+                    print("Flèche Haut appuyée")
+                    self.antenna_amplitude += 1
+                    # Ajoute ici une logique si besoin
+
+                elif y != 1 and self.button_states[8]:
+                    self.button_states[8] = False
+                    print("Flèche Haut relâchée")
+
+                # Flèche Bas
+                if y == -1 and not self.button_states[9]:
+                    self.button_states[9] = True
+                    self.antenna_amplitude -= 1
+                    print("Flèche Bas appuyée")
+
+                elif y != -1 and self.button_states[9]:
+                    self.button_states[9] = False
+                    print("Flèche Bas relâchée")
+
+                # Flèche Gauche
+                if x == -1 and not self.button_states[6]:
+                    self.button_states[6] = True
+                    self.antenna_waving_speed -= 1
+                    print("Flèche Gauche appuyée")
+
+                elif x != -1 and self.button_states[6]:
+                    self.button_states[6] = False
+                    print("Flèche Gauche relâchée")
+
+                # Flèche Droite
+                if x == 1 and not self.button_states[7]:
+                    self.button_states[7] = True
+                    self.antenna_waving_speed += 1
+                    print("Flèche Droite appuyée")
+
+                elif x != 1 and self.button_states[7]:
+                    self.button_states[7] = False
+                    print("Flèche Droite relâchée")
+
+
+
     def update_single_arm_state(self) -> None:
         """Update the robot state for single-arm teleoperation."""
         controller = self.controllers[self.control_mode]
@@ -561,6 +665,35 @@ class JoystickTeleoperation(Teleoperation):
             gripper_joint = controller.get_gripper_joint()
             gripper_joint = self.trigger_joint_to_gripper_joint(gripper_joint, controller.arm)
             self.robot.move_gripper(controller.arm, True, gripper_joint)
+
+            pygame.event.pump()
+
+            # Lecture des axes
+
+
+            left_stick_x = self.joystick.get_axis(3)  # Axe horizontal du joystick gauche
+            left_stick_y = self.joystick.get_axis(1)  # Axe vertical du joystick gauche
+            right_stick_x = self.joystick.get_axis(0) # Axe horizontal du joystick droit
+            right_stick_y = self.joystick.get_axis(4)
+
+            self.update_antenna_status()
+
+            if left_stick_x > 0.1 or left_stick_x < -0.1:
+                left_antenna_position = self.antenna_previous_position[LEFT_ARM] -  left_stick_x * self.antenna_speed
+            else:
+                left_antenna_position = self.antenna_previous_position[LEFT_ARM]
+            if right_stick_x >0.1 or right_stick_x < -0.1:
+                right_antenna_position = self.antenna_previous_position[RIGHT_ARM] - right_stick_x * self.antenna_speed
+            else:
+                right_antenna_position = self.antenna_previous_position[RIGHT_ARM]
+
+            left_antenna_position_waving = left_antenna_position + self.antenna_amplitude * np.sin(self.antenna_waving_speed * (time.time() - self.left_antenna_starting_time)) if self.left_waving else left_antenna_position
+            right_antenna_position_waving = right_antenna_position - self.antenna_amplitude * np.sin(self.antenna_waving_speed * (time.time()- self.right_antenna_starting_time)) if self.right_waving else right_antenna_position
+
+            self.robot.move_antenna(left_antenna_position_waving , LEFT_ARM)
+            self.antenna_previous_position[LEFT_ARM] = left_antenna_position
+            self.robot.move_antenna(right_antenna_position_waving, RIGHT_ARM)
+            self.antenna_previous_position[RIGHT_ARM]= right_antenna_position
 
         elif self.mode == 1:
             head_orientation = self.controller_to_head_orientation(pose, controller.arm)

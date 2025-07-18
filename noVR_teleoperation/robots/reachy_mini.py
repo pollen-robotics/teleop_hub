@@ -7,7 +7,7 @@ from reachy_mini import ReachyMini
 
 # from stewart_little_control import Client
 from scipy.spatial.transform import Rotation as R  # type: ignore
-
+BODY_YAW_ROTATION = True
 
 
 class ReachyMiniTeleoperation(Robot):
@@ -25,10 +25,11 @@ class ReachyMiniTeleoperation(Robot):
             (e.g., left controller controls the right arm). Defaults to False.
         """
         super().__init__(robot_ip, mirror_mode)
-        self.reachy_mini = ReachyMini()
+        self.reachy_mini = ReachyMini(automatic_body_yaw = BODY_YAW_ROTATION)
         # self.client = Client(robot_ip)
         self.target_pose = np.eye(4)
         self.target_antennas = np.array([0., 0.])
+        self.body = 0.0  # body position in radians
 
 
     def fk(self, arm) -> np.ndarray:
@@ -94,6 +95,16 @@ class ReachyMiniTeleoperation(Robot):
         return pose
 
 
+    def move_body(self, position: float) -> None:
+        """Send the command to move the body.
+
+        Args:
+            position (float): The target position in degrees.
+        """
+        if not BODY_YAW_ROTATION:
+            self.body = np.deg2rad(position)
+
+
     def move_antenna(self, position: float, arm=None) -> None:
         """Send the command to move the antenna, according to the controller mode.
 
@@ -109,7 +120,7 @@ class ReachyMiniTeleoperation(Robot):
             self.limit_pose(self.target_pose)
 
             # self.client.send_pose(self.target_pose, antennas = self.target_antennas, offset_zero = True)
-            self.reachy_mini.set_target(head=self.target_pose, antennas=self.target_antennas)
+            self.reachy_mini.set_target(head=self.target_pose, antennas=self.target_antennas, body_yaw=self.body)
             # self.limit_pose(self.target_pose)
             # print(self.target_pose)
 

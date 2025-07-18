@@ -44,6 +44,7 @@ class Teleoperation(ABC):
         self.controllers: dict = {}
         self.controller_previous_pose = {LEFT_ARM: np.eye(4), RIGHT_ARM: np.eye(4)}
         self.robot_previous_pose = {LEFT_ARM: np.eye(4), RIGHT_ARM: np.eye(4)}
+        self.robot_previous_body_position = 0.0
         self.stop_flag = False
 
         pygame.init()
@@ -643,6 +644,8 @@ class JoystickTeleoperation(Teleoperation):
                     self.button_states[7] = False
                     print("Flèche Droite relâchée")
 
+            
+
 
 
     def update_single_arm_state(self) -> None:
@@ -668,13 +671,11 @@ class JoystickTeleoperation(Teleoperation):
 
             pygame.event.pump()
 
-            # Lecture des axes
-
-
-            left_stick_x = self.joystick.get_axis(3)  # Axe horizontal du joystick gauche
-            left_stick_y = self.joystick.get_axis(1)  # Axe vertical du joystick gauche
-            right_stick_x = self.joystick.get_axis(0) # Axe horizontal du joystick droit
-            right_stick_y = self.joystick.get_axis(4)
+            left_stick_x = self.joystick.get_axis(3) 
+            right_stick_x = self.joystick.get_axis(0)
+            l2_value = self.joystick.get_axis(2) + 1 # L2
+            r2_value = self.joystick.get_axis(5) + 1  # R2
+                        
 
             self.update_antenna_status()
 
@@ -686,6 +687,17 @@ class JoystickTeleoperation(Teleoperation):
                 right_antenna_position = self.antenna_previous_position[RIGHT_ARM] - right_stick_x * self.antenna_speed
             else:
                 right_antenna_position = self.antenna_previous_position[RIGHT_ARM]
+
+            body_speed = 0.8
+           
+            if r2_value > 0.2 :
+                body_position = self.robot_previous_body_position + body_speed * r2_value
+            elif l2_value > 0.2 :
+                body_position = self.robot_previous_body_position - body_speed * l2_value
+            else :
+                body_position = self.robot_previous_body_position
+            self.robot_previous_body_position = body_position
+            self.robot.move_body(body_position)
 
             left_antenna_position_waving = left_antenna_position + self.antenna_amplitude * np.sin(self.antenna_waving_speed * (time.time() - self.left_antenna_starting_time)) if self.left_waving else left_antenna_position
             right_antenna_position_waving = right_antenna_position - self.antenna_amplitude * np.sin(self.antenna_waving_speed * (time.time()- self.right_antenna_starting_time)) if self.right_waving else right_antenna_position
